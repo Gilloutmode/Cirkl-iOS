@@ -581,8 +581,8 @@ struct OrbitalHeaderView: View {
 
     var body: some View {
         ZStack {
-            // Logo "cirkl" centré - typographie moderne
-            Text("cirkl")
+            // Logo "Cirkl" centré - typographie moderne
+            Text("Cirkl")
                 .font(.system(size: 24, weight: .medium, design: .rounded))
                 .tracking(1.5)
                 .foregroundColor(Color(white: 0.35))
