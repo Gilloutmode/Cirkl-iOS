@@ -43,7 +43,7 @@ enum AudioRecordingError: LocalizedError {
 }
 
 // MARK: - AudioRecorderService
-/// Service for recording audio messages for the CirKL AI assistant
+/// Service for recording audio messages for the Cirkl AI assistant
 @MainActor
 final class AudioRecorderService: NSObject, ObservableObject {
 

@@ -56,9 +56,9 @@ enum TrustLevel: String, Codable, CaseIterable, Identifiable {
         case .attested:
             return Color(red: 1.0, green: 0.8, blue: 0.0) // Jaune/Or
         case .verified:
-            return Color(red: 0.0, green: 0.78, blue: 0.51) // Mint CirKL
+            return Color(red: 0.0, green: 0.78, blue: 0.51) // Mint Cirkl
         case .superVerified:
-            return Color(red: 0.0, green: 0.48, blue: 1.0) // Electric Blue CirKL
+            return Color(red: 0.0, green: 0.48, blue: 1.0) // Electric Blue Cirkl
         }
     }
 

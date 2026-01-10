@@ -1,7 +1,7 @@
 import SwiftUI
 
 // MARK: - UserFoundView
-/// Vue affichée quand un utilisateur CirKL est détecté à proximité
+/// Vue affichée quand un utilisateur Cirkl est détecté à proximité
 struct UserFoundView: View {
 
     // MARK: - Properties

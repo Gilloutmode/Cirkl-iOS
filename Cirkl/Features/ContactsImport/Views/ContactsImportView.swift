@@ -1,7 +1,7 @@
 import SwiftUI
 
 // MARK: - ContactsImportView
-/// Vue principale pour importer des contacts et les inviter sur CirKL
+/// Vue principale pour importer des contacts et les inviter sur Cirkl
 struct ContactsImportView: View {
 
     // MARK: - Properties
@@ -145,7 +145,7 @@ struct ContactsImportView: View {
                 .font(.title2.weight(.bold))
 
             // Description
-            Text("CirKL a besoin d'accéder à vos contacts pour vous permettre d'inviter les personnes que vous avez déjà rencontrées.")
+            Text("Cirkl a besoin d'accéder à vos contacts pour vous permettre d'inviter les personnes que vous avez déjà rencontrées.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

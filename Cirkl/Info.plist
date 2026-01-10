@@ -3,20 +3,20 @@
 <plist version="1.0">
 <dict>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>CirKL utilise le microphone pour envoyer des messages vocaux à l'assistant AI.</string>
+	<string>Cirkl utilise le microphone pour envoyer des messages vocaux à l'assistant AI.</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>CirKL utilise le réseau local pour détecter les utilisateurs proches et vérifier les rencontres physiques.</string>
+	<string>Cirkl utilise le réseau local pour détecter les utilisateurs proches et vérifier les rencontres physiques.</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_cirkl-meet._tcp</string>
 		<string>_cirkl-meet._udp</string>
 	</array>
 	<key>NSNearbyInteractionUsageDescription</key>
-	<string>CirKL mesure la distance entre les téléphones pour vérifier que vous êtes physiquement proches lors d'une rencontre.</string>
+	<string>Cirkl mesure la distance entre les téléphones pour vérifier que vous êtes physiquement proches lors d'une rencontre.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>CirKL utilise la caméra pour scanner les QR codes de vérification de rencontre.</string>
+	<string>Cirkl utilise la caméra pour scanner les QR codes de vérification de rencontre.</string>
 	<key>NSContactsUsageDescription</key>
-	<string>CirKL accède à vos contacts pour vous permettre d'inviter les personnes que vous avez déjà rencontrées physiquement.</string>
+	<string>Cirkl accède à vos contacts pour vous permettre d'inviter les personnes que vous avez déjà rencontrées physiquement.</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>whatsapp</string>

@@ -4,7 +4,7 @@ import Combine
 
 // MARK: - ProximityVerificationService
 /// Service de vérification de proximité utilisant MultipeerConnectivity
-/// Permet la découverte et l'échange de données avec les utilisateurs CirKL proches
+/// Permet la découverte et l'échange de données avec les utilisateurs Cirkl proches
 @MainActor
 final class ProximityVerificationService: NSObject, ObservableObject {
 
@@ -164,7 +164,7 @@ final class ProximityVerificationService: NSObject, ObservableObject {
 
         advertiser = MCNearbyServiceAdvertiser(
             peer: peerID,
-            discoveryInfo: ["app": "CirKL", "version": "1.0"],
+            discoveryInfo: ["app": "Cirkl", "version": "1.0"],
             serviceType: serviceType
         )
         advertiser?.delegate = self
@@ -325,8 +325,8 @@ extension ProximityVerificationService: MCNearbyServiceBrowserDelegate {
         withDiscoveryInfo info: [String: String]?
     ) {
         Task { @MainActor in
-            // Vérifier que c'est bien une app CirKL
-            guard info?["app"] == "CirKL" else { return }
+            // Vérifier que c'est bien une app Cirkl
+            guard info?["app"] == "Cirkl" else { return }
 
             if !self.nearbyPeers.contains(where: { $0.displayName == peerID.displayName }) {
                 self.nearbyPeers.append(peerID)

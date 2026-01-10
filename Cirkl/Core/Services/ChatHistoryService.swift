@@ -18,7 +18,7 @@ final class ChatMessageEntity {
         content: String,
         isUser: Bool,
         timestamp: Date = Date(),
-        intent: CirKLIntent? = nil,
+        intent: CirklIntent? = nil,
         isVoiceMessage: Bool = false,
         sessionId: String
     ) {
@@ -31,9 +31,9 @@ final class ChatMessageEntity {
         self.sessionId = sessionId
     }
 
-    var intent: CirKLIntent? {
+    var intent: CirklIntent? {
         guard let raw = intentRaw else { return nil }
-        return CirKLIntent(rawValue: raw)
+        return CirklIntent(rawValue: raw)
     }
 
     /// Convert to display model

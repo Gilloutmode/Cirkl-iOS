@@ -2,7 +2,7 @@ import SwiftUI
 import MessageUI
 
 // MARK: - InvitationService
-/// Service pour générer et envoyer des invitations CirKL
+/// Service pour générer et envoyer des invitations Cirkl
 @Observable
 @MainActor
 final class InvitationService {
@@ -73,7 +73,7 @@ final class InvitationService {
 
         On s'est rencontrés récemment et j'aimerais garder le contact avec toi.
 
-        J'utilise CirKL, une app qui permet de maintenir des liens authentiques avec les personnes qu'on rencontre vraiment.
+        J'utilise Cirkl, une app qui permet de maintenir des liens authentiques avec les personnes qu'on rencontre vraiment.
 
         Confirme qu'on s'est vus en cliquant ici :
         \(link.absoluteString)
@@ -89,7 +89,7 @@ final class InvitationService {
         link: URL
     ) -> String {
         """
-        Hey ! C'est \(fromUserName). On s'est rencontrés récemment. Confirme notre rencontre sur CirKL : \(link.absoluteString)
+        Hey ! C'est \(fromUserName). On s'est rencontrés récemment. Confirme notre rencontre sur Cirkl : \(link.absoluteString)
         """
     }
 
@@ -104,7 +104,7 @@ final class InvitationService {
 
         C'est \(fromUserName). On s'est croisés récemment et j'ai pensé à toi !
 
-        J'utilise CirKL - c'est une app qui permet de garder le lien avec les personnes qu'on rencontre vraiment IRL. Fini les contacts fantômes qu'on ne revoit jamais 👻
+        J'utilise Cirkl - c'est une app qui permet de garder le lien avec les personnes qu'on rencontre vraiment IRL. Fini les contacts fantômes qu'on ne revoit jamais 👻
 
         ✨ Je t'ai ajouté à mon réseau réel - confirme qu'on s'est vus :
         \(link.absoluteString)

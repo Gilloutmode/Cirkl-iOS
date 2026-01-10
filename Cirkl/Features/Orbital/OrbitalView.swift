@@ -34,7 +34,7 @@ struct OrbitalView: View {
             name: "Gil",
             email: "gil@cirkl.app",
             avatarURL: nil,
-            bio: "Fondateur CirKL",
+            bio: "Fondateur Cirkl",
             sphere: .professional
         )
     }

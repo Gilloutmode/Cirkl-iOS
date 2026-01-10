@@ -386,7 +386,7 @@ final class Neo4jService: ObservableObject {
             // 1. Créer le noeud Gil s'il n'existe pas
             let createGilQuery = """
                 MERGE (g:Person {name: 'Gil', userId: 'gil'})
-                ON CREATE SET g.role = 'Founder', g.company = 'CirKL', g.industry = 'Tech', g.createdAt = datetime()
+                ON CREATE SET g.role = 'Founder', g.company = 'Cirkl', g.industry = 'Tech', g.createdAt = datetime()
                 RETURN g.name as name
             """
             _ = try await executeCypher(createGilQuery)

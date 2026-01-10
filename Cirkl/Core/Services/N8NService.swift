@@ -2,7 +2,7 @@ import Foundation
 import UIKit
 
 // MARK: - N8NService
-/// Service for communicating with N8N CirKL backend v17.29
+/// Service for communicating with N8N Cirkl backend v17.29
 @MainActor
 final class N8NService {
 
@@ -106,7 +106,7 @@ final class N8NService {
 
     // MARK: - Public Methods
 
-    /// Send a text message to the CirKL AI assistant
+    /// Send a text message to the Cirkl AI assistant
     func sendMessage(_ message: String, userId: String, sessionId: String? = nil) async throws -> AssistantResponse {
         let request = MessageRequest(
             userId: userId,
@@ -120,7 +120,7 @@ final class N8NService {
         return try await performRequest(request)
     }
 
-    /// Send audio data to the CirKL AI assistant
+    /// Send audio data to the Cirkl AI assistant
     func sendAudio(_ audioData: Data, userId: String, sessionId: String? = nil) async throws -> AssistantResponse {
         let base64Audio = audioData.base64EncodedString()
 
@@ -183,7 +183,7 @@ final class N8NService {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("CirKL-iOS/\(DeviceInfo.current.appVersion)", forHTTPHeaderField: "User-Agent")
+        request.setValue("Cirkl-iOS/\(DeviceInfo.current.appVersion)", forHTTPHeaderField: "User-Agent")
         request.timeoutInterval = 30
 
         do {
@@ -280,7 +280,7 @@ final class N8NService {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("CirKL-iOS/\(DeviceInfo.current.appVersion)", forHTTPHeaderField: "User-Agent")
+        request.setValue("Cirkl-iOS/\(DeviceInfo.current.appVersion)", forHTTPHeaderField: "User-Agent")
         request.timeoutInterval = 60
 
         do {
@@ -372,9 +372,9 @@ enum N8NError: LocalizedError, Sendable {
 
 extension N8NService.AssistantResponse {
     /// The detected intent from the AI
-    var detectedIntent: CirKLIntent? {
+    var detectedIntent: CirklIntent? {
         guard let intent = intent else { return nil }
-        return CirKLIntent(rawValue: intent)
+        return CirklIntent(rawValue: intent)
     }
 
     /// Whether this response indicates a new connection was created
@@ -383,8 +383,8 @@ extension N8NService.AssistantResponse {
     }
 }
 
-/// Known intents from the CirKL AI
-enum CirKLIntent: String, Sendable {
+/// Known intents from the Cirkl AI
+enum CirklIntent: String, Sendable {
     case newConnection = "new_connection"
     case memorySearch = "memory_search"
     case analyticsReport = "analytics_report"
@@ -441,7 +441,7 @@ extension N8NService {
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        request.setValue("CirKL-iOS/\(DeviceInfo.current.appVersion)", forHTTPHeaderField: "User-Agent")
+        request.setValue("Cirkl-iOS/\(DeviceInfo.current.appVersion)", forHTTPHeaderField: "User-Agent")
         request.timeoutInterval = 5 // 5 second timeout as specified
 
         #if DEBUG

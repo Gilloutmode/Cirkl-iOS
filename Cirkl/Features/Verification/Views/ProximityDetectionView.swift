@@ -2,7 +2,7 @@ import SwiftUI
 import MultipeerConnectivity
 
 // MARK: - ProximityDetectionView
-/// Vue d'animation radar pour la recherche d'utilisateurs CirKL à proximité
+/// Vue d'animation radar pour la recherche d'utilisateurs Cirkl à proximité
 struct ProximityDetectionView: View {
 
     // MARK: - Properties
@@ -38,7 +38,7 @@ struct ProximityDetectionView: View {
                     .foregroundStyle(.white)
 
                 Text(nearbyUsers.isEmpty
-                    ? "Rapprochez-vous d'un utilisateur CirKL"
+                    ? "Rapprochez-vous d'un utilisateur Cirkl"
                     : "\(nearbyUsers.count) utilisateur(s) détecté(s)")
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.7))

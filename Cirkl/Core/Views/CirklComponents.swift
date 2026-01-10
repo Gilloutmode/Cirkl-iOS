@@ -69,7 +69,7 @@ struct CirklHeaderView: View {
                 
                 Spacer()
                 
-                Text("CirKL")
+                Text("Cirkl")
                     .font(.system(size: 32, weight: .bold, design: .rounded))
                     .foregroundStyle(
                         LinearGradient(

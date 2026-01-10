@@ -85,7 +85,7 @@ struct RelationshipPickerView: View {
                 .font(.headline)
                 .multilineTextAlignment(.center)
 
-            Text("Cette information aide CirKL AI à mieux comprendre votre réseau")
+            Text("Cette information aide Cirkl AI à mieux comprendre votre réseau")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

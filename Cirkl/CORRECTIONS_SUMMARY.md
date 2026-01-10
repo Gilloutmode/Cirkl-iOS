@@ -1,4 +1,4 @@
-# Corrections apportées à CirKL
+# Corrections apportées à Cirkl
 
 ## Problèmes résolus ✅
 

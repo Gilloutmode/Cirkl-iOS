@@ -6,7 +6,7 @@ struct ChatMessage: Identifiable, Equatable {
     let content: String
     let isUser: Bool
     let timestamp: Date
-    var intent: CirKLIntent?
+    var intent: CirklIntent?
     var isVoiceMessage: Bool
 
     init(
@@ -14,7 +14,7 @@ struct ChatMessage: Identifiable, Equatable {
         content: String,
         isUser: Bool,
         timestamp: Date = Date(),
-        intent: CirKLIntent? = nil,
+        intent: CirklIntent? = nil,
         isVoiceMessage: Bool = false
     ) {
         self.id = id
@@ -104,7 +104,7 @@ struct ChatView: View {
                     .focused($isInputFocused)
                 }
             }
-            .navigationTitle("CirKL AI")
+            .navigationTitle("Cirkl AI")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -199,7 +199,7 @@ class ChatViewModel: ObservableObject {
 
     func addWelcomeMessage() {
         let welcome = ChatMessage(
-            content: "Salut ! Je suis CirKL, ton assistant pour gérer et valoriser ton réseau. Comment puis-je t'aider aujourd'hui ?",
+            content: "Salut ! Je suis Cirkl, ton assistant pour gérer et valoriser ton réseau. Comment puis-je t'aider aujourd'hui ?",
             isUser: false
         )
         messages.append(welcome)
@@ -417,7 +417,7 @@ class ChatViewModel: ObservableObject {
         // When chat reopens, onAppear will decide what to show
         // (synergy context or welcome) based on empty history
         let welcome = ChatMessage(
-            content: "Salut ! Je suis CirKL, ton assistant pour gérer et valoriser ton réseau. Comment puis-je t'aider aujourd'hui ?",
+            content: "Salut ! Je suis Cirkl, ton assistant pour gérer et valoriser ton réseau. Comment puis-je t'aider aujourd'hui ?",
             isUser: false
         )
         messages.append(welcome)
@@ -535,7 +535,7 @@ struct MessageBubble: View {
     }
 
     @ViewBuilder
-    private func intentBadge(_ intent: CirKLIntent) -> some View {
+    private func intentBadge(_ intent: CirklIntent) -> some View {
         Text(intentLabel(intent))
             .font(.caption2)
             .foregroundColor(.secondary)
@@ -547,7 +547,7 @@ struct MessageBubble: View {
             )
     }
 
-    private func intentLabel(_ intent: CirKLIntent) -> String {
+    private func intentLabel(_ intent: CirklIntent) -> String {
         switch intent {
         case .newConnection: return "🔗 Nouvelle connexion"
         case .memorySearch: return "🔍 Recherche mémoire"

@@ -74,7 +74,7 @@ final class VerificationViewModel {
         currentAvatarURL = avatarURL
     }
 
-    /// Démarre la recherche d'utilisateurs CirKL à proximité
+    /// Démarre la recherche d'utilisateurs Cirkl à proximité
     func startScanning() {
         guard !currentUserId.isEmpty else {
             state = .error(String(localized: "Utilisateur non configuré"))

@@ -142,7 +142,7 @@ struct QRFallbackView: View {
                     .font(.headline)
                     .foregroundStyle(.white)
 
-                Text("L'autre personne doit scanner ce code avec son application CirKL pour vérifier votre rencontre.")
+                Text("L'autre personne doit scanner ce code avec son application Cirkl pour vérifier votre rencontre.")
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.6))
                     .multilineTextAlignment(.center)

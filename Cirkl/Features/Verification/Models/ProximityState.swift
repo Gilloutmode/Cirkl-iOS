@@ -6,7 +6,7 @@ enum ProximityState: Equatable {
     /// État initial - pas de scan en cours
     case idle
 
-    /// Recherche d'utilisateurs CirKL à proximité
+    /// Recherche d'utilisateurs Cirkl à proximité
     case scanning
 
     /// Un utilisateur a été détecté
@@ -91,7 +91,7 @@ enum ProximityError: Error, Equatable, LocalizedError {
         case .nearbyInteractionUnavailable:
             return String(localized: "La mesure de distance n'est pas disponible sur cet appareil.")
         case .searchTimeout:
-            return String(localized: "Aucun utilisateur CirKL trouvé à proximité.")
+            return String(localized: "Aucun utilisateur Cirkl trouvé à proximité.")
         case .connectionLost:
             return String(localized: "La connexion a été perdue. Réessayez.")
         case .distanceTooFar(let distance):
