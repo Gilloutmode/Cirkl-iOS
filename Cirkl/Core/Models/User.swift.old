@@ -1,0 +1,32 @@
+import Foundation
+
+struct User: Identifiable, Codable {
+    let id: UUID
+    var name: String
+    var verificationToken: String?
+    var isVerified: Bool
+    var circles: [CirklGroup]
+    var connections: [Connection]
+}
+
+struct CirklGroup: Identifiable, Codable {
+    let id: UUID
+    var name: String
+    var members: [UUID]
+    var createdAt: Date
+}
+
+struct Connection: Identifiable, Codable {
+    let id: UUID
+    let userId: UUID
+    let connectedUserId: UUID
+    let verificationMethod: VerificationMethod
+    var isActive: Bool
+    let createdAt: Date
+}
+
+enum VerificationMethod: String, Codable, CaseIterable {
+    case nfc = "NFC"
+    case qr = "QR"
+    case bluetooth = "Bluetooth"
+}

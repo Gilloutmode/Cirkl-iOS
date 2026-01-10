@@ -1,0 +1,856 @@
+import SwiftUI
+import PhotosUI
+
+// MARK: - Profile Detail View
+/// Vue détaillée pour voir et éditer un profil de connexion
+struct ProfileDetailView: View {
+    @Environment(\.dismiss) private var dismiss
+    @StateObject private var neo4jService = Neo4jService.shared
+    private let n8nService = N8NService.shared
+
+    // TODO: Get from AuthService when implemented
+    private let currentUserId = "gil"
+
+    let contact: OrbitalContact
+    let onUpdate: (OrbitalContact) -> Void
+
+    // États d'édition
+    @State private var editedName: String = ""
+    @State private var editedRole: String = ""
+    @State private var editedCompany: String = ""
+    @State private var editedIndustry: String = ""
+    @State private var editedMeetingPlace: String = ""
+    @State private var editedNotes: String = ""
+    @State private var editedConnectionType: ConnectionType = .personnel
+    @State private var editedRelationshipType: RelationshipType?  // Legacy
+    @State private var editedRelationshipProfile: RelationshipProfile = RelationshipProfile()  // Multi-dimensionnel
+    @State private var editedMeetingDate: Date?
+    @State private var editedTags: [String] = []
+    @State private var newTag: String = ""
+
+    // Photo picker
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var selfieImage: UIImage?
+    @State private var showPhotoOptions = false
+    @State private var showCamera = false
+
+    // Pickers
+    @State private var showRelationshipPicker = false
+    @State private var showMeetingDatePicker = false
+    @State private var tempMeetingDate: Date = Date()
+
+    // UI states
+    @State private var isEditing = false
+    @State private var isSaving = false
+    @State private var showDeleteConfirmation = false
+
+    // Indique si la date de rencontre est requise (non pour la famille)
+    private var needsMeetingDate: Bool {
+        // Vérifier d'abord le profil multi-dimensionnel
+        if editedRelationshipProfile.spheres.contains(.family) {
+            return false
+        }
+        // Sinon, vérifier le type legacy
+        guard let relationship = editedRelationshipType else { return true }
+        return !relationship.impliesLifelongRelation
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Header avec photo
+                    profileHeader
+
+                    // Niveau de confiance
+                    trustLevelSection
+
+                    // Informations de rencontre
+                    meetingInfoSection
+
+                    // Informations professionnelles
+                    professionalInfoSection
+
+                    // Tags
+                    tagsSection
+
+                    // Notes
+                    notesSection
+
+                    // Bouton de suppression (si en mode édition)
+                    if isEditing {
+                        deleteButton
+                    }
+                }
+                .padding(20)
+            }
+            .background(Color(white: 0.97))
+            .navigationTitle(isEditing ? "Modifier" : contact.name)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        if isEditing {
+                            // Annuler les modifications
+                            resetFields()
+                            isEditing = false
+                        } else {
+                            dismiss()
+                        }
+                    } label: {
+                        if isEditing {
+                            Text("Annuler")
+                                .foregroundColor(.red)
+                        } else {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 24))
+                                .foregroundStyle(Color(white: 0.7))
+                        }
+                    }
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        if isEditing {
+                            Task { await saveChanges() }
+                        } else {
+                            isEditing = true
+                        }
+                    } label: {
+                        if isSaving {
+                            ProgressView()
+                        } else {
+                            Text(isEditing ? "Enregistrer" : "Modifier")
+                                .fontWeight(.semibold)
+                                .foregroundColor(Color(red: 0.5, green: 0.3, blue: 0.8))
+                        }
+                    }
+                    .disabled(isSaving)
+                }
+            }
+            .onAppear {
+                resetFields()
+            }
+            .confirmationDialog("Changer la photo", isPresented: $showPhotoOptions) {
+                Button("Prendre une photo") {
+                    showCamera = true
+                }
+                Button("Choisir dans la galerie") {
+                    // PhotosPicker handles this
+                }
+                Button("Annuler", role: .cancel) {}
+            }
+            .fullScreenCover(isPresented: $showCamera) {
+                CameraView { image in
+                    selfieImage = image
+                }
+            }
+            .alert("Supprimer cette connexion ?", isPresented: $showDeleteConfirmation) {
+                Button("Supprimer", role: .destructive) {
+                    Task { await deleteConnection() }
+                }
+                Button("Annuler", role: .cancel) {}
+            } message: {
+                Text("Cette action est irréversible.")
+            }
+        }
+    }
+
+    // MARK: - Profile Header
+    private var profileHeader: some View {
+        VStack(spacing: 16) {
+            ZStack {
+                // Photo de profil (priorité: selfieImage édité → photoName → selfiePhotoData → contactPhotoData → placeholder)
+                if let image = selfieImage {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 120, height: 120)
+                        .clipShape(Circle())
+                } else if let photoName = contact.photoName, UIImage(named: photoName) != nil {
+                    Image(photoName)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 120, height: 120)
+                        .clipShape(Circle())
+                } else if let data = contact.selfiePhotoData, let uiImage = UIImage(data: data) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 120, height: 120)
+                        .clipShape(Circle())
+                } else if let data = contact.contactPhotoData, let uiImage = UIImage(data: data) {
+                    // Photo du contact importé (pour les invités)
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 120, height: 120)
+                        .clipShape(Circle())
+                } else {
+                    // Placeholder
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    contact.avatarColor.opacity(0.3),
+                                    contact.avatarColor.opacity(0.5)
+                                ],
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: 60
+                            )
+                        )
+                        .frame(width: 120, height: 120)
+                        .overlay(
+                            Text(contact.name.prefix(1).uppercased())
+                                .font(.system(size: 48, weight: .bold, design: .rounded))
+                                .foregroundColor(contact.avatarColor)
+                        )
+                }
+
+                // Bordure
+                Circle()
+                    .stroke(contact.avatarColor.opacity(0.5), lineWidth: 4)
+                    .frame(width: 120, height: 120)
+
+                // Bouton caméra (mode édition)
+                if isEditing {
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                                Image(systemName: "camera.fill")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 36, height: 36)
+                                    .background(Circle().fill(Color(red: 0.5, green: 0.3, blue: 0.8)))
+                                    .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
+                            }
+                            .onChange(of: selectedPhotoItem) { _, newItem in
+                                Task {
+                                    if let data = try? await newItem?.loadTransferable(type: Data.self),
+                                       let image = UIImage(data: data) {
+                                        selfieImage = image
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .frame(width: 120, height: 120)
+                }
+            }
+
+            // Nom
+            if isEditing {
+                TextField("Nom", text: $editedName)
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(Color(white: 0.15))
+                    .multilineTextAlignment(.center)
+                    .textFieldStyle(.plain)
+            } else {
+                Text(contact.name)
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(Color(white: 0.15))
+            }
+
+            // Badge type de connexion
+            connectionTypeBadge
+        }
+        .padding(.vertical, 20)
+        .padding(.horizontal, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.05), radius: 10, y: 5)
+        )
+    }
+
+    // MARK: - Connection Type Badge
+    private var connectionTypeBadge: some View {
+        Group {
+            if isEditing {
+                // Picker pour le type
+                Menu {
+                    ForEach(ConnectionType.allCases) { type in
+                        Button {
+                            editedConnectionType = type
+                        } label: {
+                            Label(type.rawValue, systemImage: type.icon)
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: editedConnectionType.icon)
+                        Text(editedConnectionType.rawValue)
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 10))
+                    }
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(editedConnectionType.color)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule()
+                            .fill(editedConnectionType.color.opacity(0.12))
+                    )
+                }
+            } else {
+                HStack(spacing: 8) {
+                    Image(systemName: contact.connectionType.icon)
+                    Text(contact.connectionType.rawValue)
+                }
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(contact.connectionType.color)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    Capsule()
+                        .fill(contact.connectionType.color.opacity(0.12))
+                )
+            }
+        }
+    }
+
+    // MARK: - Trust Level Section
+    private var trustLevelSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionHeader(title: "Niveau de confiance", icon: "checkmark.shield")
+
+            VerificationBadge(trustLevel: contact.trustLevel, style: .expanded)
+        }
+    }
+
+    // MARK: - Meeting Info Section
+    private var meetingInfoSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionHeader(title: "Relation & Rencontre", icon: "person.2.fill")
+
+            VStack(spacing: 12) {
+                // Profil relationnel multi-dimensionnel (cliquable pour ouvrir le picker)
+                Button {
+                    showRelationshipPicker = true
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: editedRelationshipProfile.isEmpty ? "plus.circle.fill" : "person.2.circle.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(editedRelationshipProfile.isEmpty ? .mint : .blue)
+                            .frame(width: 24)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Relation")
+                                .font(.system(size: 12))
+                                .foregroundColor(Color(white: 0.5))
+                            if editedRelationshipProfile.isEmpty {
+                                Text("Définir la relation")
+                                    .font(.system(size: 15))
+                                    .foregroundColor(.secondary)
+                            } else {
+                                Text(editedRelationshipProfile.summary)
+                                    .font(.system(size: 15))
+                                    .foregroundColor(Color(white: 0.2))
+                            }
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .buttonStyle(.plain)
+
+                Divider()
+
+                // Date de rencontre OU "Depuis toujours" pour la famille
+                if needsMeetingDate {
+                    // Date de rencontre (modifiable)
+                    Button {
+                        tempMeetingDate = editedMeetingDate ?? Date()
+                        showMeetingDatePicker = true
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "calendar")
+                                .font(.system(size: 16))
+                                .foregroundColor(contact.avatarColor)
+                                .frame(width: 24)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Date de rencontre")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Color(white: 0.5))
+                                Text(editedMeetingDate?.formatted(date: .long, time: .omitted) ?? "Sélectionner une date")
+                                    .font(.system(size: 15))
+                                    .foregroundColor(editedMeetingDate != nil ? Color(white: 0.2) : .secondary)
+                            }
+
+                            Spacer()
+
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    // "Depuis toujours" pour la famille
+                    HStack(spacing: 12) {
+                        Image(systemName: "infinity")
+                            .font(.system(size: 16))
+                            .foregroundColor(.pink)
+                            .frame(width: 24)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Connaissance depuis")
+                                .font(.system(size: 12))
+                                .foregroundColor(Color(white: 0.5))
+                            Text("Depuis toujours")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(.pink)
+                        }
+
+                        Spacer()
+                    }
+                }
+
+                // Date d'invitation (si contact invité)
+                if let invitedAt = contact.invitedAt {
+                    Divider()
+                    infoRow(
+                        icon: "paperplane",
+                        label: "Invité le",
+                        value: invitedAt.formatted(date: .long, time: .omitted),
+                        isEditable: false
+                    )
+                }
+
+                Divider()
+
+                // Lieu de rencontre
+                if isEditing {
+                    editableInfoRow(
+                        icon: "mappin.and.ellipse",
+                        label: "Lieu",
+                        text: $editedMeetingPlace,
+                        placeholder: "Lieu de rencontre..."
+                    )
+                } else {
+                    infoRow(
+                        icon: "mappin.and.ellipse",
+                        label: "Lieu",
+                        value: contact.meetingPlace ?? "Non spécifié"
+                    )
+                }
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white)
+                    .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
+            )
+        }
+        .sheet(isPresented: $showRelationshipPicker) {
+            RelationshipProfilePicker(profile: $editedRelationshipProfile)
+                .presentationDetents([.large])
+                .onChange(of: editedRelationshipProfile) { _, newProfile in
+                    // Si famille, effacer la date de rencontre
+                    if newProfile.spheres.contains(.family) {
+                        editedMeetingDate = nil
+                    }
+                }
+        }
+        .sheet(isPresented: $showMeetingDatePicker) {
+            NavigationStack {
+                VStack(spacing: 24) {
+                    Text("Date de rencontre")
+                        .font(.headline)
+
+                    DatePicker(
+                        "Date",
+                        selection: $tempMeetingDate,
+                        in: ...Date(),
+                        displayedComponents: .date
+                    )
+                    .datePickerStyle(.graphical)
+                    .padding(.horizontal)
+
+                    Spacer()
+                }
+                .padding(.top, 20)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Annuler") {
+                            showMeetingDatePicker = false
+                        }
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Valider") {
+                            editedMeetingDate = tempMeetingDate
+                            showMeetingDatePicker = false
+                        }
+                        .fontWeight(.semibold)
+                    }
+                }
+            }
+            .presentationDetents([.medium])
+        }
+    }
+
+    // MARK: - Professional Info Section
+    private var professionalInfoSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionHeader(title: "Professionnel", icon: "briefcase")
+
+            VStack(spacing: 12) {
+                if isEditing {
+                    editableInfoRow(icon: "person.text.rectangle", label: "Rôle", text: $editedRole, placeholder: "Poste...")
+                    Divider()
+                    editableInfoRow(icon: "building.2", label: "Entreprise", text: $editedCompany, placeholder: "Entreprise...")
+                    Divider()
+                    editableInfoRow(icon: "square.grid.2x2", label: "Secteur", text: $editedIndustry, placeholder: "Industrie...")
+                } else {
+                    infoRow(icon: "person.text.rectangle", label: "Rôle", value: contact.role ?? "Non spécifié")
+                    Divider()
+                    infoRow(icon: "building.2", label: "Entreprise", value: contact.company ?? "Non spécifié")
+                    Divider()
+                    infoRow(icon: "square.grid.2x2", label: "Secteur", value: contact.industry ?? "Non spécifié")
+                }
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white)
+                    .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
+            )
+        }
+    }
+
+    // MARK: - Tags Section
+    private var tagsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionHeader(title: "Tags", icon: "tag")
+
+            VStack(alignment: .leading, spacing: 12) {
+                // Tags existants
+                FlowLayout(spacing: 8) {
+                    ForEach(editedTags, id: \.self) { tag in
+                        TagChip(tag: tag, color: contact.avatarColor, isEditing: isEditing) {
+                            editedTags.removeAll { $0 == tag }
+                        }
+                    }
+
+                    // Ajouter un tag (mode édition)
+                    if isEditing {
+                        HStack(spacing: 4) {
+                            TextField("Ajouter...", text: $newTag)
+                                .font(.system(size: 13))
+                                .foregroundColor(Color(white: 0.2))
+                                .frame(width: 80)
+
+                            if !newTag.isEmpty {
+                                Button {
+                                    addTag()
+                                } label: {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(contact.avatarColor)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule()
+                                .stroke(contact.avatarColor.opacity(0.3), lineWidth: 1)
+                        )
+                    }
+                }
+
+                if editedTags.isEmpty && !isEditing {
+                    Text("Aucun tag")
+                        .font(.system(size: 14))
+                        .foregroundColor(Color(white: 0.5))
+                }
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white)
+                    .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
+            )
+        }
+    }
+
+    // MARK: - Notes Section
+    private var notesSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionHeader(title: "Notes", icon: "note.text")
+
+            VStack(alignment: .leading, spacing: 8) {
+                if isEditing {
+                    TextEditor(text: $editedNotes)
+                        .font(.system(size: 15))
+                        .foregroundColor(Color(white: 0.15))
+                        .frame(minHeight: 100)
+                        .scrollContentBackground(.hidden)
+                        .padding(8)
+                        .background(Color(white: 0.98))
+                        .cornerRadius(8)
+                } else {
+                    Text(contact.notes?.isEmpty == false ? contact.notes! : "Aucune note")
+                        .font(.system(size: 15))
+                        .foregroundColor(contact.notes?.isEmpty == false ? Color(white: 0.2) : Color(white: 0.5))
+                }
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white)
+                    .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
+            )
+        }
+    }
+
+    // MARK: - Delete Button
+    private var deleteButton: some View {
+        Button {
+            showDeleteConfirmation = true
+        } label: {
+            HStack {
+                Image(systemName: "trash")
+                Text("Supprimer cette connexion")
+            }
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundColor(.red)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.red.opacity(0.08))
+            )
+        }
+    }
+
+    // MARK: - Helper Views
+    private func sectionHeader(title: String, icon: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: .semibold))
+            Text(title)
+                .font(.system(size: 16, weight: .bold))
+        }
+        .foregroundColor(Color(white: 0.3))
+    }
+
+    private func infoRow(icon: String, label: String, value: String, isEditable: Bool = true) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundColor(contact.avatarColor)
+                .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.system(size: 12))
+                    .foregroundColor(Color(white: 0.5))
+                Text(value)
+                    .font(.system(size: 15))
+                    .foregroundColor(Color(white: 0.2))
+            }
+
+            Spacer()
+        }
+    }
+
+    private func editableInfoRow(icon: String, label: String, text: Binding<String>, placeholder: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundColor(contact.avatarColor)
+                .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.system(size: 12))
+                    .foregroundColor(Color(white: 0.5))
+                TextField(placeholder, text: text)
+                    .font(.system(size: 15))
+                    .foregroundColor(Color(white: 0.15))
+                    .textFieldStyle(.plain)
+            }
+
+            Spacer()
+        }
+    }
+
+    // MARK: - Actions
+    private func resetFields() {
+        editedName = contact.name
+        editedRole = contact.role ?? ""
+        editedCompany = contact.company ?? ""
+        editedIndustry = contact.industry ?? ""
+        editedMeetingPlace = contact.meetingPlace ?? ""
+        editedNotes = contact.notes ?? ""
+        editedConnectionType = contact.connectionType
+        editedRelationshipType = contact.relationshipType
+        editedRelationshipProfile = contact.relationshipProfile ?? contact.effectiveRelationshipProfile
+        editedMeetingDate = contact.meetingDate
+        editedTags = contact.tags
+
+        // Photo: priorité au selfie, puis contactPhotoData pour les invités
+        if let data = contact.selfiePhotoData {
+            selfieImage = UIImage(data: data)
+        } else if let data = contact.contactPhotoData {
+            selfieImage = UIImage(data: data)
+        }
+    }
+
+    private func addTag() {
+        let trimmed = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !editedTags.contains(trimmed) else { return }
+        editedTags.append(trimmed)
+        newTag = ""
+    }
+
+    private func saveChanges() async {
+        isSaving = true
+
+        // Créer le contact mis à jour
+        var updated = contact
+        updated.name = editedName
+        updated.role = editedRole.isEmpty ? nil : editedRole
+        updated.company = editedCompany.isEmpty ? nil : editedCompany
+        updated.industry = editedIndustry.isEmpty ? nil : editedIndustry
+        updated.meetingPlace = editedMeetingPlace.isEmpty ? nil : editedMeetingPlace
+        updated.notes = editedNotes.isEmpty ? nil : editedNotes
+        updated.connectionType = editedConnectionType
+        updated.relationshipType = editedRelationshipType
+        updated.relationshipProfile = editedRelationshipProfile.isEmpty ? nil : editedRelationshipProfile
+        updated.meetingDate = editedMeetingDate
+        updated.tags = editedTags
+
+        // Photo
+        if let image = selfieImage {
+            updated.selfiePhotoData = image.jpegData(compressionQuality: 0.7)
+        }
+
+        // Sync to Neo4j
+        do {
+            try await neo4jService.updateConnection(updated.toNeo4jConnection())
+
+            // v17.29: Also sync RelationshipProfile to Google Sheets via N8N
+            if let profile = updated.relationshipProfile, !profile.isEmpty {
+                do {
+                    let _ = try await n8nService.updateConnection(
+                        connectionId: contact.id,
+                        relationshipProfile: profile,
+                        userId: currentUserId
+                    )
+                    #if DEBUG
+                    print("✅ N8N: Connection \(contact.id) synced to Google Sheets")
+                    #endif
+                } catch {
+                    // Don't fail the whole save if N8N sync fails
+                    // The local data is already saved to Neo4j
+                    #if DEBUG
+                    print("⚠️ N8N sync failed (non-critical): \(error)")
+                    #endif
+                }
+            }
+
+            onUpdate(updated)
+            // Dismiss the view so user sees updated data in the list
+            dismiss()
+        } catch {
+            print("❌ Failed to save: \(error)")
+            // On error, stay in edit mode so user can retry
+            isSaving = false
+        }
+    }
+
+    private func deleteConnection() async {
+        isSaving = true
+        do {
+            try await neo4jService.deleteConnection(contact.toNeo4jConnection())
+            dismiss()
+        } catch {
+            print("❌ Failed to delete: \(error)")
+        }
+        isSaving = false
+    }
+}
+
+// MARK: - Tag Chip
+struct TagChip: View {
+    let tag: String
+    let color: Color
+    let isEditing: Bool
+    let onDelete: () -> Void
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Text(tag)
+                .font(.system(size: 13, weight: .medium))
+
+            if isEditing {
+                Button(action: onDelete) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 12))
+                }
+            }
+        }
+        .foregroundColor(color)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(
+            Capsule()
+                .fill(color.opacity(0.12))
+        )
+    }
+}
+
+// MARK: - Camera View
+struct CameraView: UIViewControllerRepresentable {
+    let onCapture: (UIImage) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.cameraDevice = .front
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: CameraView
+
+        init(_ parent: CameraView) {
+            self.parent = parent
+        }
+
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+            if let image = info[.originalImage] as? UIImage {
+                parent.onCapture(image)
+            }
+            parent.dismiss()
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.dismiss()
+        }
+    }
+}
+
+// MARK: - Preview
+#Preview {
+    ProfileDetailView(contact: OrbitalContact.all[0]) { _ in }
+}

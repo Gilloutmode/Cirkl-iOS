@@ -1,0 +1,76 @@
+# Xcode
+build/
+DerivedData/
+*.xcuserdata
+*.xcworkspace/xcuserdata/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+xcuserdata/
+
+# Swift Package Manager
+.build/
+Packages/
+Package.pins
+Package.resolved
+*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# Carthage
+Carthage/Build/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Environment
+.env
+.env.local
+*.env
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+.vscode/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Test files
+*.test.swift
+test-*.js
+playwright-test.js
+validate-*.js
+
+# Temporary/Development files
+*.log
+tmp/
+temp/
+screenshots/
+claudedocs/
+docs/
+
+# Scripts (keep in repo but ignore generated)
+*.generated.swift
+
+# Serena MCP cache
+.serena/
+
+# Cursor
+.cursor/
+
+# Build artifacts
+*.ipa
+*.dSYM.zip
+*.dSYM

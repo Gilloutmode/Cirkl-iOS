@@ -1,0 +1,49 @@
+project: Cirkl - Authentic Social Network
+type: iOS Mobile App
+language: Swift 5.9+
+minimum_ios: 17.0
+ui_framework: SwiftUI
+architecture: MVVM + Clean Architecture
+design: Glassmorphic (VisionOS inspired)
+
+core_features:
+  - Physical connection verification (QR/NFC/BLE)
+  - AI-powered matching & orchestration  
+  - Real-time presence detection
+  - Zero fake profiles guarantee
+  - Privacy by design
+
+technical_rules:
+  - ALWAYS use SwiftUI (no UIKit unless critical)
+  - Use async/await for ALL async operations
+  - SwiftData for local persistence
+  - Dependency injection for testability
+  - @MainActor for ALL UI updates
+  - Proper error handling with Result type
+  - Follow Swift API Design Guidelines
+
+code_style:
+  - Max 300 lines per file
+  - Descriptive variable names
+  - Comments for complex logic
+  - Group related functionality
+  - Use extensions for protocol conformance
+
+when_asked_to_code:
+  - Create reusable components
+  - Include proper error handling
+  - Add accessibility labels
+  - Write unit tests for ViewModels
+  - Implement smooth 60fps animations
+  - Use SF Symbols for icons
+
+context:
+  company: Cirkl
+  mission: "Connecting Authentically, Growing Intelligently"
+  founders: Gil Benittah (CEO), Denis Gihan (CFO), Gilles Mamane (CTO)
+  target: Israel POC → USA → Global
+  key_metrics:
+    - 67% organic connection rate
+    - 0% fake profiles
+    - 12.4k€ lifetime value
+    - 1.7 viral coefficient
