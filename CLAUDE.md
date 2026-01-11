@@ -19,6 +19,35 @@ open Cirkl.xcodeproj
 
 **Cirkl** is an authentic social network iOS app that guarantees real human connections through physical verification (QR/NFC/BLE). Zero fake profiles, 100% human.
 
+> 📖 **Vision complète**: Voir [`VISION_PRODUIT.md`](./VISION_PRODUIT.md) pour la vision fondateur, mécaniques psychologiques, et features détaillées.
+
+### Core Philosophy
+- **Émerveillement en 3 secondes**: L'utilisateur se voit au centre de son univers relationnel
+- **Réseau vivant**: Les connexions "respirent" - s'approchent ou s'éloignent selon l'engagement
+- **IA compagnon**: Pas un outil, un compagnon relationnel qui donne de la valeur avant de demander
+
+### Key Features (Priority Order)
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| 🎙️ **Morning Brief** | Brief vocal quotidien personnalisé (ElevenLabs) | 🔴 P0 |
+| 🔮 **Synchronicity Score** | Widget iOS public avec score et niveau | 🔴 P0 |
+| 📱 **Memory Import** | Import contacts + LinkedIn pour valeur J1 | 🔴 P0 |
+| 🌙 **Night Reflection** | Mode réflexion nocturne avec souvenirs | 🟡 P1 |
+| 📊 **Network Pulse** | Dashboard santé du réseau (🟢🟡🔴) | 🟡 P1 |
+| ⏱️ **Window of Opportunity** | Urgence éthique 48h sur opportunités | 🟢 P2 |
+
+### UX Principles
+1. **< 30 sec to value**: Dopamine dès l'import réseau existant
+2. **Pull > Push**: L'utilisateur revient par curiosité, pas par notification
+3. **Variable Reward**: Synchronicity Engine génère des surprises imprévisibles
+4. **Identité**: "Je suis un architecte de connexions" (pas un networker)
+
+### Magic Numbers
+- **25 connexions + 3 CirKLs** = Seuil d'indispensabilité
+- **CirKL of 3** = Unité minimale de valeur (triangulation sociale)
+- **48h** = Fenêtre d'opportunité avant redistribution
+
 ### Tech Stack
 - **Swift 6.0** with **SwiftUI 5**
 - **Min iOS**: 17.0
@@ -209,6 +238,7 @@ refactor(services): extract N8N response parsing
 
 ## Related Documentation
 
+- **`VISION_PRODUIT.md`** - Vision fondateur, mécaniques UX, features prioritaires
 - `.claude/context.md` - Detailed project context
 - `.claude/context/design-principles.md` - Design guidelines
 - `.claude/context/style-guide.md` - UI style guide
