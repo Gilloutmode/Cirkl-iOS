@@ -1,6 +1,6 @@
 # VISION PRODUIT CIRKL - Document Fondateur
 
-> **Version**: 1.0 | **Dernière mise à jour**: Janvier 2025
+> **Version**: 1.0 | **Dernière mise à jour**: 11 Janvier 2026
 > **Statut**: Document vivant - Modifiable à tout moment
 
 Ce document capture la vision produit complète de Cirkl, les mécaniques psychologiques, et les décisions de design. Il sert de référence pour toutes les décisions de développement.
@@ -477,7 +477,7 @@ Le MVP avec juste QR + IA + Interface peut fonctionner SI :
 
 | Date | Modification | Auteur |
 |------|--------------|--------|
-| Jan 2025 | Création initiale du document | Gil (Fondateur) |
+| 11 Jan 2026 | Création initiale du document | Gil (Fondateur) |
 
 ---
 

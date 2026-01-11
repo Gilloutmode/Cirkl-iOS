@@ -238,14 +238,30 @@ refactor(services): extract N8N response parsing
 
 ## Related Documentation
 
-- **`VISION_PRODUIT.md`** - Vision fondateur, mécaniques UX, features prioritaires
-- `.claude/context.md` - Detailed project context
-- `.claude/context/design-principles.md` - Design guidelines
-- `.claude/context/style-guide.md` - UI style guide
-- `.serena/memories/` - Session memories and learnings
+| Document | When to Read | Content |
+|----------|--------------|---------|
+| @VISION_PRODUIT.md | Adding features, UX decisions, understanding "why" | Vision fondateur, mécaniques psychologiques, features prioritaires |
+| `.claude/context.md` | Deep project context needed | Architecture détaillée, décisions techniques |
+| `.claude/context/design-principles.md` | Creating new UI components | Design system principles, patterns |
+| `.claude/context/style-guide.md` | Styling questions, color/spacing | UI specifications, glassmorphism rules |
+| `.serena/memories/` | Resuming after break, context recovery | Session memories, learnings |
 
-## Claude Usage Rules
+> **Note**: Create `CLAUDE.local.md` (gitignored) for personal environment overrides.
 
+## AI Assistant Guidelines
+
+### Before Modifying Code - Ask Yourself:
+1. **Have I read the file(s)?** - Never edit blind
+2. **Does this follow existing patterns?** - Check similar code first
+3. **Is this the minimal change?** - Avoid over-engineering
+4. **Will this compile/build?** - Test before committing
+
+### Security Guardrails
+- **Never commit**: API keys, credentials, tokens, .env files
+- **Never expose**: User data, internal URLs in logs
+- **Always check**: `.gitignore` before adding sensitive files
+
+### Modification Rules
 1. **Read before edit**: Always read a file before modifying it
 2. **Follow existing patterns**: Match the style of surrounding code
 3. **Small changes**: Prefer targeted edits over large rewrites
