@@ -148,54 +148,120 @@ struct CirklSearchBar: View {
     }
 }
 
-/// Settings view with logout and reset options
+/// Settings view with logout, reset, and theme options
 struct CirklSettingsView: View {
     @EnvironmentObject var appState: AppStateManager
+    @Environment(\.themeManager) var themeManager
     @Environment(\.dismiss) var dismiss
-    
+
     var body: some View {
         NavigationView {
-            GlassEffectContainer(spacing: 20.0) {
-                VStack(spacing: 24) {
-                    Text("Réglages")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .padding()
-                    
-                    VStack(spacing: 16) {
-                        Button("Déconnexion") {
-                            appState.logout()
-                            dismiss()
+            List {
+                // MARK: - Apparence
+                Section {
+                    ForEach(ThemeMode.allCases) { mode in
+                        ThemeModeRow(
+                            mode: mode,
+                            isSelected: themeManager.themeMode == mode
+                        ) {
+                            themeManager.setTheme(mode)
                         }
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(Color.red)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 14)
-                        .glassEffect(GlassEffectStyle.regular.tint(Color.red).interactive(), in: .rect(cornerRadius: 12))
-                        
-                        Button("Réinitialiser l'onboarding") {
-                            appState.resetOnboarding()
-                            dismiss()
-                        }
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(Color.orange)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 14)
-                        .glassEffect(GlassEffectStyle.regular.tint(Color.orange).interactive(), in: .rect(cornerRadius: 12))
                     }
-                    
-                    Spacer()
+                } header: {
+                    Label("Apparence", systemImage: "paintbrush.fill")
+                } footer: {
+                    Text("Le mode automatique suit les réglages système de votre iPhone.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Fermer") {
+
+                // MARK: - Compte
+                Section {
+                    Button {
+                        Task {
+                            await appState.logoutAsync()
                             dismiss()
                         }
-                        .foregroundColor(.primary)
+                    } label: {
+                        Label("Déconnexion", systemImage: "rectangle.portrait.and.arrow.right")
+                            .foregroundStyle(.red)
+                    }
+
+                    Button {
+                        Task {
+                            await appState.resetOnboardingAsync()
+                            dismiss()
+                        }
+                    } label: {
+                        Label("Réinitialiser l'onboarding", systemImage: "arrow.counterclockwise")
+                            .foregroundStyle(.orange)
+                    }
+                } header: {
+                    Label("Compte", systemImage: "person.fill")
+                }
+
+                // MARK: - À propos
+                Section {
+                    HStack {
+                        Text("Version")
+                        Spacer()
+                        Text("1.0.0")
+                            .foregroundStyle(.secondary)
+                    }
+                } header: {
+                    Label("À propos", systemImage: "info.circle.fill")
+                }
+            }
+            .navigationTitle("Réglages")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Fermer") {
+                        dismiss()
                     }
                 }
             }
         }
+    }
+}
+
+/// Row component for theme mode selection
+private struct ThemeModeRow: View {
+    let mode: ThemeMode
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 16) {
+                // Icon
+                Image(systemName: mode.icon)
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(mode.iconColor)
+                    .frame(width: 32, height: 32)
+
+                // Text content
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(mode.displayName)
+                        .font(.body)
+                        .foregroundStyle(.primary)
+
+                    Text(mode.description)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                // Selection indicator
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 22, weight: .medium))
+                        .foregroundStyle(.blue)
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }

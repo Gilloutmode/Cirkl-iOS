@@ -14,7 +14,8 @@ final class Neo4jService: ObservableObject {
     // États publiés
     @Published private(set) var connectionCount: Int = 0
     @Published private(set) var connections: [Neo4jConnection] = []
-    @Published private(set) var isLoading = false
+    /// Starts as true to show loading skeleton on first render
+    @Published private(set) var isLoading = true
     @Published private(set) var error: String?
 
     private init() {}

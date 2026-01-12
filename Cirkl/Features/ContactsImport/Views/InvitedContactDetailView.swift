@@ -99,7 +99,7 @@ struct InvitedContactDetailView: View {
                         } else {
                             Image(systemName: "xmark.circle.fill")
                                 .font(.title2)
-                                .foregroundStyle(Color(white: 0.7))
+                                .foregroundStyle(DesignTokens.Colors.textSecondary)
                         }
                     }
                 }
@@ -117,7 +117,7 @@ struct InvitedContactDetailView: View {
                         } else {
                             Text(isEditing ? "Enregistrer" : "Modifier")
                                 .fontWeight(.semibold)
-                                .foregroundStyle(.mint)
+                                .foregroundStyle(DesignTokens.Colors.mint)
                         }
                     }
                     .disabled(isSaving)
@@ -284,7 +284,7 @@ struct InvitedContactDetailView: View {
                             }
                         } else {
                             Image(systemName: "plus.circle.fill")
-                                .foregroundStyle(.mint)
+                                .foregroundStyle(DesignTokens.Colors.mint)
                             Text("Définir la relation")
                                 .foregroundStyle(.secondary)
                         }

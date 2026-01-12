@@ -6,7 +6,10 @@ struct ConnectionBubble: View {
     let isSelected: Bool
     let isHovered: Bool
     var showTrustBadge: Bool = true
-    
+
+    // Accessibility
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     @State private var isAnimating = false
     
     // Calculate opacity based on relationship maturity
@@ -65,13 +68,13 @@ struct ConnectionBubble: View {
             
             // Main bubble with glassmorphic effect
             ZStack {
-                // Glass background
+                // Glass background - adaptive for light/dark mode
                 Circle()
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(0.1 * bubbleOpacity),
-                                Color.white.opacity(0.05 * bubbleOpacity)
+                                DesignTokens.Colors.bubbleBackground.opacity(bubbleOpacity),
+                                DesignTokens.Colors.bubbleBackground.opacity(bubbleOpacity * 0.5)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -108,7 +111,7 @@ struct ConnectionBubble: View {
                         } placeholder: {
                             Image(systemName: "person.fill")
                                 .font(.system(size: 20))
-                                .foregroundColor(.white.opacity(0.7))
+                                .foregroundColor(DesignTokens.Colors.textSecondary)
                         }
                         .frame(width: bubbleSize * 0.6, height: bubbleSize * 0.6)
                         .clipShape(Circle())
@@ -118,7 +121,7 @@ struct ConnectionBubble: View {
                     if isHovered || isSelected {
                         Text(connection.name)
                             .font(.system(size: 10, weight: .medium))
-                            .foregroundColor(.white)
+                            .foregroundColor(DesignTokens.Colors.textPrimary)
                             .lineLimit(1)
                     }
                 }
@@ -138,9 +141,57 @@ struct ConnectionBubble: View {
             }
         }
         .onAppear {
-            if connection.hasActiveOpportunity {
+            // Only animate if Reduce Motion is not enabled
+            if connection.hasActiveOpportunity && !reduceMotion {
                 isAnimating = true
             }
         }
+        // MARK: - Accessibility
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityLabelText)
+        .accessibilityHint("Double-tap pour voir le profil")
+        .accessibilityAddTraits(.isButton)
+        .accessibilityValue(accessibilityValueText)
+    }
+
+    // MARK: - Accessibility Helpers
+
+    private var accessibilityLabelText: String {
+        var label = connection.name
+
+        // Add role/company if available
+        if let role = connection.role, !role.isEmpty {
+            label += ", \(role)"
+        }
+        if let company = connection.company, !company.isEmpty {
+            label += " chez \(company)"
+        }
+
+        return label
+    }
+
+    private var accessibilityValueText: String {
+        var values: [String] = []
+
+        // Trust level
+        switch connection.trustLevel {
+        case .superVerified:
+            values.append("Connexion super vérifiée")
+        case .verified:
+            values.append("Connexion vérifiée")
+        case .attested:
+            values.append("Connexion attestée")
+        case .pending:
+            values.append("En attente de vérification")
+        case .invited:
+            values.append("Invitation envoyée")
+        }
+
+        // Active opportunity
+        if connection.hasActiveOpportunity {
+            values.append("Opportunité active")
+        }
+
+        return values.joined(separator: ", ")
     }
 }

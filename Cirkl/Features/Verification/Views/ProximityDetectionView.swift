@@ -140,19 +140,14 @@ struct ProximityDetectionView: View {
                 .frame(width: 70, height: 70)
                 .blur(radius: 10)
 
-            // Glass circle
-            Circle()
-                .fill(.ultraThinMaterial)
-                .frame(width: 60, height: 60)
-                .overlay(
-                    Circle()
-                        .stroke(.white.opacity(0.2), lineWidth: 0.5)
-                )
-
-            // Icon
+            // Icon with Liquid Glass
             Image(systemName: "person.fill")
                 .font(.system(size: 24))
                 .foregroundStyle(.white)
+                .frame(width: 60, height: 60)
+                .background(Color.mint.opacity(0.1))
+                .clipShape(Circle())
+                .glassEffect(.regular, in: .circle)
         }
     }
 
@@ -181,14 +176,13 @@ struct ProximityDetectionView: View {
                     onUserSelected(peer)
                 } label: {
                     HStack {
-                        // Avatar
-                        Circle()
-                            .fill(.ultraThinMaterial)
+                        // Avatar with Liquid Glass
+                        Image(systemName: "person.fill")
+                            .foregroundStyle(.white.opacity(0.8))
                             .frame(width: 40, height: 40)
-                            .overlay(
-                                Image(systemName: "person.fill")
-                                    .foregroundStyle(.white.opacity(0.8))
-                            )
+                            .background(Color.mint.opacity(0.1))
+                            .clipShape(Circle())
+                            .glassEffect(.regular, in: .circle)
 
                         // Name
                         Text(peer.displayName)
@@ -207,12 +201,7 @@ struct ProximityDetectionView: View {
                             .clipShape(Capsule())
                     }
                     .padding(12)
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(.white.opacity(0.1), lineWidth: 0.5)
-                    )
+                    .glassEffect(.regular, in: .rect(cornerRadius: 12))
                 }
             }
         }

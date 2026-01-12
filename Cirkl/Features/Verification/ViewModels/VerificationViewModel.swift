@@ -214,7 +214,7 @@ final class VerificationViewModel {
         // Callback sur erreur
         proximityService.onError = { [weak self] error in
             Task { @MainActor in
-                self?.state = .error(error.localizedDescription ?? "Erreur inconnue")
+                self?.state = .error(error.localizedDescription)
             }
         }
 
@@ -285,7 +285,7 @@ extension VerificationViewModel {
         case .verified(let distance):
             state = .verified(distance: distance)
         case .error(let error):
-            state = .error(error.localizedDescription ?? "Erreur")
+            state = .error(error.localizedDescription)
         }
     }
 }

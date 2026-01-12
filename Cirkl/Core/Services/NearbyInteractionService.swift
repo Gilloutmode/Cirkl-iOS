@@ -41,7 +41,9 @@ final class NearbyInteractionService: NSObject, ObservableObject {
 
     /// Vérifie si NearbyInteraction est disponible sur cet appareil
     func checkAvailability() {
-        isAvailable = NISession.isSupported
+        // Utiliser deviceCapabilities (iOS 16+) au lieu de isSupported (deprecated)
+        let capabilities = NISession.deviceCapabilities
+        isAvailable = capabilities.supportsPreciseDistanceMeasurement
     }
 
     /// Retourne le discovery token de la session courante

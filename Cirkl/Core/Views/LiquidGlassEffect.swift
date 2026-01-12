@@ -328,8 +328,39 @@ extension View {
     }
 }
 
+// MARK: - Rainbow Border Modifier
+
+/// Modifier pour ajouter une bordure arc-en-ciel animée
+struct RainbowBorderModifier: ViewModifier {
+    let lineWidth: CGFloat
+    @State var animationPhase: Double
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(
+                        AngularGradient(
+                            colors: [
+                                .red, .orange, .yellow, .green,
+                                .blue, .purple, .pink, .red
+                            ],
+                            center: .center,
+                            startAngle: .degrees(animationPhase),
+                            endAngle: .degrees(animationPhase + 360)
+                        ),
+                        lineWidth: lineWidth
+                    )
+            )
+            .onAppear {
+                withAnimation(.linear(duration: 3).repeatForever(autoreverses: false)) {
+                    animationPhase = 360
+                }
+            }
+    }
+}
+
 // MARK: - Rainbow Border Extension
-// (Using existing RainbowBorderModifier from CirklDesignSystem)
 
 public extension View {
     /// Ajoute une bordure arc-en-ciel animée

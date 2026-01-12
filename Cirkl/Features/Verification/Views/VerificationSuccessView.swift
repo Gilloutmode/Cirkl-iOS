@@ -8,6 +8,9 @@ struct VerificationSuccessView: View {
     let distance: Float?
     let onComplete: () -> Void
 
+    // MARK: - Accessibility
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     @State private var checkmarkScale: CGFloat = 0
     @State private var ringScale: CGFloat = 0
     @State private var contentOpacity: Double = 0
@@ -38,10 +41,10 @@ struct VerificationSuccessView: View {
     // MARK: - Success Animation
     private var successAnimation: some View {
         ZStack {
-            // Confetti particles
-            if confettiVisible {
+            // Confetti particles (disabled when Reduce Motion is enabled)
+            if confettiVisible && !reduceMotion {
                 ForEach(0..<20, id: \.self) { index in
-                    ConfettiParticle(
+                    VerificationConfettiParticle(
                         color: confettiColors[index % confettiColors.count],
                         delay: Double(index) * 0.05
                     )
@@ -74,12 +77,7 @@ struct VerificationSuccessView: View {
                 )
                 .frame(width: 140, height: 140)
 
-            // Checkmark background
-            Circle()
-                .fill(.ultraThinMaterial)
-                .frame(width: 100, height: 100)
-
-            // Checkmark
+            // Checkmark with Liquid Glass background
             Image(systemName: "checkmark")
                 .font(.system(size: 48, weight: .bold))
                 .foregroundStyle(
@@ -89,6 +87,10 @@ struct VerificationSuccessView: View {
                         endPoint: .bottomTrailing
                     )
                 )
+                .frame(width: 100, height: 100)
+                .background(Color.mint.opacity(0.1))
+                .clipShape(Circle())
+                .glassEffect(.regular, in: .circle)
                 .scaleEffect(checkmarkScale)
         }
     }
@@ -188,30 +190,44 @@ struct VerificationSuccessView: View {
 
     // MARK: - Animations
     private func runAnimations() {
-        // Checkmark pop
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.5).delay(0.1)) {
+        // 🎉 Haptic feedback for success celebration
+        CirklHaptics.verificationSuccess()
+
+        // 🎉 Toast confirmation
+        ToastManager.shared.success("Connexion vérifiée !")
+
+        // Use simpler animations when Reduce Motion is enabled
+        if reduceMotion {
+            // Instant appearance for Reduce Motion
             checkmarkScale = 1.0
-        }
-
-        // Ring expand
-        withAnimation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2)) {
             ringScale = 1.0
-        }
-
-        // Content fade in
-        withAnimation(.easeOut(duration: 0.4).delay(0.4)) {
             contentOpacity = 1.0
-        }
+        } else {
+            // Checkmark pop
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.5).delay(0.1)) {
+                checkmarkScale = 1.0
+            }
 
-        // Confetti
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            confettiVisible = true
+            // Ring expand
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2)) {
+                ringScale = 1.0
+            }
+
+            // Content fade in
+            withAnimation(.easeOut(duration: 0.4).delay(0.4)) {
+                contentOpacity = 1.0
+            }
+
+            // Confetti
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                confettiVisible = true
+            }
         }
     }
 }
 
-// MARK: - Confetti Particle
-private struct ConfettiParticle: View {
+// MARK: - Verification Confetti Particle
+private struct VerificationConfettiParticle: View {
     let color: Color
     let delay: Double
 

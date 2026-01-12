@@ -84,7 +84,7 @@ struct ProfileDetailView: View {
                 }
                 .padding(20)
             }
-            .background(Color(white: 0.97))
+            .background(DesignTokens.Colors.background)
             .navigationTitle(isEditing ? "Modifier" : contact.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -100,11 +100,11 @@ struct ProfileDetailView: View {
                     } label: {
                         if isEditing {
                             Text("Annuler")
-                                .foregroundColor(.red)
+                                .foregroundColor(DesignTokens.Colors.error)
                         } else {
                             Image(systemName: "xmark.circle.fill")
                                 .font(.system(size: 24))
-                                .foregroundStyle(Color(white: 0.7))
+                                .foregroundStyle(DesignTokens.Colors.textTertiary)
                         }
                     }
                 }
@@ -122,7 +122,7 @@ struct ProfileDetailView: View {
                         } else {
                             Text(isEditing ? "Enregistrer" : "Modifier")
                                 .fontWeight(.semibold)
-                                .foregroundColor(Color(red: 0.5, green: 0.3, blue: 0.8))
+                                .foregroundColor(DesignTokens.Colors.purple)
                         }
                     }
                     .disabled(isSaving)
@@ -224,7 +224,7 @@ struct ProfileDetailView: View {
                                     .font(.system(size: 16, weight: .semibold))
                                     .foregroundColor(.white)
                                     .frame(width: 36, height: 36)
-                                    .background(Circle().fill(Color(red: 0.5, green: 0.3, blue: 0.8)))
+                                    .background(Circle().fill(DesignTokens.Colors.purple))
                                     .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
                             }
                             .onChange(of: selectedPhotoItem) { _, newItem in
@@ -244,25 +244,25 @@ struct ProfileDetailView: View {
             // Nom
             if isEditing {
                 TextField("Nom", text: $editedName)
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(Color(white: 0.15))
+                    .font(DesignTokens.Typography.title2)
+                    .foregroundColor(DesignTokens.Colors.textPrimary)
                     .multilineTextAlignment(.center)
                     .textFieldStyle(.plain)
             } else {
                 Text(contact.name)
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(Color(white: 0.15))
+                    .font(DesignTokens.Typography.title2)
+                    .foregroundColor(DesignTokens.Colors.textPrimary)
             }
 
             // Badge type de connexion
             connectionTypeBadge
         }
-        .padding(.vertical, 20)
-        .padding(.horizontal, 16)
+        .padding(.vertical, DesignTokens.Spacing.xl)
+        .padding(.horizontal, DesignTokens.Spacing.md)
         .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.05), radius: 10, y: 5)
+            RoundedRectangle(cornerRadius: DesignTokens.Radius.xl)
+                .fill(DesignTokens.Colors.surface)
+                .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
         )
     }
 
@@ -334,13 +334,13 @@ struct ProfileDetailView: View {
                     HStack(spacing: 12) {
                         Image(systemName: editedRelationshipProfile.isEmpty ? "plus.circle.fill" : "person.2.circle.fill")
                             .font(.system(size: 16))
-                            .foregroundColor(editedRelationshipProfile.isEmpty ? .mint : .blue)
+                            .foregroundColor(editedRelationshipProfile.isEmpty ? DesignTokens.Colors.mint : DesignTokens.Colors.electricBlue)
                             .frame(width: 24)
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Relation")
                                 .font(.system(size: 12))
-                                .foregroundColor(Color(white: 0.5))
+                                .foregroundColor(DesignTokens.Colors.textSecondary)
                             if editedRelationshipProfile.isEmpty {
                                 Text("Définir la relation")
                                     .font(.system(size: 15))
@@ -348,7 +348,7 @@ struct ProfileDetailView: View {
                             } else {
                                 Text(editedRelationshipProfile.summary)
                                     .font(.system(size: 15))
-                                    .foregroundColor(Color(white: 0.2))
+                                    .foregroundColor(DesignTokens.Colors.textPrimary)
                             }
                         }
 
@@ -379,10 +379,10 @@ struct ProfileDetailView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Date de rencontre")
                                     .font(.system(size: 12))
-                                    .foregroundColor(Color(white: 0.5))
+                                    .foregroundColor(DesignTokens.Colors.textSecondary)
                                 Text(editedMeetingDate?.formatted(date: .long, time: .omitted) ?? "Sélectionner une date")
                                     .font(.system(size: 15))
-                                    .foregroundColor(editedMeetingDate != nil ? Color(white: 0.2) : .secondary)
+                                    .foregroundColor(editedMeetingDate != nil ? DesignTokens.Colors.textPrimary : .secondary)
                             }
 
                             Spacer()
@@ -398,16 +398,16 @@ struct ProfileDetailView: View {
                     HStack(spacing: 12) {
                         Image(systemName: "infinity")
                             .font(.system(size: 16))
-                            .foregroundColor(.pink)
+                            .foregroundColor(DesignTokens.Colors.pink)
                             .frame(width: 24)
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Connaissance depuis")
                                 .font(.system(size: 12))
-                                .foregroundColor(Color(white: 0.5))
+                                .foregroundColor(DesignTokens.Colors.textSecondary)
                             Text("Depuis toujours")
                                 .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(.pink)
+                                .foregroundColor(DesignTokens.Colors.pink)
                         }
 
                         Spacer()
@@ -445,9 +445,9 @@ struct ProfileDetailView: View {
             }
             .padding(16)
             .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white)
-                    .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
+                RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
+                    .fill(DesignTokens.Colors.surface)
+                    .shadow(color: .black.opacity(0.06), radius: 8, y: 4)
             )
         }
         .sheet(isPresented: $showRelationshipPicker) {
@@ -520,9 +520,9 @@ struct ProfileDetailView: View {
             }
             .padding(16)
             .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white)
-                    .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
+                RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
+                    .fill(DesignTokens.Colors.surface)
+                    .shadow(color: .black.opacity(0.06), radius: 8, y: 4)
             )
         }
     }
@@ -546,7 +546,7 @@ struct ProfileDetailView: View {
                         HStack(spacing: 4) {
                             TextField("Ajouter...", text: $newTag)
                                 .font(.system(size: 13))
-                                .foregroundColor(Color(white: 0.2))
+                                .foregroundColor(DesignTokens.Colors.textPrimary)
                                 .frame(width: 80)
 
                             if !newTag.isEmpty {
@@ -570,15 +570,15 @@ struct ProfileDetailView: View {
 
                 if editedTags.isEmpty && !isEditing {
                     Text("Aucun tag")
-                        .font(.system(size: 14))
-                        .foregroundColor(Color(white: 0.5))
+                        .font(DesignTokens.Typography.footnote)
+                        .foregroundColor(DesignTokens.Colors.textSecondary)
                 }
             }
             .padding(16)
             .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white)
-                    .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
+                RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
+                    .fill(DesignTokens.Colors.surface)
+                    .shadow(color: .black.opacity(0.06), radius: 8, y: 4)
             )
         }
     }
@@ -592,23 +592,23 @@ struct ProfileDetailView: View {
                 if isEditing {
                     TextEditor(text: $editedNotes)
                         .font(.system(size: 15))
-                        .foregroundColor(Color(white: 0.15))
+                        .foregroundColor(DesignTokens.Colors.textPrimary)
                         .frame(minHeight: 100)
                         .scrollContentBackground(.hidden)
                         .padding(8)
-                        .background(Color(white: 0.98))
-                        .cornerRadius(8)
+                        .background(DesignTokens.Colors.surfaceSecondary)
+                        .cornerRadius(DesignTokens.Radius.small)
                 } else {
                     Text(contact.notes?.isEmpty == false ? contact.notes! : "Aucune note")
-                        .font(.system(size: 15))
-                        .foregroundColor(contact.notes?.isEmpty == false ? Color(white: 0.2) : Color(white: 0.5))
+                        .font(DesignTokens.Typography.subheadline)
+                        .foregroundColor(contact.notes?.isEmpty == false ? DesignTokens.Colors.textPrimary : DesignTokens.Colors.textSecondary)
                 }
             }
             .padding(16)
             .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white)
-                    .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
+                RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
+                    .fill(DesignTokens.Colors.surface)
+                    .shadow(color: .black.opacity(0.06), radius: 8, y: 4)
             )
         }
     }
@@ -622,42 +622,42 @@ struct ProfileDetailView: View {
                 Image(systemName: "trash")
                 Text("Supprimer cette connexion")
             }
-            .font(.system(size: 16, weight: .semibold))
-            .foregroundColor(.red)
+            .font(DesignTokens.Typography.bodyBold)
+            .foregroundColor(DesignTokens.Colors.error)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
+            .padding(.vertical, DesignTokens.Spacing.md)
             .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.red.opacity(0.08))
+                RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
+                    .fill(DesignTokens.Colors.error.opacity(0.1))
             )
         }
     }
 
     // MARK: - Helper Views
     private func sectionHeader(title: String, icon: String) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DesignTokens.Spacing.sm) {
             Image(systemName: icon)
                 .font(.system(size: 14, weight: .semibold))
             Text(title)
-                .font(.system(size: 16, weight: .bold))
+                .font(DesignTokens.Typography.headline)
         }
-        .foregroundColor(Color(white: 0.3))
+        .foregroundColor(DesignTokens.Colors.textSecondary)
     }
 
     private func infoRow(icon: String, label: String, value: String, isEditable: Bool = true) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: DesignTokens.Spacing.sm + 4) {
             Image(systemName: icon)
-                .font(.system(size: 16))
+                .font(.system(size: DesignTokens.Sizes.iconSmall))
                 .foregroundColor(contact.avatarColor)
-                .frame(width: 24)
+                .frame(width: DesignTokens.Spacing.lg)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
-                    .font(.system(size: 12))
-                    .foregroundColor(Color(white: 0.5))
+                    .font(DesignTokens.Typography.caption1)
+                    .foregroundColor(DesignTokens.Colors.textSecondary)
                 Text(value)
-                    .font(.system(size: 15))
-                    .foregroundColor(Color(white: 0.2))
+                    .font(DesignTokens.Typography.subheadline)
+                    .foregroundColor(DesignTokens.Colors.textPrimary)
             }
 
             Spacer()
@@ -665,19 +665,19 @@ struct ProfileDetailView: View {
     }
 
     private func editableInfoRow(icon: String, label: String, text: Binding<String>, placeholder: String) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: DesignTokens.Spacing.sm + 4) {
             Image(systemName: icon)
-                .font(.system(size: 16))
+                .font(.system(size: DesignTokens.Sizes.iconSmall))
                 .foregroundColor(contact.avatarColor)
-                .frame(width: 24)
+                .frame(width: DesignTokens.Spacing.lg)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
-                    .font(.system(size: 12))
-                    .foregroundColor(Color(white: 0.5))
+                    .font(DesignTokens.Typography.caption1)
+                    .foregroundColor(DesignTokens.Colors.textSecondary)
                 TextField(placeholder, text: text)
-                    .font(.system(size: 15))
-                    .foregroundColor(Color(white: 0.15))
+                    .font(DesignTokens.Typography.subheadline)
+                    .foregroundColor(DesignTokens.Colors.textPrimary)
                     .textFieldStyle(.plain)
             }
 

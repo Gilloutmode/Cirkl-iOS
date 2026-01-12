@@ -24,6 +24,7 @@ struct AddConnectionView: View {
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var selfieImage: UIImage?
     @State private var showCamera = false
+    @State private var isLoadingPhoto = false
 
     // UI states
     @State private var isSaving = false
@@ -59,7 +60,7 @@ struct AddConnectionView: View {
                 }
                 .padding(20)
             }
-            .background(Color(white: 0.97))
+            .background(DesignTokens.Colors.background)
             .navigationTitle("Nouvelle connexion")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -82,7 +83,7 @@ struct AddConnectionView: View {
                         }
                     }
                     .disabled(!isValid || isSaving)
-                    .foregroundColor(isValid ? Color(red: 0.5, green: 0.3, blue: 0.8) : .gray)
+                    .foregroundColor(isValid ? DesignTokens.Colors.purple : .gray)
                 }
             }
             .fullScreenCover(isPresented: $showCamera) {
@@ -97,7 +98,17 @@ struct AddConnectionView: View {
     private var photoSection: some View {
         VStack(spacing: 16) {
             ZStack {
-                if let image = selfieImage {
+                if isLoadingPhoto {
+                    // Loading state
+                    Circle()
+                        .fill(connectionType.color.opacity(0.2))
+                        .frame(width: 100, height: 100)
+                        .overlay(
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: connectionType.color))
+                                .scaleEffect(1.2)
+                        )
+                } else if let image = selfieImage {
                     Image(uiImage: image)
                         .resizable()
                         .scaledToFill()
@@ -125,31 +136,41 @@ struct AddConnectionView: View {
                 } label: {
                     Label("Caméra", systemImage: "camera.fill")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Color(red: 0.5, green: 0.3, blue: 0.8))
+                        .foregroundColor(DesignTokens.Colors.purple)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
                         .background(
                             Capsule()
-                                .fill(Color(red: 0.5, green: 0.3, blue: 0.8).opacity(0.1))
+                                .fill(DesignTokens.Colors.purple.opacity(0.1))
                         )
                 }
 
                 PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
                     Label("Galerie", systemImage: "photo.fill")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Color(red: 0.5, green: 0.3, blue: 0.8))
+                        .foregroundColor(DesignTokens.Colors.purple)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
                         .background(
                             Capsule()
-                                .fill(Color(red: 0.5, green: 0.3, blue: 0.8).opacity(0.1))
+                                .fill(DesignTokens.Colors.purple.opacity(0.1))
                         )
                 }
                 .onChange(of: selectedPhotoItem) { _, newItem in
+                    guard let newItem else { return }
+                    isLoadingPhoto = true
                     Task {
-                        if let data = try? await newItem?.loadTransferable(type: Data.self),
+                        if let data = try? await newItem.loadTransferable(type: Data.self),
                            let image = UIImage(data: data) {
-                            selfieImage = image
+                            await MainActor.run {
+                                selfieImage = image
+                                isLoadingPhoto = false
+                                CirklHaptics.selection()
+                            }
+                        } else {
+                            await MainActor.run {
+                                isLoadingPhoto = false
+                            }
                         }
                     }
                 }
@@ -159,7 +180,7 @@ struct AddConnectionView: View {
         .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color.white)
+                .fill(DesignTokens.Colors.surface)
                 .shadow(color: .black.opacity(0.05), radius: 10, y: 5)
         )
     }
@@ -175,7 +196,7 @@ struct AddConnectionView: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white)
+                    .fill(DesignTokens.Colors.surface)
                     .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
             )
         }
@@ -228,7 +249,7 @@ struct AddConnectionView: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white)
+                    .fill(DesignTokens.Colors.surface)
                     .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
             )
         }
@@ -250,22 +271,22 @@ struct AddConnectionView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Date")
                             .font(.system(size: 12))
-                            .foregroundColor(Color(white: 0.5))
+                            .foregroundColor(DesignTokens.Colors.textSecondary)
                         Text(Date().formatted(date: .long, time: .omitted))
                             .font(.system(size: 15))
-                            .foregroundColor(Color(white: 0.3))
+                            .foregroundColor(DesignTokens.Colors.textPrimary)
                     }
 
                     Spacer()
 
                     Text("Auto")
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(Color(white: 0.5))
+                        .foregroundColor(DesignTokens.Colors.textSecondary)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(
                             Capsule()
-                                .fill(Color(white: 0.95))
+                                .fill(DesignTokens.Colors.surfaceSecondary)
                         )
                 }
 
@@ -276,7 +297,7 @@ struct AddConnectionView: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white)
+                    .fill(DesignTokens.Colors.surface)
                     .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
             )
         }
@@ -326,7 +347,7 @@ struct AddConnectionView: View {
                 // Suggested tags
                 Text("Suggestions:")
                     .font(.system(size: 12))
-                    .foregroundColor(Color(white: 0.5))
+                    .foregroundColor(DesignTokens.Colors.textSecondary)
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
@@ -354,7 +375,7 @@ struct AddConnectionView: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white)
+                    .fill(DesignTokens.Colors.surface)
                     .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
             )
         }
@@ -384,7 +405,7 @@ struct AddConnectionView: View {
                 .font(.system(size: 15))
                 .frame(minHeight: 80)
                 .padding(12)
-                .background(Color.white)
+                .background(DesignTokens.Colors.surface)
                 .cornerRadius(16)
                 .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
         }
@@ -398,7 +419,7 @@ struct AddConnectionView: View {
             Text(title)
                 .font(.system(size: 16, weight: .bold))
         }
-        .foregroundColor(Color(white: 0.3))
+        .foregroundColor(DesignTokens.Colors.textPrimary)
     }
 
     private func formField(icon: String, label: String, text: Binding<String>, placeholder: String) -> some View {
@@ -411,7 +432,7 @@ struct AddConnectionView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
                     .font(.system(size: 12))
-                    .foregroundColor(Color(white: 0.5))
+                    .foregroundColor(DesignTokens.Colors.textSecondary)
                 TextField(placeholder, text: text)
                     .font(.system(size: 15))
                     .textFieldStyle(.plain)
@@ -484,9 +505,21 @@ struct AddConnectionView: View {
                 tags: newConnection.tags
             )
 
+            // ✅ Haptic feedback for successful connection creation
+            CirklHaptics.connectionCreated()
+
+            // ✅ Toast confirmation
+            ToastManager.shared.success("Contact ajouté avec succès")
+
             onAdd(orbitalContact)
             dismiss()
         } catch {
+            // ❌ Haptic feedback for error
+            CirklHaptics.errorOccurred()
+
+            // ❌ Toast error
+            ToastManager.shared.error("Impossible de créer le contact")
+
             print("❌ Failed to create connection: \(error)")
         }
 

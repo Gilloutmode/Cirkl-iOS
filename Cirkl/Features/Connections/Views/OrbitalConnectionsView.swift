@@ -10,12 +10,12 @@ struct OrbitalConnectionsView: View {
     
     // Connections with real names and colors
     let connections = [
-        (name: "Gilles", angle: 0.0, color: Color.purple),
-        (name: "Judith", angle: 60.0, color: Color.pink),
-        (name: "Denis", angle: 120.0, color: Color.orange),
-        (name: "Salomé", angle: 180.0, color: Color.mint),
-        (name: "Dan", angle: 240.0, color: Color.cyan),
-        (name: "Shay", angle: 300.0, color: Color.blue)
+        (name: "Gilles", angle: 0.0, color: DesignTokens.Colors.purple),
+        (name: "Judith", angle: 60.0, color: DesignTokens.Colors.pink),
+        (name: "Denis", angle: 120.0, color: DesignTokens.Colors.warning),
+        (name: "Salomé", angle: 180.0, color: DesignTokens.Colors.success),
+        (name: "Dan", angle: 240.0, color: DesignTokens.Colors.electricBlue),
+        (name: "Shay", angle: 300.0, color: DesignTokens.Colors.electricBlue)
     ]
     
     var body: some View {
@@ -38,21 +38,21 @@ struct OrbitalConnectionsView: View {
                             HStack(spacing: 6) {
                                 Image(systemName: "person.2.fill")
                                     .font(.system(size: 14))
-                                    .foregroundColor(.black.opacity(0.7))
+                                    .foregroundColor(DesignTokens.Colors.textSecondary)
                                 Text("1,247")
                                     .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(.black)
+                                    .foregroundColor(DesignTokens.Colors.textPrimary)
                             }
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
-                            .background(.ultraThinMaterial, in: Capsule())
+                            .glassEffect(.regular, in: .rect(cornerRadius: 20))
                             
                             Spacer()
                             
                             // Cirkl title - BLACK
                             Text("Cirkl")
                                 .font(.system(size: 28, weight: .bold, design: .rounded))
-                                .foregroundColor(.black)
+                                .foregroundColor(DesignTokens.Colors.textPrimary)
                             
                             Spacer()
                             
@@ -60,9 +60,11 @@ struct OrbitalConnectionsView: View {
                             Button(action: {}) {
                                 Image(systemName: "gearshape.fill")
                                     .font(.system(size: 18))
-                                    .foregroundColor(.black.opacity(0.7))
+                                    .foregroundColor(DesignTokens.Colors.textSecondary)
                                     .frame(width: 40, height: 40)
-                                    .background(.ultraThinMaterial, in: SwiftUI.Circle())
+                                    .background(Color.gray.opacity(0.1))
+                                    .clipShape(Circle())
+                                    .glassEffect(.regular.interactive(), in: .circle)
                             }
                         }
                         .padding(.horizontal, 20)
@@ -146,31 +148,49 @@ struct OrbitalConnectionsView: View {
     }
 }
 
-// MARK: - Light Liquid Glass Background
+// MARK: - Adaptive Liquid Glass Background
 struct LightLiquidGlassBackground: View {
     @State private var animateGradient = false
-    
+    @Environment(\.colorScheme) private var colorScheme
+
+    // Couleurs adaptatives selon le mode
+    private var gradientColors: [Color] {
+        if colorScheme == .dark {
+            return [
+                Color(red: 0.08, green: 0.06, blue: 0.15), // Dark purple
+                Color(red: 0.06, green: 0.08, blue: 0.18), // Dark blue
+                Color(red: 0.12, green: 0.06, blue: 0.12)  // Dark pink
+            ]
+        } else {
+            return [
+                Color(red: 0.95, green: 0.94, blue: 1.0), // Light purple
+                Color(red: 0.94, green: 0.97, blue: 1.0), // Light blue
+                Color(red: 1.0, green: 0.95, blue: 0.98)  // Light pink
+            ]
+        }
+    }
+
+    private var blobOpacity: Double {
+        colorScheme == .dark ? 0.15 : 0.1
+    }
+
     var body: some View {
         ZStack {
-            // Light base gradient
+            // Adaptive base gradient
             LinearGradient(
-                colors: [
-                    Color(red: 0.95, green: 0.94, blue: 1.0), // Light purple
-                    Color(red: 0.94, green: 0.97, blue: 1.0), // Light blue
-                    Color(red: 1.0, green: 0.95, blue: 0.98)  // Light pink
-                ],
+                colors: gradientColors,
                 startPoint: animateGradient ? .topLeading : .bottomTrailing,
                 endPoint: animateGradient ? .bottomTrailing : .topLeading
             )
-            
-            // Floating blobs
+
+            // Floating blobs - adaptatives
             ForEach(0..<5) { i in
                 SwiftUI.Circle()
                     .fill(
                         RadialGradient(
                             colors: [
-                                Color.purple.opacity(0.1),
-                                Color.blue.opacity(0.05),
+                                Color.purple.opacity(blobOpacity),
+                                Color.blue.opacity(blobOpacity * 0.5),
                                 Color.clear
                             ],
                             center: .center,
@@ -247,26 +267,18 @@ struct AppleIntelligenceSearchBar: View {
             
             TextField("Ask anything you want to find...", text: $text)
                 .font(.system(size: 15))
-                .foregroundColor(.black.opacity(0.8))
+                .foregroundColor(DesignTokens.Colors.textPrimary)
             
             Button(action: {}) {
                 Image(systemName: "mic.fill")
                     .font(.system(size: 16))
-                    .foregroundColor(.gray)
+                    .foregroundColor(DesignTokens.Colors.textSecondary)
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(
-            ZStack {
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(.thinMaterial)
-                
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color.white.opacity(0.6), lineWidth: 0.5)
-            }
-        )
-        .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 5)
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
+        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 5)
         .onAppear {
             withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
                 pulseScale = 1.05
@@ -306,11 +318,12 @@ struct PremiumGlassSphere: View {
                     )
                     .frame(width: 70, height: 70)
                 
-                // Glass material layer
+                // Glass material layer - iOS 26 Liquid Glass
                 SwiftUI.Circle()
-                    .fill(.regularMaterial)
                     .frame(width: 70, height: 70)
-                    .opacity(0.8)
+                    .background(Color.white.opacity(0.1))
+                    .clipShape(Circle())
+                    .glassEffect(.regular, in: .circle)
                 
                 // Perfect glass reflection highlight
                 SwiftUI.Circle()
@@ -359,13 +372,10 @@ struct PremiumGlassSphere: View {
             // Name label
             Text(name)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.black.opacity(0.8))
+                .foregroundColor(DesignTokens.Colors.textPrimary)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 4)
-                .background(.regularMaterial, in: Capsule())
-                .overlay(
-                    Capsule().stroke(Color.white.opacity(0.5), lineWidth: 0.5)
-                )
+                .glassEffect(.regular, in: .rect(cornerRadius: 12))
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isSelected)
         .onAppear {
@@ -427,11 +437,12 @@ struct PremiumCentralSphere: View {
                     )
                     .frame(width: 110, height: 110)
                 
-                // Glass material layer
+                // Glass material layer - iOS 26 Liquid Glass
                 SwiftUI.Circle()
-                    .fill(.ultraThinMaterial)
                     .frame(width: 110, height: 110)
-                    .opacity(0.7)
+                    .background(Color.purple.opacity(0.1))
+                    .clipShape(Circle())
+                    .glassEffect(.regular, in: .circle)
                 
                 // Perfect spherical highlight
                 SwiftUI.Circle()

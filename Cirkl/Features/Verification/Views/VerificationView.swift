@@ -145,7 +145,7 @@ struct VerificationView: View {
     private var bottomActionsView: some View {
         if case .scanning = viewModel.state {
             VStack(spacing: 16) {
-                // QR Fallback button
+                // QR Fallback button (fix: glassEffect blocks taps)
                 Button {
                     showQRFallback = true
                 } label: {
@@ -157,9 +157,12 @@ struct VerificationView: View {
                     .foregroundStyle(.white.opacity(0.8))
                     .padding(.horizontal, 20)
                     .padding(.vertical, 12)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Capsule())
+                    .background(
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(Color.white.opacity(0.15))
+                    )
                 }
+                .contentShape(RoundedRectangle(cornerRadius: 20))
 
                 // Cancel button
                 Button {
@@ -181,22 +184,20 @@ private struct IdleStateView: View {
 
     var body: some View {
         VStack(spacing: 32) {
-            // Icon
-            ZStack {
-                Circle()
-                    .fill(.ultraThinMaterial)
-                    .frame(width: 120, height: 120)
-
-                Image(systemName: "person.2.wave.2")
-                    .font(.system(size: 48))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [.mint, .blue],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
+            // Icon with Liquid Glass
+            Image(systemName: "person.2.wave.2")
+                .font(.system(size: 48))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [.mint, .blue],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
                     )
-            }
+                )
+                .frame(width: 120, height: 120)
+                .background(Color.mint.opacity(0.1))
+                .clipShape(Circle())
+                .glassEffect(.regular, in: .circle)
 
             // Text
             VStack(spacing: 12) {
@@ -252,14 +253,14 @@ private struct MeasuringView: View {
                         .opacity(0.8 - Double(index) * 0.2)
                 }
 
-                // Center icon
-                Circle()
-                    .fill(.ultraThinMaterial)
-                    .frame(width: 80, height: 80)
-
+                // Center icon with Liquid Glass
                 Image(systemName: "wave.3.right")
                     .font(.system(size: 32))
                     .foregroundStyle(.mint)
+                    .frame(width: 80, height: 80)
+                    .background(Color.mint.opacity(0.1))
+                    .clipShape(Circle())
+                    .glassEffect(.regular, in: .circle)
             }
 
             // Status text
@@ -333,9 +334,12 @@ private struct ErrorStateView: View {
                 .foregroundStyle(.white)
                 .padding(.horizontal, 32)
                 .padding(.vertical, 14)
-                .background(.ultraThinMaterial)
-                .clipShape(Capsule())
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color.white.opacity(0.15))
+                )
             }
+            .contentShape(RoundedRectangle(cornerRadius: 20))
         }
     }
 }

@@ -47,10 +47,14 @@ struct UserFoundView: View {
                     .frame(width: 160, height: 160)
                     .blur(radius: 20)
 
-                // Avatar circle
-                Circle()
-                    .fill(.ultraThinMaterial)
+                // Avatar circle with Liquid Glass
+                Text(peerName.prefix(1).uppercased())
+                    .font(.system(size: 40, weight: .bold))
+                    .foregroundStyle(.white)
                     .frame(width: 100, height: 100)
+                    .background(Color.mint.opacity(0.1))
+                    .clipShape(Circle())
+                    .glassEffect(.regular, in: .circle)
                     .overlay(
                         Circle()
                             .stroke(
@@ -61,11 +65,6 @@ struct UserFoundView: View {
                                 ),
                                 lineWidth: 3
                             )
-                    )
-                    .overlay(
-                        Text(peerName.prefix(1).uppercased())
-                            .font(.system(size: 40, weight: .bold))
-                            .foregroundStyle(.white)
                     )
             }
             .scaleEffect(appearAnimation ? 1.0 : 0.5)
@@ -94,12 +93,7 @@ struct UserFoundView: View {
             }
         }
         .padding(32)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 24))
-        .overlay(
-            RoundedRectangle(cornerRadius: 24)
-                .stroke(.white.opacity(0.1), lineWidth: 0.5)
-        )
+        .glassEffect(.regular, in: .rect(cornerRadius: 24))
         .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
         .offset(y: appearAnimation ? 0 : 30)
     }

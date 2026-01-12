@@ -17,7 +17,7 @@ struct OnboardingView: View {
                     .font(.system(size: 60, weight: .bold, design: .rounded))
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [.cyan, .purple],
+                            colors: [DesignTokens.Colors.electricBlue, DesignTokens.Colors.purple],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
@@ -29,23 +29,23 @@ struct OnboardingView: View {
                         title: "Connexions Authentiques",
                         description: "Rencontrez de vraies personnes, vérifiées physiquement par QR, NFC ou Bluetooth.",
                         icon: "person.2.fill",
-                        color: .cyan
+                        color: DesignTokens.Colors.electricBlue
                     )
                     .tag(0)
-                    
+
                     OnboardingPage(
                         title: "Interface Orbitale",
                         description: "Vos connexions gravitent autour de vous dans une interface révolutionnaire.",
                         icon: "circle.hexagongrid.fill",
-                        color: .purple
+                        color: DesignTokens.Colors.purple
                     )
                     .tag(1)
-                    
+
                     OnboardingPage(
                         title: "Assistant IA",
                         description: "Votre compagnon intelligent qui détecte les opportunités et enrichit vos relations.",
                         icon: "sparkles",
-                        color: .orange
+                        color: DesignTokens.Colors.mint
                     )
                     .tag(2)
                 }
@@ -59,12 +59,12 @@ struct OnboardingView: View {
                     } label: {
                         Text("Commencer")
                             .font(.headline)
-                            .foregroundColor(.white)
+                            .foregroundColor(DesignTokens.Colors.textPrimary)
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(
                                 LinearGradient(
-                                    colors: [.cyan, .purple],
+                                    colors: [DesignTokens.Colors.electricBlue, DesignTokens.Colors.purple],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
@@ -99,12 +99,12 @@ struct OnboardingPage: View {
             Text(title)
                 .font(.title)
                 .fontWeight(.bold)
-                .foregroundColor(.white)
-            
+                .foregroundColor(DesignTokens.Colors.textPrimary)
+
             Text(description)
                 .font(.body)
                 .multilineTextAlignment(.center)
-                .foregroundColor(.white.opacity(0.7))
+                .foregroundColor(DesignTokens.Colors.textSecondary)
                 .padding(.horizontal, 40)
         }
     }

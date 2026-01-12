@@ -6,19 +6,19 @@ import Foundation
 class AppStateManager: ObservableObject {
     @Published var showOnboarding: Bool = true
     @Published var isAuthenticated: Bool = false
-    
+
     var hasCompletedOnboarding: Bool {
         get { UserDefaults.standard.bool(forKey: "hasCompletedOnboarding") }
-        set { 
+        set {
             UserDefaults.standard.set(newValue, forKey: "hasCompletedOnboarding")
             // Manually trigger objectWillChange when the computed property changes
             objectWillChange.send()
         }
     }
-    
+
     init() {
         showOnboarding = !hasCompletedOnboarding
-        
+
         #if DEBUG
         // Pour le développement, skip l'onboarding
         if CommandLine.arguments.contains("--skip-onboarding") {
@@ -28,30 +28,67 @@ class AppStateManager: ObservableObject {
         }
         #endif
     }
-    
+
     func completeOnboarding() {
         withAnimation(.easeInOut(duration: 0.5)) {
             hasCompletedOnboarding = true
             showOnboarding = false
         }
     }
-    
+
     func authenticate() {
         withAnimation(.easeInOut(duration: 0.5)) {
             isAuthenticated = true
         }
     }
-    
+
+    /// Déconnexion complète (Supabase + état local) - Version synchrone (legacy)
     func logout() {
-        withAnimation(.easeInOut(duration: 0.5)) {
-            isAuthenticated = false
+        Task {
+            await logoutAsync()
         }
     }
-    
+
+    /// Déconnexion complète (Supabase + état local) - Version async
+    func logoutAsync() async {
+        do {
+            try await SupabaseService.shared.signOut()
+            #if DEBUG
+            print("✅ AppStateManager: Logout completed")
+            #endif
+        } catch {
+            #if DEBUG
+            print("❌ AppStateManager: Logout error - \(error)")
+            #endif
+        }
+        // Note: isAuthenticated est géré par SupabaseService via le listener
+    }
+
+    /// Reset complet pour revoir l'onboarding - Version synchrone (legacy)
     func resetOnboarding() {
+        Task {
+            await resetOnboardingAsync()
+        }
+    }
+
+    /// Reset complet pour revoir l'onboarding - Version async
+    func resetOnboardingAsync() async {
+        do {
+            try await SupabaseService.shared.signOut()
+            #if DEBUG
+            print("✅ AppStateManager: Reset onboarding - signOut completed")
+            #endif
+        } catch {
+            #if DEBUG
+            print("❌ AppStateManager: Reset onboarding error - \(error)")
+            #endif
+        }
+        // Reset les flags locaux
         hasCompletedOnboarding = false
         showOnboarding = true
-        isAuthenticated = false
+        #if DEBUG
+        print("✅ AppStateManager: Onboarding reset - hasCompletedOnboarding=false, showOnboarding=true")
+        #endif
     }
 }
 

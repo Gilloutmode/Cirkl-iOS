@@ -29,9 +29,10 @@ extension Color {
 }
 
 // MARK: - Cirkl Colors
+// Note: Primary and secondary colors are now defined in Assets.xcassets
+// with light/dark mode support. Use DesignTokens.Colors or Color("CirklPrimary") etc.
 extension Color {
-    static let cirklPrimary = Color(hex: "6C63FF")
-    static let cirklSecondary = Color(hex: "FF6B6B")
+    // Legacy colors for backward compatibility - prefer DesignTokens.Colors
     static let cirklAccent = Color(hex: "4ECDC4")
     static let cirklBackground = Color(hex: "0A0E27")
 }
@@ -41,14 +42,14 @@ struct CirklButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.headline)
-            .foregroundColor(.white)
+            .foregroundColor(DesignTokens.Colors.textPrimary)
             .frame(maxWidth: .infinity)
             .frame(height: 56)
             .background(
                 RoundedRectangle(cornerRadius: 24)
                     .fill(
                         LinearGradient(
-                            gradient: Gradient(colors: [Color.cirklPrimary, Color.cirklAccent]),
+                            gradient: Gradient(colors: [DesignTokens.Colors.primary, Color.cirklAccent]),
                             startPoint: .leading,
                             endPoint: .trailing
                         )
@@ -81,7 +82,7 @@ struct CirklTextFieldStyle: TextFieldStyle {
     func _body(configuration: TextField<Self._Label>) -> some View {
         configuration
             .font(.body)
-            .foregroundColor(.white)
+            .foregroundColor(DesignTokens.Colors.textPrimary)
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
             .background(

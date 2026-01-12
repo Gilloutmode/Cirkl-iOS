@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		2BE5DA662F13C02300742EE5 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 2BE5DA652F13C02300742EE5 /* Auth */; };
+		2BE5DA682F13C02300742EE5 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 2BE5DA672F13C02300742EE5 /* PostgREST */; };
+		2BE5DA6B2F13C1A800742EE5 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 2BE5DA6A2F13C1A800742EE5 /* Supabase */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		2B0715E22E7066AF003FE51A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -65,6 +71,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2BE5DA682F13C02300742EE5 /* PostgREST in Frameworks */,
+				2BE5DA662F13C02300742EE5 /* Auth in Frameworks */,
+				2BE5DA6B2F13C1A800742EE5 /* Supabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -91,6 +100,7 @@
 				2B0715D22E7066AD003FE51A /* Cirkl */,
 				2B0715E42E7066AF003FE51A /* CirklTests */,
 				2B0715EE2E7066AF003FE51A /* CirklUITests */,
+				2BE5DA692F13C1A800742EE5 /* Frameworks */,
 				2B0715D12E7066AD003FE51A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -103,6 +113,13 @@
 				2B0715EB2E7066AF003FE51A /* CirklUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		2BE5DA692F13C1A800742EE5 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -125,6 +142,9 @@
 			);
 			name = Cirkl;
 			packageProductDependencies = (
+				2BE5DA652F13C02300742EE5 /* Auth */,
+				2BE5DA672F13C02300742EE5 /* PostgREST */,
+				2BE5DA6A2F13C1A800742EE5 /* Supabase */,
 			);
 			productName = Cirkl;
 			productReference = 2B0715D02E7066AD003FE51A /* Cirkl.app */;
@@ -208,6 +228,9 @@
 			);
 			mainGroup = 2B0715C72E7066AD003FE51A;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				2BE5DA642F13C02300742EE5 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2B0715D12E7066AD003FE51A /* Products */;
 			projectDirPath = "";
@@ -577,6 +600,35 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		2BE5DA642F13C02300742EE5 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		2BE5DA652F13C02300742EE5 /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2BE5DA642F13C02300742EE5 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Auth;
+		};
+		2BE5DA672F13C02300742EE5 /* PostgREST */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2BE5DA642F13C02300742EE5 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = PostgREST;
+		};
+		2BE5DA6A2F13C1A800742EE5 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2BE5DA642F13C02300742EE5 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 2B0715C82E7066AD003FE51A /* Project object */;
 }

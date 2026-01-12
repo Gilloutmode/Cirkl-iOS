@@ -10,8 +10,7 @@ struct ModeBadge: View {
 
     var body: some View {
         Button(action: {
-            let generator = UIImpactFeedbackGenerator(style: .light)
-            generator.impactOccurred()
+            CirklHaptics.modeToggle()
             action()
         }) {
             HStack(spacing: 6) {
@@ -23,7 +22,7 @@ struct ModeBadge: View {
                 // Compteur
                 Text("\(count)")
                     .font(.system(size: 14, weight: .bold, design: .rounded))
-                    .foregroundStyle(isActive ? .white : Color(white: 0.35))
+                    .foregroundStyle(isActive ? .white : .white.opacity(0.7))
             }
             .padding(.horizontal, isActive ? 14 : 12)
             .padding(.vertical, isActive ? 10 : 8)
@@ -46,12 +45,12 @@ struct ModeBadge: View {
             // Background actif: gradient avec glow
             mode.activeGradient
         } else {
-            // Background inactif: style différent selon le mode
+            // === DARK MODE: Glass effect pour badges inactifs ===
             if mode == .pending {
-                // Style pointillé pour pending
+                // Style pointillé glass pour pending
                 ZStack {
                     Capsule()
-                        .fill(Color.white.opacity(0.9))
+                        .fill(.ultraThinMaterial.opacity(0.6))
                     Capsule()
                         .stroke(
                             mode.color.opacity(0.4),
@@ -59,9 +58,13 @@ struct ModeBadge: View {
                         )
                 }
             } else {
-                // Style solide pour verified
+                // Style glass pour verified
                 Capsule()
-                    .fill(Color(white: 0.95))
+                    .fill(.ultraThinMaterial.opacity(0.6))
+                    .overlay(
+                        Capsule()
+                            .stroke(DesignTokens.Colors.textPrimary.opacity(0.15), lineWidth: 0.5)
+                    )
             }
         }
     }
@@ -73,6 +76,7 @@ struct ModeToggleGroup: View {
     @Binding var selectedMode: OrbitalViewMode
     let verifiedCount: Int
     let pendingCount: Int
+    var onBadgeTap: (() -> Void)? = nil  // Callback optionnel appelé quand un badge est tappé
 
     var body: some View {
         HStack(spacing: 10) {
@@ -85,6 +89,7 @@ struct ModeToggleGroup: View {
                     withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
                         selectedMode = .verified
                     }
+                    onBadgeTap?()
                 }
             )
 
@@ -98,6 +103,7 @@ struct ModeToggleGroup: View {
                         withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
                             selectedMode = .pending
                         }
+                        onBadgeTap?()
                     }
                 )
             }
@@ -108,7 +114,8 @@ struct ModeToggleGroup: View {
 // MARK: - Preview
 #Preview {
     ZStack {
-        Color(white: 0.98).ignoresSafeArea()
+        // === DARK MODE PREVIEW BACKGROUND ===
+        DesignTokens.Colors.background.ignoresSafeArea()
 
         VStack(spacing: 40) {
             // États individuels

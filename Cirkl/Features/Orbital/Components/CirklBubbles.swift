@@ -7,7 +7,10 @@ import SwiftUI
 struct CirklProfileBubble: View {
     let connection: Connection
     let isSelected: Bool
-    
+
+    // Accessibility
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     @State private var breathingPhase: Double = 0
     @State private var isHovered = false
     
@@ -15,46 +18,16 @@ struct CirklProfileBubble: View {
         VStack(spacing: 8) {
             // Bulle principale
             ZStack {
-                // Fond Liquid Glass avec effet 3D
+                // Fond Liquid Glass natif iOS 26
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.9),
-                                Color.white.opacity(0.7)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(connection.color.opacity(0.1))
                     .frame(width: 75, height: 75)
-                    .overlay(
-                        Circle()
-                            .fill(
-                                RadialGradient(
-                                    colors: [
-                                        connection.color.opacity(0.3),
-                                        connection.color.opacity(0.1),
-                                        Color.clear
-                                    ],
-                                    center: .center,
-                                    startRadius: 5,
-                                    endRadius: 35
-                                )
-                            )
-                    )
+                    .glassEffect(.regular, in: .circle)
                     .shadow(color: connection.color.opacity(0.3), radius: isSelected ? 15 : 8, x: 0, y: 5)
                     .overlay(
                         Circle()
                             .stroke(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(0.8),
-                                        connection.color.opacity(0.4)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
+                                connection.color.opacity(isSelected ? 0.6 : 0.3),
                                 lineWidth: isSelected ? 2.5 : 1.5
                             )
                     )
@@ -77,15 +50,15 @@ struct CirklProfileBubble: View {
             .animation(.spring(response: 0.3, dampingFraction: 0.7, blendDuration: 0.3), value: isSelected)
             .animation(.spring(response: 0.3, dampingFraction: 0.7, blendDuration: 0.3), value: isHovered)
             
-            // Nom sous la bulle
+            // Nom sous la bulle - adaptatif light/dark
             Text(connection.name)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.primary.opacity(0.9))
+                .foregroundColor(DesignTokens.Colors.textPrimary)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 4)
                 .background(
                     Capsule()
-                        .fill(Color.white.opacity(0.8))
+                        .fill(DesignTokens.Colors.bubbleBackground)
                         .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 )
         }
@@ -93,6 +66,8 @@ struct CirklProfileBubble: View {
             isHovered = hovering
         }
         .onAppear {
+            // Breathing animation disabled when Reduce Motion is enabled
+            guard !reduceMotion else { return }
             withAnimation(.easeInOut(duration: 3 + Double.random(in: 0...2)).repeatForever(autoreverses: true)) {
                 breathingPhase = 1.0
             }
@@ -102,6 +77,9 @@ struct CirklProfileBubble: View {
 
 /// Bulle centrale utilisateur (Gil) avec Liquid Glass 3D et effet arc-en-ciel
 struct CirklCentralBubble: View {
+    // Accessibility
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     @State private var rainbowRotation: Double = 0
     @State private var pulseScale: Double = 1.0
     
@@ -127,34 +105,11 @@ struct CirklCentralBubble: View {
                     .blur(radius: 20)
                     .scaleEffect(pulseScale)
                 
-                // Bulle principale avec Liquid Glass
+                // Bulle principale avec Liquid Glass natif iOS 26
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.white,
-                                Color.white.opacity(0.9)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(Color.purple.opacity(0.1))
                     .frame(width: 100, height: 100)
-                    .overlay(
-                        Circle()
-                            .fill(
-                                RadialGradient(
-                                    colors: [
-                                        Color.pink.opacity(0.2),
-                                        Color.purple.opacity(0.1),
-                                        Color.clear
-                                    ],
-                                    center: .center,
-                                    startRadius: 10,
-                                    endRadius: 45
-                                )
-                            )
-                    )
+                    .glassEffect(.regular, in: .circle)
                     .shadow(color: Color.purple.opacity(0.4), radius: 20, x: 0, y: 8)
                 
                 // Bordure arc-en-ciel animée
@@ -188,7 +143,7 @@ struct CirklCentralBubble: View {
                     )
             }
             
-            // Nom avec effet spécial
+            // Nom avec effet spécial - adaptatif light/dark
             Text("Gil")
                 .font(.system(size: 16, weight: .bold))
                 .foregroundStyle(
@@ -202,11 +157,13 @@ struct CirklCentralBubble: View {
                 .padding(.vertical, 6)
                 .background(
                     Capsule()
-                        .fill(Color.white)
+                        .fill(DesignTokens.Colors.bubbleBackground)
                         .shadow(color: Color.purple.opacity(0.3), radius: 4, x: 0, y: 2)
                 )
         }
         .onAppear {
+            // Animations disabled when Reduce Motion is enabled
+            guard !reduceMotion else { return }
             // Animation de rotation arc-en-ciel
             withAnimation(.linear(duration: 4).repeatForever(autoreverses: false)) {
                 rainbowRotation = 360
@@ -314,12 +271,12 @@ struct CirklNameLabel: View {
     var body: some View {
         Text(text)
             .font(.system(size: style.fontSize, weight: style.fontWeight))
-            .foregroundStyle(Color.primary)
+            .foregroundStyle(DesignTokens.Colors.textPrimary)
             .padding(.horizontal, style == .central ? 16 : 12)
             .padding(.vertical, style == .central ? 8 : 6)
             .background(
                 Capsule()
-                    .fill(Color.white.opacity(0.9))
+                    .fill(DesignTokens.Colors.bubbleBackground)
                     .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 2)
             )
     }

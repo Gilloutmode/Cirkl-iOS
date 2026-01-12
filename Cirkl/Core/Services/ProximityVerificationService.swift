@@ -121,7 +121,7 @@ final class ProximityVerificationService: NSObject, ObservableObject {
     func sendVerificationData(withDiscoveryToken tokenData: Data?) throws {
         guard let session = session,
               let connectedPeer = connectedPeer,
-              var userData = currentUserData else {
+              let userData = currentUserData else {
             throw ProximityError.connectionLost
         }
 

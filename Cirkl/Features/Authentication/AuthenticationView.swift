@@ -28,7 +28,7 @@ struct AuthenticationView: View {
                     
                     Text("Connexion Authentique")
                         .font(.title2)
-                        .foregroundColor(.white.opacity(0.8))
+                        .foregroundColor(DesignTokens.Colors.textPrimary.opacity(0.8))
                 }
                 
                 // Authentication options
@@ -37,25 +37,25 @@ struct AuthenticationView: View {
                     AuthButton(
                         title: "Scanner QR Code",
                         icon: "qrcode",
-                        color: .cyan
+                        color: DesignTokens.Colors.electricBlue
                     ) {
                         showQRScanner = true
                     }
-                    
+
                     // NFC
                     AuthButton(
                         title: "Connexion NFC",
                         icon: "wave.3.right",
-                        color: .purple
+                        color: DesignTokens.Colors.purple
                     ) {
                         showNFCReader = true
                     }
-                    
+
                     // Face ID
                     AuthButton(
                         title: "Face ID",
                         icon: "faceid",
-                        color: .green
+                        color: DesignTokens.Colors.success
                     ) {
                         authenticateWithBiometric()
                     }
@@ -68,7 +68,7 @@ struct AuthenticationView: View {
                     appState.authenticate()
                 } label: {
                     Text("Skip (Dev)")
-                        .foregroundColor(.white.opacity(0.5))
+                        .foregroundColor(DesignTokens.Colors.textSecondary)
                 }
                 #endif
             }
@@ -121,7 +121,7 @@ struct AuthButton: View {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 14))
             }
-            .foregroundColor(.white)
+            .foregroundColor(DesignTokens.Colors.textPrimary)
             .padding()
             .background(
                 ZStack {
@@ -129,8 +129,8 @@ struct AuthButton: View {
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    Color.white.opacity(0.1),
-                                    Color.white.opacity(0.05)
+                                    DesignTokens.Colors.surface.opacity(0.3),
+                                    DesignTokens.Colors.surface.opacity(0.15)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -146,8 +146,8 @@ struct AuthButton: View {
                         .stroke(
                             LinearGradient(
                                 colors: [
-                                    Color.white.opacity(0.3),
-                                    Color.white.opacity(0.1)
+                                    DesignTokens.Colors.textPrimary.opacity(0.3),
+                                    DesignTokens.Colors.textPrimary.opacity(0.1)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -168,17 +168,17 @@ struct QRScannerView: View {
     
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            DesignTokens.Colors.background.ignoresSafeArea()
             
             VStack {
                 Text("QR Scanner")
-                    .foregroundColor(.white)
+                    .foregroundColor(DesignTokens.Colors.textPrimary)
                 
                 Button("Authenticate") {
                     appState.authenticate()
                     dismiss()
                 }
-                .foregroundColor(.cyan)
+                .foregroundColor(DesignTokens.Colors.electricBlue)
             }
         }
     }
@@ -190,17 +190,17 @@ struct NFCReaderView: View {
     
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            DesignTokens.Colors.background.ignoresSafeArea()
             
             VStack {
                 Text("NFC Reader")
-                    .foregroundColor(.white)
+                    .foregroundColor(DesignTokens.Colors.textPrimary)
                 
                 Button("Authenticate") {
                     appState.authenticate()
                     dismiss()
                 }
-                .foregroundColor(.purple)
+                .foregroundColor(DesignTokens.Colors.purple)
             }
         }
     }

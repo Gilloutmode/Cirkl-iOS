@@ -49,12 +49,13 @@ open Cirkl.xcodeproj
 - **48h** = Fenêtre d'opportunité avant redistribution
 
 ### Tech Stack
-- **Swift 6.0** with **SwiftUI 5**
-- **Min iOS**: 17.0
+- **Swift 6.0** with **SwiftUI** (iOS 26)
+- **Min iOS**: 26.0 (Liquid Glass)
 - **Architecture**: MVVM-C + Clean Architecture
-- **State Management**: `@Observable` for ViewModels (iOS 17+), `@MainActor` for UI
+- **State Management**: `@Observable` for ViewModels, `@MainActor` for UI
 - **Persistence**: SwiftData
 - **Backend**: N8N webhooks → AI Orchestration
+- **On-Device AI**: Foundation Models (iPhone 15 Pro+)
 
 ## Project Structure
 
@@ -80,12 +81,12 @@ Cirkl/
 └── Resources/              # Assets, colors, localization
 ```
 
-## Design System - Glassmorphic VisionOS Style
+## Design System - Liquid Glass (iOS 26)
 
 ### Core Visual Rules
-1. **Background blur**: 20-30 radius
-2. **Glass tint**: `Color.white.opacity(0.05)` to `0.1`
-3. **Border**: 0.5pt white @ 20% opacity
+1. **Native Glass**: Use `.glassEffect()` instead of manual blur/materials
+2. **Interactive Elements**: `.glassEffect(.regular.interactive())` for buttons
+3. **Morphing Transitions**: `GlassEffectContainer` with `glassEffectID()`
 4. **Dark mode only**: `.preferredColorScheme(.dark)`
 5. **Target framerate**: 120fps (ProMotion)
 
@@ -94,15 +95,41 @@ Cirkl/
 - **Electric Blue**: `#007AFF` (primary actions)
 - **Mint**: `#00C781` (success, verification)
 
-### Glassmorphic Component Pattern
+### Liquid Glass Component Patterns
 ```swift
-RoundedRectangle(cornerRadius: 20)
-    .fill(Color.white.opacity(0.08))
-    .background(.ultraThinMaterial)
-    .overlay(
-        RoundedRectangle(cornerRadius: 20)
-            .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
-    )
+// Basic glass effect (replaces old manual glassmorphism)
+.glassEffect()
+
+// Interactive buttons
+Button("Action") { }
+    .buttonStyle(.glassProminent)
+
+// Glass card component
+VStack {
+    content
+}
+.padding()
+.glassEffect(.regular, in: .rect(cornerRadius: 20))
+
+// Morphing transitions
+@Namespace private var namespace
+
+GlassEffectContainer(spacing: 16) {
+    ForEach(items) { item in
+        ItemView(item: item)
+            .glassEffect()
+            .glassEffectID(item.id, in: namespace)
+    }
+}
+```
+
+### Glass Effect Variants
+```swift
+.glassEffect()                    // Default: regular, capsule
+.glassEffect(.regular)            // Standard translucent
+.glassEffect(.clear)              // More transparent
+.glassEffect(.identity)           // For morphing transitions
+.glassEffect(.regular.interactive()) // Responds to touch
 ```
 
 ## Coding Standards
@@ -140,6 +167,27 @@ final class FeatureViewModel {
     }
 }
 ```
+
+### Foundation Models Integration (On-Device AI)
+```swift
+import FoundationModels
+
+// Always check availability first
+guard LanguageModelSession.isAvailable else {
+    // Provide fallback for non-Pro devices
+    return
+}
+
+// Simple generation
+let session = LanguageModelSession()
+let response = try await session.respond(to: prompt)
+
+// Streaming for better UX
+for try await chunk in session.streamResponse(to: prompt) {
+    output += chunk
+}
+```
+> **Requires**: iPhone 15 Pro+, iPad M1+, Mac M1+
 
 ## Key Services
 
@@ -241,9 +289,9 @@ refactor(services): extract N8N response parsing
 | Document | When to Read | Content |
 |----------|--------------|---------|
 | @VISION_PRODUIT.md | Adding features, UX decisions, understanding "why" | Vision fondateur, mécaniques psychologiques, features prioritaires |
+| `~/.claude/references/liquid-glass/` | Liquid Glass APIs, Foundation Models | Complete iOS 26 API reference |
+| `~/.claude/skills/ios/` | iOS development patterns | SwiftUI features, AI integration skills |
 | `.claude/context.md` | Deep project context needed | Architecture détaillée, décisions techniques |
-| `.claude/context/design-principles.md` | Creating new UI components | Design system principles, patterns |
-| `.claude/context/style-guide.md` | Styling questions, color/spacing | UI specifications, glassmorphism rules |
 | `.serena/memories/` | Resuming after break, context recovery | Session memories, learnings |
 
 > **Note**: Create `CLAUDE.local.md` (gitignored) for personal environment overrides.
@@ -266,4 +314,4 @@ refactor(services): extract N8N response parsing
 2. **Follow existing patterns**: Match the style of surrounding code
 3. **Small changes**: Prefer targeted edits over large rewrites
 4. **Test builds**: Verify changes compile before committing
-5. **Preserve glassmorphism**: All UI must follow the glass design system
+5. **Use Liquid Glass**: All floating UI must use `.glassEffect()` APIs

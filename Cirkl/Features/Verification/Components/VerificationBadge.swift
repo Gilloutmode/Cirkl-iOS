@@ -89,12 +89,7 @@ struct VerificationBadge: View {
             Spacer()
         }
         .padding(12)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(trustLevel.color.opacity(0.2), lineWidth: 0.5)
-        )
+        .glassEffect(.regular, in: .rect(cornerRadius: 12))
     }
 }
 
@@ -170,14 +165,7 @@ struct ConnectionVerificationIcon: View {
                 .font(.system(size: 10, weight: .bold))
                 .foregroundStyle(trustLevel.color)
                 .padding(4)
-                .background(
-                    Circle()
-                        .fill(.ultraThinMaterial)
-                )
-                .overlay(
-                    Circle()
-                        .stroke(trustLevel.color.opacity(0.5), lineWidth: 1)
-                )
+                .glassEffect(.regular, in: .rect(cornerRadius: 10))
         }
         .onAppear {
             if showPulse && trustLevel >= .verified {
@@ -236,8 +224,7 @@ struct ConnectionVerificationIcon: View {
                     }
                 }
                 .padding()
-                .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .glassEffect(.regular, in: .rect(cornerRadius: 12))
                 .padding(.horizontal)
 
                 // Status tags

@@ -6,32 +6,51 @@ struct ContentView: View {
     @StateObject private var connectionState = ConnectionStateManager()
     @StateObject private var performanceManager = PerformanceManager()
     @StateObject private var errorHandler = ErrorHandler()
-    
+    @ObservedObject private var supabaseService = SupabaseService.shared
+
+    /// In DEBUG mode, Skip (Dev) button sets appState.isAuthenticated
+    /// In RELEASE mode, only Supabase auth counts
+    private var shouldShowLogin: Bool {
+        #if DEBUG
+        return !supabaseService.isAuthenticated && !appState.isAuthenticated
+        #else
+        return !supabaseService.isAuthenticated
+        #endif
+    }
+
     var body: some View {
         Group {
-            if appState.showOnboarding {
+            // 1. Check authentication (Supabase OR appState in DEBUG)
+            if shouldShowLogin {
+                LoginView(appState: appState)
+                    .withErrorHandling(errorHandler)
+            }
+            // 2. Then check onboarding (only for first-time users)
+            else if appState.showOnboarding {
                 OnboardingView(appState: appState)
                     .withErrorHandling(errorHandler)
-            } else if appState.isAuthenticated {
+            }
+            // 3. Main app - user is logged in and has completed onboarding
+            else {
                 // Interface principale avec nouveau design Living Glass
                 OrbitalView()
                     .environmentObject(appState)
                     .environmentObject(connectionState)
                     .environmentObject(performanceManager)
                     .withErrorHandling(errorHandler)
-            } else {
-                AuthenticationView(appState: appState)
-                    .withErrorHandling(errorHandler)
             }
         }
-        .onAppear {
-            // Pour le développement : skip onboarding et authenticate directement
-            #if DEBUG
-            appState.completeOnboarding()
-            appState.authenticate()
-            #endif
+        .onChange(of: supabaseService.isAuthenticated) { _, isAuthenticated in
+            // Quand l'utilisateur se connecte via Supabase
+            if isAuthenticated {
+                #if DEBUG
+                print("✅ Supabase auth detected - user logged in")
+                #endif
+            }
         }
         .task {
+            // Vérifier la session existante au lancement
+            _ = await supabaseService.checkSession()
             // Initialiser les optimisations de performance
             await performanceManager.initializeOptimizations()
         }
@@ -47,17 +66,9 @@ struct CirklMainInterface: View {
     
     var body: some View {
         ZStack {
-            // Arrière-plan avec gradient subtil Liquid Glass
-            LinearGradient(
-                colors: [
-                    Color(white: 0.98),
-                    Color(white: 0.95),
-                    Color(white: 0.92)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            // Arrière-plan adaptatif - utilise DesignTokens
+            DesignTokens.Colors.background
+                .ignoresSafeArea()
             
             // Contenu principal
             VStack(spacing: 0) {
@@ -85,14 +96,7 @@ struct CirklMainInterface: View {
             )
             .padding(.horizontal)
             .background(
-                LinearGradient(
-                    colors: [
-                        Color(white: 0.98).opacity(0.95),
-                        Color(white: 0.96).opacity(0.9)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
+                DesignTokens.Colors.surface.opacity(0.95)
             )
         }
         .sheet(isPresented: $showSettings) {
@@ -119,13 +123,13 @@ struct OrbitalBubbleSystem: View {
             let orbitalRadius = min(geometry.size.width, geometry.size.height) * 0.32
             
             ZStack {
-                // Guide visuel optionnel du cercle orbital (très subtil)
+                // Guide visuel optionnel du cercle orbital (très subtil, adaptatif)
                 if performanceManager.shouldShowLiquidEffects {
                     Circle()
                         .stroke(
                             LinearGradient(
                                 colors: [
-                                    Color.gray.opacity(0.03),
+                                    DesignTokens.Colors.textTertiary.opacity(0.1),
                                     Color.clear
                                 ],
                                 startPoint: .top,

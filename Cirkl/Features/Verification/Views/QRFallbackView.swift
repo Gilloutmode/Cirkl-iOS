@@ -67,12 +67,7 @@ struct QRFallbackView: View {
             modeButton(title: "Mon QR", mode: .display, icon: "qrcode")
             modeButton(title: "Scanner", mode: .scan, icon: "qrcode.viewfinder")
         }
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(.white.opacity(0.1), lineWidth: 0.5)
-        )
+        .glassEffect(.regular, in: .rect(cornerRadius: 12))
     }
 
     private func modeButton(title: String, mode: QRMode, icon: String) -> some View {
@@ -116,12 +111,7 @@ struct QRFallbackView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .padding(20)
-                .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 24))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24)
-                        .stroke(.white.opacity(0.1), lineWidth: 0.5)
-                )
+                .glassEffect(.regular, in: .rect(cornerRadius: 24))
             } else {
                 // Error state
                 VStack(spacing: 12) {

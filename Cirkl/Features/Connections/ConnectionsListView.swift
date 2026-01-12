@@ -26,7 +26,7 @@ struct ConnectionsListView: View {
         NavigationStack {
             ZStack {
                 // Background
-                Color(white: 0.97)
+                DesignTokens.Colors.background
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
@@ -42,19 +42,47 @@ struct ConnectionsListView: View {
                         .padding(.bottom, 16)
 
                     // List
-                    ScrollView {
-                        LazyVStack(spacing: 12) {
-                            ForEach(filteredContacts) { contact in
-                                Button {
-                                    selectedContact = contact
-                                } label: {
-                                    ConnectionRowView(contact: contact)
+                    if neo4jService.isLoading && contacts.isEmpty {
+                        // Skeleton Loading State
+                        ScrollView {
+                            LazyVStack(spacing: 12) {
+                                ForEach(0..<5, id: \.self) { _ in
+                                    ConnectionRowSkeleton()
                                 }
-                                .buttonStyle(.plain)
                             }
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 20)
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 20)
+                    } else if filteredContacts.isEmpty {
+                        // Empty State
+                        VStack {
+                            Spacer()
+                            if searchText.isEmpty {
+                                CirklEmptyState.connections(onAdd: {
+                                    showAddConnection = true
+                                })
+                            } else {
+                                CirklEmptyState.noSearchResults
+                            }
+                            Spacer()
+                        }
+                        .frame(maxWidth: .infinity)
+                    } else {
+                        // Contacts List
+                        ScrollView {
+                            LazyVStack(spacing: 12) {
+                                ForEach(filteredContacts) { contact in
+                                    Button {
+                                        selectedContact = contact
+                                    } label: {
+                                        ConnectionRowView(contact: contact)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 20)
+                        }
                     }
                 }
             }
@@ -67,7 +95,7 @@ struct ConnectionsListView: View {
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 24))
-                            .foregroundStyle(Color(white: 0.7))
+                            .foregroundStyle(DesignTokens.Colors.textTertiary)
                     }
                 }
 
@@ -77,7 +105,7 @@ struct ConnectionsListView: View {
                     } label: {
                         Image(systemName: "person.badge.plus")
                             .font(.system(size: 18, weight: .medium))
-                            .foregroundStyle(Color(red: 0.5, green: 0.3, blue: 0.8))
+                            .foregroundStyle(DesignTokens.Colors.purple)
                     }
                 }
             }
@@ -102,11 +130,11 @@ struct ConnectionsListView: View {
         HStack(spacing: 12) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 16, weight: .medium))
-                .foregroundColor(Color(white: 0.5))
+                .foregroundColor(DesignTokens.Colors.textSecondary)
 
             TextField("Rechercher une connexion...", text: $searchText)
                 .font(.system(size: 16))
-                .foregroundColor(Color(white: 0.2))
+                .foregroundColor(DesignTokens.Colors.textPrimary)
 
             if !searchText.isEmpty {
                 Button {
@@ -114,7 +142,7 @@ struct ConnectionsListView: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 16))
-                        .foregroundColor(Color(white: 0.5))
+                        .foregroundColor(DesignTokens.Colors.textSecondary)
                 }
             }
         }
@@ -122,7 +150,7 @@ struct ConnectionsListView: View {
         .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
+                .fill(DesignTokens.Colors.surface)
                 .shadow(color: .black.opacity(0.04), radius: 4, y: 2)
         )
     }
@@ -134,21 +162,21 @@ struct ConnectionsListView: View {
                 icon: "person.2.fill",
                 value: "\(contacts.count)",
                 label: "Total",
-                color: Color(red: 0.5, green: 0.3, blue: 0.8)
+                color: DesignTokens.Colors.purple
             )
 
             StatBadge(
                 icon: "building.2.fill",
                 value: "\(uniqueCompanies)",
                 label: "Entreprises",
-                color: Color(red: 0.3, green: 0.6, blue: 0.8)
+                color: DesignTokens.Colors.electricBlue
             )
 
             StatBadge(
                 icon: "tag.fill",
                 value: "\(uniqueRoles)",
                 label: "Rôles",
-                color: Color(red: 0.8, green: 0.5, blue: 0.3)
+                color: DesignTokens.Colors.warning
             )
         }
     }
@@ -181,13 +209,13 @@ struct StatBadge: View {
 
             Text(label)
                 .font(.system(size: 11, weight: .medium))
-                .foregroundColor(Color(white: 0.5))
+                .foregroundColor(DesignTokens.Colors.textSecondary)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
+                .fill(DesignTokens.Colors.surface)
                 .shadow(color: .black.opacity(0.04), radius: 4, y: 2)
         )
     }
@@ -207,7 +235,7 @@ struct ConnectionRowView: View {
                 HStack(spacing: 8) {
                     Text(contact.name)
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(Color(white: 0.15))
+                        .foregroundColor(DesignTokens.Colors.textPrimary)
 
                     // Connection type badge
                     HStack(spacing: 4) {
@@ -228,15 +256,15 @@ struct ConnectionRowView: View {
                 if let role = contact.role, let company = contact.company {
                     Text("\(role) @ \(company)")
                         .font(.system(size: 13))
-                        .foregroundColor(Color(white: 0.5))
+                        .foregroundColor(DesignTokens.Colors.textSecondary)
                 } else if let role = contact.role {
                     Text(role)
                         .font(.system(size: 13))
-                        .foregroundColor(Color(white: 0.5))
+                        .foregroundColor(DesignTokens.Colors.textSecondary)
                 } else if let company = contact.company {
                     Text(company)
                         .font(.system(size: 13))
-                        .foregroundColor(Color(white: 0.5))
+                        .foregroundColor(DesignTokens.Colors.textSecondary)
                 }
 
                 // Meeting info
@@ -247,7 +275,7 @@ struct ConnectionRowView: View {
                         Text(place)
                             .font(.system(size: 11))
                     }
-                    .foregroundColor(Color(white: 0.55))
+                    .foregroundColor(DesignTokens.Colors.textSecondary)
                 }
 
                 // Tags
@@ -273,12 +301,12 @@ struct ConnectionRowView: View {
             // Chevron
             Image(systemName: "chevron.right")
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(Color(white: 0.7))
+                .foregroundColor(DesignTokens.Colors.textTertiary)
         }
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
+                .fill(DesignTokens.Colors.surface)
                 .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
         )
     }
@@ -323,7 +351,94 @@ struct ConnectionRowView: View {
     }
 }
 
+// MARK: - Connection Row Skeleton
+/// Skeleton placeholder for ConnectionRowView during loading
+struct ConnectionRowSkeleton: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isAnimating = false
+
+    var body: some View {
+        HStack(spacing: 14) {
+            // Avatar skeleton
+            Circle()
+                .fill(DesignTokens.Colors.surface)
+                .frame(width: 48, height: 48)
+                .overlay(
+                    Circle()
+                        .fill(shimmerGradient)
+                        .opacity(isAnimating ? 0.6 : 0.3)
+                )
+
+            // Info skeleton
+            VStack(alignment: .leading, spacing: 8) {
+                // Name
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(shimmerGradient)
+                    .frame(width: 120, height: 16)
+                    .opacity(isAnimating ? 0.6 : 0.3)
+
+                // Role
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(shimmerGradient)
+                    .frame(width: 180, height: 12)
+                    .opacity(isAnimating ? 0.5 : 0.25)
+
+                // Tags
+                HStack(spacing: 6) {
+                    ForEach(0..<2, id: \.self) { _ in
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(shimmerGradient)
+                            .frame(width: 60, height: 20)
+                            .opacity(isAnimating ? 0.4 : 0.2)
+                    }
+                }
+            }
+
+            Spacer()
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(DesignTokens.Colors.surface)
+                .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
+        )
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
+                isAnimating = true
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Chargement...")
+    }
+
+    private var shimmerGradient: LinearGradient {
+        LinearGradient(
+            colors: [
+                DesignTokens.Colors.textTertiary.opacity(0.3),
+                DesignTokens.Colors.textTertiary.opacity(0.5),
+                DesignTokens.Colors.textTertiary.opacity(0.3)
+            ],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
+}
+
 // MARK: - Preview
 #Preview {
     ConnectionsListView(contacts: OrbitalContact.all)
+}
+
+#Preview("Skeleton Loading") {
+    ZStack {
+        DesignTokens.Colors.background.ignoresSafeArea()
+        VStack(spacing: 12) {
+            ConnectionRowSkeleton()
+            ConnectionRowSkeleton()
+            ConnectionRowSkeleton()
+        }
+        .padding()
+    }
+    .preferredColorScheme(.dark)
 }

@@ -61,19 +61,32 @@ struct ChatView: View {
                     // Messages list
                     ScrollViewReader { proxy in
                         ScrollView {
-                            LazyVStack(spacing: 12) {
-                                ForEach(viewModel.messages) { message in
-                                    MessageBubble(message: message)
-                                        .id(message.id)
+                            if viewModel.messages.isEmpty && !viewModel.isLoading {
+                                // Empty state - aucune conversation
+                                VStack {
+                                    Spacer(minLength: 80)
+                                    CirklEmptyState.chat(onStart: {
+                                        CirklHaptics.selection()
+                                        isInputFocused = true
+                                    })
+                                    Spacer()
                                 }
+                                .frame(minHeight: 400)
+                            } else {
+                                LazyVStack(spacing: 12) {
+                                    ForEach(viewModel.messages) { message in
+                                        MessageBubble(message: message)
+                                            .id(message.id)
+                                    }
 
-                                if viewModel.isLoading {
-                                    LoadingBubble()
-                                        .id("loading")
+                                    if viewModel.isLoading {
+                                        LoadingBubble()
+                                            .id("loading")
+                                    }
                                 }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
                         }
                         .onChange(of: viewModel.messages.count) { _, _ in
                             withAnimation {
@@ -446,7 +459,7 @@ struct MessageBubble: View {
                     if message.isVoiceMessage {
                         Image(systemName: "waveform")
                             .font(.system(size: 14))
-                            .foregroundColor(message.isUser ? .white.opacity(0.9) : .secondary)
+                            .foregroundColor(message.isUser ? DesignTokens.Colors.textPrimary : DesignTokens.Colors.textSecondary)
                     }
 
                     Text(message.content)
@@ -476,8 +489,8 @@ struct MessageBubble: View {
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    Color.blue.opacity(0.3),
-                                    Color.purple.opacity(0.2)
+                                    DesignTokens.Colors.electricBlue.opacity(0.3),
+                                    DesignTokens.Colors.purple.opacity(0.2)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -489,8 +502,8 @@ struct MessageBubble: View {
                         .stroke(
                             LinearGradient(
                                 colors: [
-                                    Color.white.opacity(0.5),
-                                    Color.white.opacity(0.1)
+                                    DesignTokens.Colors.glassBorder,
+                                    DesignTokens.Colors.glassBorder.opacity(0.2)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -498,9 +511,9 @@ struct MessageBubble: View {
                             lineWidth: 0.5
                         )
                 )
-                .shadow(color: Color.blue.opacity(0.2), radius: 8, x: 0, y: 4)
+                .shadow(color: DesignTokens.Colors.electricBlue.opacity(0.2), radius: 8, x: 0, y: 4)
         } else {
-            // AI bubble: Clear Liquid Glass with cyan accent
+            // AI bubble: Clear Liquid Glass with accent
             RoundedRectangle(cornerRadius: 18)
                 .fill(.ultraThinMaterial.opacity(0.7))
                 .overlay(
@@ -508,8 +521,8 @@ struct MessageBubble: View {
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    Color.cyan.opacity(0.1),
-                                    Color.teal.opacity(0.05)
+                                    DesignTokens.Colors.electricBlue.opacity(0.1),
+                                    DesignTokens.Colors.mint.opacity(0.05)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -521,8 +534,8 @@ struct MessageBubble: View {
                         .stroke(
                             LinearGradient(
                                 colors: [
-                                    Color.white.opacity(0.4),
-                                    Color.white.opacity(0.1)
+                                    DesignTokens.Colors.glassBorder,
+                                    DesignTokens.Colors.glassBorder.opacity(0.25)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -530,7 +543,7 @@ struct MessageBubble: View {
                             lineWidth: 0.5
                         )
                 )
-                .shadow(color: Color.black.opacity(0.08), radius: 6, x: 0, y: 3)
+                .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 3)
         }
     }
 
@@ -567,7 +580,7 @@ struct LoadingBubble: View {
             HStack(spacing: 4) {
                 ForEach(0..<3) { index in
                     Circle()
-                        .fill(Color.cyan.opacity(0.8))
+                        .fill(DesignTokens.Colors.electricBlue.opacity(0.8))
                         .frame(width: 8, height: 8)
                         .scaleEffect(animationPhase == Double(index) ? 1.2 : 0.8)
                         .opacity(animationPhase == Double(index) ? 1 : 0.5)
@@ -583,8 +596,8 @@ struct LoadingBubble: View {
                             .fill(
                                 LinearGradient(
                                     colors: [
-                                        Color.cyan.opacity(0.1),
-                                        Color.teal.opacity(0.05)
+                                        DesignTokens.Colors.electricBlue.opacity(0.1),
+                                        DesignTokens.Colors.mint.opacity(0.05)
                                     ],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
@@ -593,7 +606,7 @@ struct LoadingBubble: View {
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 18)
-                            .stroke(Color.white.opacity(0.3), lineWidth: 0.5)
+                            .stroke(DesignTokens.Colors.glassBorder, lineWidth: 0.5)
                     )
             )
 
@@ -628,8 +641,8 @@ struct InputBar: View {
                                 .stroke(
                                     LinearGradient(
                                         colors: [
-                                            Color.white.opacity(0.4),
-                                            Color.white.opacity(0.1)
+                                            DesignTokens.Colors.glassBorder,
+                                            DesignTokens.Colors.glassBorder.opacity(0.25)
                                         ],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
@@ -648,12 +661,12 @@ struct InputBar: View {
                     .foregroundStyle(
                         canSend
                             ? LinearGradient(
-                                colors: [Color.blue, Color.cyan],
+                                colors: [DesignTokens.Colors.electricBlue, DesignTokens.Colors.electricBlue.opacity(0.7)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
                             : LinearGradient(
-                                colors: [Color.gray.opacity(0.5), Color.gray.opacity(0.3)],
+                                colors: [DesignTokens.Colors.textTertiary.opacity(0.5), DesignTokens.Colors.textTertiary.opacity(0.3)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -678,7 +691,7 @@ struct InputBar: View {
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    Color.white.opacity(0.1),
+                                    DesignTokens.Colors.glassBorder.opacity(0.5),
                                     Color.clear
                                 ],
                                 startPoint: .top,
@@ -686,7 +699,7 @@ struct InputBar: View {
                             )
                         )
                 )
-                .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: -5)
+                .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: -5)
         )
     }
 

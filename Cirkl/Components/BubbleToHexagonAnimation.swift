@@ -232,7 +232,7 @@ struct AnimatedBubble: View {
             
             Text(connection.name)
                 .font(.system(size: 13, weight: .regular))
-                .foregroundColor(.black)
+                .foregroundColor(DesignTokens.Colors.textPrimary)
                 .opacity(phase >= 2 ? 1 : 0)
         }
         .scaleEffect(scale)
@@ -274,7 +274,7 @@ struct CenterProfile: View {
             
             Text("Gil")
                 .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.black)
+                .foregroundColor(DesignTokens.Colors.textPrimary)
         }
     }
 }

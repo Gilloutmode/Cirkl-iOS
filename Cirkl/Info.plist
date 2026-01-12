@@ -2,6 +2,19 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.cirkl.auth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>cirkl</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Cirkl utilise le microphone pour envoyer des messages vocaux à l'assistant AI.</string>
 	<key>NSLocalNetworkUsageDescription</key>

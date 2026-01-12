@@ -38,12 +38,12 @@ struct CirklAIButton: View {
     private let buttonSize: CGFloat = 70
     private let longPressThreshold: TimeInterval = 0.3
 
-    // MARK: - Colors by State
-    private let idleColor = Color(red: 0.5, green: 0.3, blue: 0.8)      // Violet original
-    private let synergyColor = Color(red: 0, green: 199/255, blue: 190/255) // #00C7BE Cyan
-    private let opportunityColor = Color(red: 52/255, green: 199/255, blue: 89/255) // #34C759 Green
-    private let newConnectionColor = Color(red: 255/255, green: 149/255, blue: 0) // #FF9500 Orange
-    private let recordingColor = Color.red
+    // MARK: - Colors by State (using DesignTokens for brand consistency)
+    private let idleColor = DesignTokens.Colors.purple      // Violet original
+    private let synergyColor = DesignTokens.Colors.electricBlue // Cyan → Electric Blue
+    private let opportunityColor = DesignTokens.Colors.mint // #34C759 Green → Mint
+    private let newConnectionColor = DesignTokens.Colors.pink // Orange → Pink (brand color)
+    private let recordingColor = DesignTokens.Colors.error
 
     private var currentColor: Color {
         if audioService.state.isRecording {
@@ -132,7 +132,7 @@ struct CirklAIButton: View {
             if synergiesCount > 0 && !audioService.state.isRecording {
                 Text("\(synergiesCount)")
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.white)
+                    .foregroundColor(DesignTokens.Colors.textPrimary)
                     .frame(width: 20, height: 20)
                     .background(Circle().fill(currentColor))
                     .offset(x: 28, y: -28)
@@ -142,10 +142,10 @@ struct CirklAIButton: View {
             if audioService.state.isRecording {
                 Text(formatDuration(audioService.recordingDuration))
                     .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                    .foregroundColor(.white)
+                    .foregroundColor(DesignTokens.Colors.textPrimary)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(Capsule().fill(Color.red))
+                    .background(Capsule().fill(DesignTokens.Colors.error))
                     .offset(y: 50)
             }
         }

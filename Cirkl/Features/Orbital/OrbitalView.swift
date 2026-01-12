@@ -2,6 +2,7 @@ import SwiftUI
 
 // MARK: - OrbitalView (Design Fidèle - Glass Bubble Style)
 struct OrbitalView: View {
+    @EnvironmentObject var appState: AppStateManager
     @StateObject private var viewModel = OrbitalViewModel()
     @StateObject private var neo4jService = Neo4jService.shared
     private let invitedContactsService = InvitedContactsService.shared
@@ -12,6 +13,9 @@ struct OrbitalView: View {
 
     // État pour afficher la liste des connexions
     @State private var showConnectionsList = false
+
+    // État pour afficher les réglages
+    @State private var showSettings = false
 
     // État pour afficher le profil d'un contact (tap sur bulle)
     @State private var selectedContact: OrbitalContact?
@@ -262,7 +266,10 @@ struct OrbitalView: View {
                 selectedMode: $selectedViewMode,
                 verifiedCount: verifiedCount,
                 pendingCount: pendingCount,
-                onAddTap: { showAddOptions = true }
+                invitedCount: invitedContactsService.invitedContacts.count,
+                onAddTap: { showAddOptions = true },
+                onSettingsTap: { showSettings = true },
+                onConnectionsTap: { showConnectionsList = true }
             )
             .padding(.horizontal, 20)
             .padding(.top, 12)
@@ -280,36 +287,60 @@ struct OrbitalView: View {
                 let centerY = height * 0.42
 
                 ZStack {
-                    // Lignes de connexion grises subtiles (suivent les bulles)
-                    OrbitalLinesCanvas(
-                        contacts: allContacts,
-                        centerX: centerX,
-                        centerY: centerY,
-                        width: width,
-                        height: height,
-                        bubbleOffsets: bubbleOffsets,
-                        searchQuery: viewModel.searchQuery
-                    )
-
-                    // Bulles des connexions (draggables + filtrables + tap pour profil)
-                    OrbitalBubblesLayer(
-                        contacts: allContacts,
-                        centerX: centerX,
-                        centerY: centerY,
-                        width: width,
-                        height: height,
-                        bubbleOffsets: $bubbleOffsets,
-                        searchQuery: viewModel.searchQuery,
-                        onContactTap: { contact in
-                            selectedContact = contact
+                    if neo4jService.isLoading {
+                        // Skeleton Loading State
+                        OrbitalSkeletonView(
+                            centerX: centerX,
+                            centerY: centerY,
+                            width: width,
+                            height: height
+                        )
+                        .transition(.opacity)
+                    } else if allContacts.isEmpty {
+                        // Empty State - aucune connexion dans ce mode
+                        VStack {
+                            Spacer()
+                            CirklEmptyState.orbital(onImport: {
+                                CirklHaptics.selection()
+                                showContactsImport = true
+                            })
+                            Spacer()
                         }
-                    )
+                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                    } else {
+                        // Lignes de connexion grises subtiles (suivent les bulles)
+                        OrbitalLinesCanvas(
+                            contacts: allContacts,
+                            centerX: centerX,
+                            centerY: centerY,
+                            width: width,
+                            height: height,
+                            bubbleOffsets: bubbleOffsets,
+                            searchQuery: viewModel.searchQuery
+                        )
 
-                    // Bulle centrale (Gil)
+                        // Bulles des connexions (draggables + filtrables + tap pour profil)
+                        OrbitalBubblesLayer(
+                            contacts: allContacts,
+                            centerX: centerX,
+                            centerY: centerY,
+                            width: width,
+                            height: height,
+                            bubbleOffsets: $bubbleOffsets,
+                            searchQuery: viewModel.searchQuery,
+                            onContactTap: { contact in
+                                CirklHaptics.bubbleTap()
+                                selectedContact = contact
+                            }
+                        )
+                    }
+
+                    // Bulle centrale (Gil) - toujours visible
                     CenterUserBubble()
                         .position(x: centerX, y: centerY)
                 }
                 .animation(.spring(response: 0.5, dampingFraction: 0.8), value: selectedViewMode)
+                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: allContacts.isEmpty)
             }
             .padding(.top, 16)
 
@@ -317,9 +348,17 @@ struct OrbitalView: View {
             CirklAIButton()
                 .padding(.bottom, 30)
         }
-        .background(Color.white)
+        .background(
+            // Adaptive background using Design Tokens - changes with light/dark theme
+            DesignTokens.Colors.background
+                .ignoresSafeArea()
+        )
         .sheet(isPresented: $showConnectionsList) {
             ConnectionsListView(contacts: baseContactsForCounting)
+        }
+        .sheet(isPresented: $showSettings) {
+            CirklSettingsView()
+                .environmentObject(appState)
         }
         .sheet(item: $selectedContact) { contact in
             // Si c'est un contact invité, afficher InvitedContactDetailView
@@ -577,23 +616,48 @@ struct OrbitalHeaderView: View {
     @Binding var selectedMode: OrbitalViewMode
     let verifiedCount: Int
     let pendingCount: Int
+    let invitedCount: Int  // Nombre d'invitations envoyées (en attente)
     let onAddTap: () -> Void
+    let onSettingsTap: () -> Void  // Callback pour ouvrir les réglages
+    let onConnectionsTap: () -> Void  // Callback pour ouvrir la liste des connexions
 
     var body: some View {
         ZStack {
-            // Logo "Cirkl" centré - typographie moderne
+            // === LOGO CIRKL CENTRÉ - ADAPTIVE (light/dark mode) ===
             Text("Cirkl")
                 .font(.system(size: 24, weight: .medium, design: .rounded))
                 .tracking(1.5)
-                .foregroundColor(Color(white: 0.35))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [.primary.opacity(0.9), .primary.opacity(0.6)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
 
             HStack {
-                // Toggle badges à gauche (interactifs)
-                ModeToggleGroup(
-                    selectedMode: $selectedMode,
-                    verifiedCount: verifiedCount,
-                    pendingCount: pendingCount
-                )
+                // Toggle badges à gauche (interactifs) - tap pour toggle ET ouvrir la liste
+                HStack(spacing: 8) {
+                    // Toggle des modes avec callback pour ouvrir la liste
+                    ModeToggleGroup(
+                        selectedMode: $selectedMode,
+                        verifiedCount: verifiedCount,
+                        pendingCount: pendingCount,
+                        onBadgeTap: onConnectionsTap
+                    )
+
+                    // Badge invitations envoyées (si > 0)
+                    if invitedCount > 0 {
+                        InvitationsSentBadge(count: invitedCount)
+                            .onTapGesture {
+                                // Basculer vers le mode pending et ouvrir la liste
+                                withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                                    selectedMode = .pending
+                                }
+                                onConnectionsTap()
+                            }
+                    }
+                }
 
                 Spacer()
 
@@ -619,20 +683,49 @@ struct OrbitalHeaderView: View {
                 )
                 .shadow(color: Color(red: 0.0, green: 0.78, blue: 0.51).opacity(0.3), radius: 8, y: 4)
 
-                // Bouton settings à droite
-                Button(action: {}) {
+                // === BOUTON SETTINGS - ADAPTIVE (light/dark mode) ===
+                Button(action: {
+                    CirklHaptics.selection()
+                    onSettingsTap()
+                }) {
                     Image(systemName: "gearshape")
                         .font(.system(size: 20, weight: .regular))
-                        .foregroundColor(Color(white: 0.35))
+                        .foregroundColor(.secondary)
                 }
                 .frame(width: 44, height: 44)
-                .background(
-                    Circle()
-                        .fill(Color(white: 0.95))
-                )
+                .background(Circle().fill(Color.primary.opacity(0.08)))
+                .contentShape(Circle())
             }
         }
         .frame(height: 44)
+    }
+}
+
+// MARK: - Invitations Sent Badge
+/// Petit badge affichant le nombre d'invitations envoyées (en attente de confirmation)
+struct InvitationsSentBadge: View {
+    let count: Int
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "paperplane.fill")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(.white.opacity(0.6))
+
+            Text("\(count)")
+                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .foregroundColor(.white.opacity(0.8))
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .glassEffect(.regular, in: .capsule)
+        .overlay(
+            Capsule()
+                .stroke(
+                    Color.white.opacity(0.2),
+                    style: StrokeStyle(lineWidth: 1.5, dash: [4, 3])
+                )
+        )
     }
 }
 
@@ -644,21 +737,21 @@ struct OrbitalSearchBarView: View {
         HStack(spacing: 12) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 18, weight: .regular))
-                .foregroundColor(Color(white: 0.55))
+                .foregroundColor(.secondary)
 
             TextField("Ask anything you want to find...", text: $searchText)
                 .font(.system(size: 16))
-                .foregroundColor(Color(white: 0.30))
+                .foregroundColor(.primary)
 
             Image(systemName: "mic")
                 .font(.system(size: 18, weight: .regular))
-                .foregroundColor(Color(white: 0.55))
+                .foregroundColor(.secondary)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
         .background(
             RoundedRectangle(cornerRadius: 25)
-                .fill(Color(white: 0.96))
+                .fill(Color.primary.opacity(0.06))
         )
     }
 }
@@ -723,9 +816,10 @@ struct OrbitalLinesCanvas: View {
                 path.move(to: CGPoint(x: startX, y: startY))
                 path.addLine(to: CGPoint(x: endX, y: endY))
 
+                // === LIGNES CONNEXION (Adaptatif Light/Dark) ===
                 context.stroke(
                     path,
-                    with: .color(Color(white: 0.75).opacity(0.7)),
+                    with: .color(DesignTokens.Colors.orbitalLines),
                     style: StrokeStyle(lineWidth: 1.5, lineCap: .round)
                 )
             }
@@ -961,6 +1055,9 @@ struct GlassBubbleView: View {
     @Binding var dragOffset: CGSize  // Binding partagé pour que les lignes suivent
     var onTap: (() -> Void)?  // Callback pour ouvrir le profil
 
+    // Accessibility
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     @State private var breathingPhase: Double = 0
     @State private var isDragging: Bool = false
     @State private var isBouncing: Bool = false  // Effet rebond au toucher
@@ -968,69 +1065,83 @@ struct GlassBubbleView: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            // === BULLE PRINCIPALE ===
+            // === BULLE PRINCIPALE AVEC LIQUID GLASS ===
             ZStack {
-                // === FOND TRANSPARENT TEINTÉ (visible derrière la personne détourée) ===
+                // === FOND LIQUID GLASS NATIF iOS 26 ===
                 Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [
-                                avatarColor.opacity(0.08),
-                                avatarColor.opacity(0.15),
-                                avatarColor.opacity(0.05)
-                            ],
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: size * 0.5
-                        )
-                    )
-                    .frame(width: size - 6, height: size - 6)
+                    .fill(avatarColor.opacity(0.15))
+                    .frame(width: size, height: size)
+                    .glassEffect(.regular.interactive(), in: .circle)
 
                 // === CONTENU: PHOTO DÉTOURÉE (fond transparent) OU PLACEHOLDER ===
                 if let photoName = photoName, UIImage(named: photoName) != nil {
                     // Photo détourée avec fond transparent via Vision
                     SegmentedAsyncImage(
                         imageName: photoName,
-                        size: CGSize(width: size - 6, height: size - 6),
+                        size: CGSize(width: size - 10, height: size - 10),
                         placeholderColor: avatarColor
                     )
                 } else {
-                    // Placeholder: icône personne
+                    // Placeholder: icône personne - ADAPTIVE (light/dark mode)
                     Image(systemName: "person.fill")
-                        .font(.system(size: size * 0.35, weight: .medium))
+                        .font(.system(size: size * 0.38, weight: .semibold))
                         .foregroundStyle(
                             LinearGradient(
                                 colors: [
-                                    avatarColor.opacity(0.8),
-                                    avatarColor.opacity(0.6)
+                                    avatarColor,
+                                    avatarColor.opacity(0.7)
                                 ],
-                                startPoint: .top,
-                                endPoint: .bottom
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
                             )
                         )
+                        .shadow(color: avatarColor.opacity(0.5), radius: 8)
                 }
 
-                // === OVERLAY GLASS BUBBLE (transparent avec effets) ===
-                GlassBubbleOverlay(size: size, tintColor: avatarColor)
+                // === BORDURE SUBTILE IRIDESCENTE - ADAPTIVE ===
+                Circle()
+                    .stroke(
+                        AngularGradient(
+                            colors: [
+                                avatarColor.opacity(0.6),
+                                avatarColor.opacity(0.3),
+                                avatarColor.opacity(0.5),
+                                avatarColor.opacity(0.4),
+                                avatarColor.opacity(0.6)
+                            ],
+                            center: .center
+                        ),
+                        lineWidth: 2
+                    )
+                    .frame(width: size - 2, height: size - 2)
             }
-            .scaleEffect(1.0 + breathingPhase * 0.012)
+            // === BREATHING ANIMATION VISIBLE (5% au lieu de 1.2%) ===
+            .scaleEffect(1.0 + breathingPhase * 0.05)
             // Effet rebond au premier toucher (bounce)
             .scaleEffect(isBouncing ? 1.15 : 1.0)
             // Légère augmentation de taille quand on drag
             .scaleEffect(isDragging ? 1.08 : 1.0)
             .shadow(color: avatarColor.opacity(isDragging ? 0.5 : 0.3), radius: isDragging ? 15 : 10, x: 0, y: isDragging ? 8 : 5)
 
-            // === BADGE NOM ===
+            // === BADGE NOM (Adaptatif Light/Dark) ===
             Text(name)
                 .font(.system(size: 13, weight: .semibold, design: .rounded))
-                .foregroundColor(Color(white: 0.3))
+                .foregroundColor(DesignTokens.Colors.bubbleText)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 5)
                 .background(
                     Capsule()
-                        .fill(Color.white.opacity(0.95))
-                        .shadow(color: .black.opacity(0.08), radius: 3, y: 2)
+                        .fill(DesignTokens.Colors.bubbleBackground)
+                        .background(
+                            Capsule()
+                                .fill(.ultraThinMaterial)
+                        )
+                        .overlay(
+                            Capsule()
+                                .stroke(DesignTokens.Colors.bubbleBackground, lineWidth: 0.5)
+                        )
                 )
+                .shadow(color: avatarColor.opacity(0.3), radius: 4, y: 2)
         }
         .offset(x: dragOffset.width, y: dragOffset.height)
         .gesture(
@@ -1083,7 +1194,8 @@ struct GlassBubbleView: View {
                 }
         )
         .onAppear {
-            // Animation breathing (scale) subtile
+            // Animation breathing (scale) subtile - disabled when Reduce Motion is enabled
+            guard !reduceMotion else { return }
             withAnimation(.easeInOut(duration: Double.random(in: 3...5)).repeatForever(autoreverses: true)) {
                 breathingPhase = 1.0
             }
@@ -1102,6 +1214,9 @@ struct GhostBubbleView: View {
     let index: Int
     @Binding var dragOffset: CGSize
     var onTap: (() -> Void)?
+
+    // Accessibility
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var pulsePhase: Double = 0
     @State private var isDragging: Bool = false
@@ -1225,15 +1340,15 @@ struct GhostBubbleView: View {
             .scaleEffect(isDragging ? 1.05 : 1.0)
             .shadow(color: Color.gray.opacity(isDragging ? 0.3 : 0.15), radius: isDragging ? 10 : 6, x: 0, y: isDragging ? 6 : 3)
 
-            // === BADGE NOM (semi-transparent) ===
+            // === BADGE NOM (Adaptatif Light/Dark) ===
             Text(name)
                 .font(.system(size: 12, weight: .medium, design: .rounded))
-                .foregroundColor(Color(white: 0.45))
+                .foregroundColor(DesignTokens.Colors.textSecondary)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 4)
                 .background(
                     Capsule()
-                        .fill(Color.white.opacity(0.75))
+                        .fill(DesignTokens.Colors.bubbleBackground)
                         .shadow(color: .black.opacity(0.05), radius: 2, y: 1)
                 )
         }
@@ -1279,7 +1394,8 @@ struct GhostBubbleView: View {
                 }
         )
         .onAppear {
-            // Animation pulsation pour indiquer l'état "en attente"
+            // Animation pulsation pour indiquer l'état "en attente" - disabled when Reduce Motion is enabled
+            guard !reduceMotion else { return }
             withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
                 pulsePhase = 1.0
             }
@@ -1289,86 +1405,139 @@ struct GhostBubbleView: View {
 
 // MARK: - Center User Bubble (Gil - Style Glass Transparent comme les autres bulles)
 struct CenterUserBubble: View {
-    private let size: CGFloat = 90  // Plus grande que les contacts (70pt)
+    private let size: CGFloat = 95  // Plus grande que les contacts (70pt)
+
+    // Accessibility
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var breathingPhase: Double = 0
+    @State private var rainbowRotation: Double = 0
 
-    // Couleur orange/coral distinctive pour Gil
-    private let gilColor = Color(red: 0.95, green: 0.55, blue: 0.40)
+    // Couleur coral/rose distinctive pour Gil
+    private let gilColor = Color(red: 0.95, green: 0.45, blue: 0.50)
 
     var body: some View {
         ZStack {
-            // === BULLE PRINCIPALE ===
+            // === HALO GLOW EXTERNE ===
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            gilColor.opacity(0.4),
+                            gilColor.opacity(0.15),
+                            Color.clear
+                        ],
+                        center: .center,
+                        startRadius: size * 0.4,
+                        endRadius: size * 0.85
+                    )
+                )
+                .frame(width: size * 1.6, height: size * 1.6)
+                .blur(radius: 15)
+                .scaleEffect(1.0 + breathingPhase * 0.08)
+
+            // === BULLE PRINCIPALE AVEC LIQUID GLASS ===
             VStack(spacing: 0) {
                 ZStack {
-                    // === FOND TRANSPARENT TEINTÉ (visible derrière la personne détourée) ===
+                    // === FOND LIQUID GLASS NATIF iOS 26 (PROMINENT) ===
                     Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [
-                                    gilColor.opacity(0.08),
-                                    gilColor.opacity(0.15),
-                                    gilColor.opacity(0.05)
-                                ],
-                                center: .center,
-                                startRadius: 0,
-                                endRadius: size * 0.5
-                            )
-                        )
-                        .frame(width: size - 6, height: size - 6)
+                        .fill(gilColor.opacity(0.2))
+                        .frame(width: size, height: size)
+                        .glassEffect(.regular, in: .circle)
 
-                    // === CONTENU: PHOTO DÉTOURÉE (fond transparent) OU PLACEHOLDER ===
+                    // === CONTENU: PHOTO DÉTOURÉE OU PLACEHOLDER ===
                     if UIImage(named: "photo_gil") != nil {
-                        // Photo détourée avec fond transparent via Vision
                         SegmentedAsyncImage(
                             imageName: "photo_gil",
-                            size: CGSize(width: size - 6, height: size - 6),
+                            size: CGSize(width: size - 12, height: size - 12),
                             placeholderColor: gilColor
                         )
                     } else {
-                        // Placeholder: icône personne
+                        // Placeholder: icône personne stylisée - ADAPTIVE
                         Image(systemName: "person.fill")
-                            .font(.system(size: size * 0.40, weight: .medium))
+                            .font(.system(size: size * 0.42, weight: .bold))
                             .foregroundStyle(
                                 LinearGradient(
                                     colors: [
-                                        gilColor.opacity(0.85),
-                                        gilColor.opacity(0.65)
+                                        gilColor,
+                                        gilColor.opacity(0.8)
                                     ],
-                                    startPoint: .top,
-                                    endPoint: .bottom
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
                                 )
                             )
+                            .shadow(color: gilColor.opacity(0.6), radius: 10)
                     }
 
-                    // === OVERLAY GLASS BUBBLE (transparent avec effets) ===
-                    GlassBubbleOverlay(size: size, tintColor: gilColor)
+                    // === BORDURE ARC-EN-CIEL ANIMÉE ===
+                    Circle()
+                        .stroke(
+                            AngularGradient(
+                                colors: [
+                                    Color.red.opacity(0.7),
+                                    Color.orange.opacity(0.7),
+                                    Color.yellow.opacity(0.7),
+                                    Color.green.opacity(0.7),
+                                    Color.blue.opacity(0.7),
+                                    Color.purple.opacity(0.7),
+                                    Color.pink.opacity(0.7),
+                                    Color.red.opacity(0.7)
+                                ],
+                                center: .center,
+                                startAngle: .degrees(rainbowRotation),
+                                endAngle: .degrees(rainbowRotation + 360)
+                            ),
+                            lineWidth: 3
+                        )
+                        .frame(width: size - 2, height: size - 2)
                 }
-                .scaleEffect(1.0 + breathingPhase * 0.015)
-                .shadow(color: gilColor.opacity(0.35), radius: 12, x: 0, y: 6)
+                // === BREATHING ANIMATION TRÈS VISIBLE (6%) ===
+                .scaleEffect(1.0 + breathingPhase * 0.06)
+                .shadow(color: gilColor.opacity(0.5), radius: 20, x: 0, y: 8)
             }
 
-            // === BADGE NOM "Gil" (positionné en bas de la bulle) ===
+            // === BADGE NOM "Gil" (Adaptatif Light/Dark) ===
             VStack {
                 Spacer()
                     .frame(height: size * 0.95)
 
                 Text("Gil")
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
-                    .foregroundColor(Color(white: 0.2))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 7)
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .foregroundColor(DesignTokens.Colors.bubbleText)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 8)
                     .background(
                         Capsule()
-                            .fill(Color.white.opacity(0.95))
-                            .shadow(color: gilColor.opacity(0.2), radius: 4, y: 2)
-                            .shadow(color: .black.opacity(0.08), radius: 3, y: 1)
+                            .fill(DesignTokens.Colors.bubbleBackground)
+                            .background(
+                                Capsule()
+                                    .fill(.ultraThinMaterial)
+                            )
+                            .overlay(
+                                Capsule()
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: [gilColor.opacity(0.5), Color.white.opacity(0.3)],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        ),
+                                        lineWidth: 1
+                                    )
+                            )
                     )
+                    .shadow(color: gilColor.opacity(0.4), radius: 6, y: 3)
             }
         }
         .onAppear {
+            // Animations disabled when Reduce Motion is enabled
+            guard !reduceMotion else { return }
+            // Breathing animation visible
             withAnimation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true)) {
                 breathingPhase = 1.0
+            }
+            // Rainbow border rotation
+            withAnimation(.linear(duration: 6.0).repeatForever(autoreverses: false)) {
+                rainbowRotation = 360
             }
         }
     }
@@ -1378,6 +1547,9 @@ struct CenterUserBubble: View {
 struct OrbitalMicButtonView: View {
     let onTap: () -> Void
     let onAudioRecorded: (Data) -> Void
+
+    // Accessibility
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @StateObject private var audioService = AudioRecorderService.shared
 
@@ -1503,6 +1675,8 @@ struct OrbitalMicButtonView: View {
                 }
         )
         .onAppear {
+            // Pulse animation disabled when Reduce Motion is enabled
+            guard !reduceMotion else { return }
             withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
                 pulsePhase = 1.0
             }
@@ -1517,4 +1691,5 @@ struct OrbitalMicButtonView: View {
 // MARK: - Preview
 #Preview {
     OrbitalView()
+        .environmentObject(AppStateManager())
 }
