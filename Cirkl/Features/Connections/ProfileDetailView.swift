@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import UIKit
 
 // MARK: - Profile Detail View
 /// Vue détaillée pour voir et éditer un profil de connexion
@@ -32,6 +33,7 @@ struct ProfileDetailView: View {
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var selfieImage: UIImage?
     @State private var showPhotoOptions = false
+    @State private var showPhotoPicker = false
     @State private var showCamera = false
 
     // Pickers
@@ -90,6 +92,7 @@ struct ProfileDetailView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
+                        CirklHaptics.light()
                         if isEditing {
                             // Annuler les modifications
                             resetFields()
@@ -111,6 +114,7 @@ struct ProfileDetailView: View {
 
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
+                        CirklHaptics.medium()
                         if isEditing {
                             Task { await saveChanges() }
                         } else {
@@ -136,9 +140,18 @@ struct ProfileDetailView: View {
                     showCamera = true
                 }
                 Button("Choisir dans la galerie") {
-                    // PhotosPicker handles this
+                    showPhotoPicker = true
                 }
                 Button("Annuler", role: .cancel) {}
+            }
+            .photosPicker(isPresented: $showPhotoPicker, selection: $selectedPhotoItem, matching: .images)
+            .onChange(of: selectedPhotoItem) { _, newItem in
+                Task {
+                    if let data = try? await newItem?.loadTransferable(type: Data.self),
+                       let image = UIImage(data: data) {
+                        selfieImage = image
+                    }
+                }
             }
             .fullScreenCover(isPresented: $showCamera) {
                 CameraView { image in
@@ -160,15 +173,9 @@ struct ProfileDetailView: View {
     private var profileHeader: some View {
         VStack(spacing: 16) {
             ZStack {
-                // Photo de profil (priorité: selfieImage édité → photoName → selfiePhotoData → contactPhotoData → placeholder)
+                // Photo de profil (priorité: selfieImage édité → selfiePhotoData → contactPhotoData → photoName asset → placeholder)
                 if let image = selfieImage {
                     Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 120, height: 120)
-                        .clipShape(Circle())
-                } else if let photoName = contact.photoName, UIImage(named: photoName) != nil {
-                    Image(photoName)
                         .resizable()
                         .scaledToFill()
                         .frame(width: 120, height: 120)
@@ -186,6 +193,14 @@ struct ProfileDetailView: View {
                         .scaledToFill()
                         .frame(width: 120, height: 120)
                         .clipShape(Circle())
+                } else if let photoName = contact.photoName, !photoName.isEmpty {
+                    // Local asset image - use SegmentedAsyncImage for async loading
+                    // Same approach as GlassBubbleView for consistent behavior
+                    SegmentedAsyncImage(
+                        imageName: photoName,
+                        size: CGSize(width: 120, height: 120),
+                        placeholderColor: contact.avatarColor
+                    )
                 } else {
                     // Placeholder
                     Circle()
@@ -213,13 +228,16 @@ struct ProfileDetailView: View {
                     .stroke(contact.avatarColor.opacity(0.5), lineWidth: 4)
                     .frame(width: 120, height: 120)
 
-                // Bouton caméra (mode édition)
+                // Bouton caméra (mode édition) - déclenche le dialog de choix
+                // CRITICAL FIX: Added .contentShape(Circle()) and .buttonStyle(.plain) for reliable hit-testing on device
                 if isEditing {
                     VStack {
                         Spacer()
                         HStack {
                             Spacer()
-                            PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                            Button {
+                                showPhotoOptions = true
+                            } label: {
                                 Image(systemName: "camera.fill")
                                     .font(.system(size: 16, weight: .semibold))
                                     .foregroundColor(.white)
@@ -227,14 +245,8 @@ struct ProfileDetailView: View {
                                     .background(Circle().fill(DesignTokens.Colors.purple))
                                     .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
                             }
-                            .onChange(of: selectedPhotoItem) { _, newItem in
-                                Task {
-                                    if let data = try? await newItem?.loadTransferable(type: Data.self),
-                                       let image = UIImage(data: data) {
-                                        selfieImage = image
-                                    }
-                                }
-                            }
+                            .buttonStyle(.plain)
+                            .contentShape(Circle())
                         }
                     }
                     .frame(width: 120, height: 120)
@@ -260,10 +272,21 @@ struct ProfileDetailView: View {
         .padding(.vertical, DesignTokens.Spacing.xl)
         .padding(.horizontal, DesignTokens.Spacing.md)
         .background(
+            // CRITICAL FIX: Use ultraThinMaterial instead of glassEffect
+            // glassEffect blocks touch events (camera button) on iOS 26 real devices
             RoundedRectangle(cornerRadius: DesignTokens.Radius.xl)
-                .fill(DesignTokens.Colors.surface)
-                .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
+                .fill(Color.primary.opacity(0.04))
+                .background(
+                    RoundedRectangle(cornerRadius: DesignTokens.Radius.xl)
+                        .fill(.ultraThinMaterial)
+                )
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignTokens.Radius.xl)
+                .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
+        )
+        .dynamicCardReflection(intensity: 0.5, cornerRadius: DesignTokens.Radius.xl)
+        .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
     }
 
     // MARK: - Connection Type Badge
@@ -359,7 +382,7 @@ struct ProfileDetailView: View {
                             .foregroundColor(.secondary)
                     }
                 }
-                .buttonStyle(.plain)
+                .contentShape(Rectangle())
 
                 Divider()
 
@@ -392,7 +415,7 @@ struct ProfileDetailView: View {
                                 .foregroundColor(.secondary)
                         }
                     }
-                    .buttonStyle(.plain)
+                    .contentShape(Rectangle())
                 } else {
                     // "Depuis toujours" pour la famille
                     HStack(spacing: 12) {
@@ -445,10 +468,21 @@ struct ProfileDetailView: View {
             }
             .padding(16)
             .background(
+                // CRITICAL FIX: Use ultraThinMaterial instead of glassEffect
+                // glassEffect blocks touch events (relation picker, date picker) on iOS 26 real devices
                 RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
-                    .fill(DesignTokens.Colors.surface)
-                    .shadow(color: .black.opacity(0.06), radius: 8, y: 4)
+                    .fill(Color.primary.opacity(0.04))
+                    .background(
+                        RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
+                            .fill(.ultraThinMaterial)
+                    )
             )
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
+                    .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
+            )
+            .dynamicCardReflection(intensity: 0.4, cornerRadius: DesignTokens.Radius.large)
+            .shadow(color: .black.opacity(0.06), radius: 8, y: 4)
         }
         .sheet(isPresented: $showRelationshipPicker) {
             RelationshipProfilePicker(profile: $editedRelationshipProfile)
@@ -520,10 +554,21 @@ struct ProfileDetailView: View {
             }
             .padding(16)
             .background(
+                // CRITICAL FIX: Use ultraThinMaterial instead of glassEffect
+                // glassEffect blocks touch events (TextFields) on iOS 26 real devices
                 RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
-                    .fill(DesignTokens.Colors.surface)
-                    .shadow(color: .black.opacity(0.06), radius: 8, y: 4)
+                    .fill(Color.primary.opacity(0.04))
+                    .background(
+                        RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
+                            .fill(.ultraThinMaterial)
+                    )
             )
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
+                    .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
+            )
+            .dynamicCardReflection(intensity: 0.4, cornerRadius: DesignTokens.Radius.large)
+            .shadow(color: .black.opacity(0.06), radius: 8, y: 4)
         }
     }
 
@@ -550,6 +595,7 @@ struct ProfileDetailView: View {
                                 .frame(width: 80)
 
                             if !newTag.isEmpty {
+                                // CRITICAL FIX: Added .contentShape() and .buttonStyle() for reliable hit-testing on device
                                 Button {
                                     addTag()
                                 } label: {
@@ -557,6 +603,8 @@ struct ProfileDetailView: View {
                                         .font(.system(size: 16))
                                         .foregroundColor(contact.avatarColor)
                                 }
+                                .buttonStyle(.plain)
+                                .contentShape(Circle())
                             }
                         }
                         .padding(.horizontal, 10)
@@ -576,10 +624,21 @@ struct ProfileDetailView: View {
             }
             .padding(16)
             .background(
+                // CRITICAL FIX: Use ultraThinMaterial instead of glassEffect
+                // glassEffect blocks touch events (tag add button, TextField) on iOS 26 real devices
                 RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
-                    .fill(DesignTokens.Colors.surface)
-                    .shadow(color: .black.opacity(0.06), radius: 8, y: 4)
+                    .fill(Color.primary.opacity(0.04))
+                    .background(
+                        RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
+                            .fill(.ultraThinMaterial)
+                    )
             )
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
+                    .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
+            )
+            .dynamicCardReflection(intensity: 0.4, cornerRadius: DesignTokens.Radius.large)
+            .shadow(color: .black.opacity(0.06), radius: 8, y: 4)
         }
     }
 
@@ -606,16 +665,29 @@ struct ProfileDetailView: View {
             }
             .padding(16)
             .background(
+                // CRITICAL FIX: Use ultraThinMaterial instead of glassEffect
+                // glassEffect blocks touch events (TextEditor) on iOS 26 real devices
                 RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
-                    .fill(DesignTokens.Colors.surface)
-                    .shadow(color: .black.opacity(0.06), radius: 8, y: 4)
+                    .fill(Color.primary.opacity(0.04))
+                    .background(
+                        RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
+                            .fill(.ultraThinMaterial)
+                    )
             )
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
+                    .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
+            )
+            .dynamicCardReflection(intensity: 0.4, cornerRadius: DesignTokens.Radius.large)
+            .shadow(color: .black.opacity(0.06), radius: 8, y: 4)
         }
     }
 
     // MARK: - Delete Button
+    // CRITICAL FIX: Added .contentShape() and .buttonStyle() for reliable hit-testing on device
     private var deleteButton: some View {
         Button {
+            CirklHaptics.warning()
             showDeleteConfirmation = true
         } label: {
             HStack {
@@ -631,6 +703,8 @@ struct ProfileDetailView: View {
                     .fill(DesignTokens.Colors.error.opacity(0.1))
             )
         }
+        .buttonStyle(.plain)
+        .contentShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.large))
     }
 
     // MARK: - Helper Views
@@ -761,10 +835,13 @@ struct ProfileDetailView: View {
             }
 
             onUpdate(updated)
+            // Toast de succès
+            ToastManager.shared.success("Profil mis à jour")
             // Dismiss the view so user sees updated data in the list
             dismiss()
         } catch {
             print("❌ Failed to save: \(error)")
+            ToastManager.shared.error("Erreur lors de la sauvegarde")
             // On error, stay in edit mode so user can retry
             isSaving = false
         }
@@ -774,9 +851,11 @@ struct ProfileDetailView: View {
         isSaving = true
         do {
             try await neo4jService.deleteConnection(contact.toNeo4jConnection())
+            ToastManager.shared.success("Connexion supprimée")
             dismiss()
         } catch {
             print("❌ Failed to delete: \(error)")
+            ToastManager.shared.error("Erreur lors de la suppression")
         }
         isSaving = false
     }
@@ -795,10 +874,13 @@ struct TagChip: View {
                 .font(.system(size: 13, weight: .medium))
 
             if isEditing {
+                // CRITICAL FIX: Added .contentShape() for reliable hit-testing on device
                 Button(action: onDelete) {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 12))
                 }
+                .buttonStyle(.plain)
+                .contentShape(Circle())
             }
         }
         .foregroundColor(color)

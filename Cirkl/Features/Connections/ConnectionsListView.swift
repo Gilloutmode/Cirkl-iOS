@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 // MARK: - Connections List View
 /// Vue liste affichant toutes les connexions avec leurs détails
@@ -73,6 +74,7 @@ struct ConnectionsListView: View {
                             LazyVStack(spacing: 12) {
                                 ForEach(filteredContacts) { contact in
                                     Button {
+                                        CirklHaptics.selection()
                                         selectedContact = contact
                                     } label: {
                                         ConnectionRowView(contact: contact)
@@ -91,6 +93,7 @@ struct ConnectionsListView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
+                        CirklHaptics.light()
                         dismiss()
                     } label: {
                         Image(systemName: "xmark.circle.fill")
@@ -101,6 +104,7 @@ struct ConnectionsListView: View {
 
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
+                        CirklHaptics.medium()
                         showAddConnection = true
                     } label: {
                         Image(systemName: "person.badge.plus")
@@ -138,6 +142,7 @@ struct ConnectionsListView: View {
 
             if !searchText.isEmpty {
                 Button {
+                    CirklHaptics.light()
                     searchText = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
@@ -329,18 +334,57 @@ struct ConnectionRowView: View {
                 )
                 .frame(width: 48, height: 48)
 
-            // Photo or placeholder
-            if let photoName = contact.photoName, UIImage(named: photoName) != nil {
-                Image(photoName)
+            // Photo with Kingfisher caching or placeholder
+            // Priority: selfiePhotoData > contactPhotoData > photoName URL > photoName asset > initials
+            if let photoData = contact.selfiePhotoData,
+               let uiImage = UIImage(data: photoData) {
+                // Selfie photo (taken during verification)
+                Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFill()
                     .frame(width: 44, height: 44)
                     .clipShape(Circle())
+            } else if let photoData = contact.contactPhotoData,
+               let uiImage = UIImage(data: photoData) {
+                // Contact photo from Data (e.g., imported from contacts)
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 44, height: 44)
+                    .clipShape(Circle())
+            } else if let photoName = contact.photoName, !photoName.isEmpty {
+                // Check if photoName is a URL string
+                if let url = URL(string: photoName), url.scheme != nil {
+                    // Remote image with Kingfisher caching
+                    KFImage(url)
+                        .placeholder {
+                            // Shimmer placeholder while loading
+                            Circle()
+                                .fill(DesignTokens.Colors.surface)
+                                .frame(width: 44, height: 44)
+                                .overlay(
+                                    Text(contact.name.prefix(1).uppercased())
+                                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                                        .foregroundColor(contact.avatarColor.opacity(0.5))
+                                )
+                        }
+                        .fade(duration: 0.25)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 44, height: 44)
+                        .clipShape(Circle())
+                } else {
+                    // Local asset image - use SegmentedAsyncImage for async loading
+                    // Same approach as GlassBubbleView for consistent behavior
+                    SegmentedAsyncImage(
+                        imageName: photoName,
+                        size: CGSize(width: 44, height: 44),
+                        placeholderColor: contact.avatarColor
+                    )
+                }
             } else {
-                // Initials
-                Text(contact.name.prefix(1).uppercased())
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                    .foregroundColor(contact.avatarColor)
+                // Initials fallback
+                initialsView
             }
 
             // Border
@@ -348,6 +392,12 @@ struct ConnectionRowView: View {
                 .stroke(contact.avatarColor.opacity(0.3), lineWidth: 2)
                 .frame(width: 48, height: 48)
         }
+    }
+
+    private var initialsView: some View {
+        Text(contact.name.prefix(1).uppercased())
+            .font(.system(size: 18, weight: .bold, design: .rounded))
+            .foregroundColor(contact.avatarColor)
     }
 }
 

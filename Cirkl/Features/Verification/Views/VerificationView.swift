@@ -68,6 +68,7 @@ struct VerificationView: View {
     private var headerView: some View {
         HStack {
             Button {
+                CirklHaptics.light()
                 dismiss()
             } label: {
                 Image(systemName: "xmark.circle.fill")
@@ -147,6 +148,7 @@ struct VerificationView: View {
             VStack(spacing: 16) {
                 // QR Fallback button (fix: glassEffect blocks taps)
                 Button {
+                    CirklHaptics.medium()
                     showQRFallback = true
                 } label: {
                     HStack {
@@ -166,6 +168,7 @@ struct VerificationView: View {
 
                 // Cancel button
                 Button {
+                    CirklHaptics.light()
                     viewModel.stopScanning()
                 } label: {
                     Text("Annuler")
