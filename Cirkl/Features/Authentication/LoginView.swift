@@ -208,8 +208,9 @@ struct LoginView: View {
                 .padding(.vertical, 14)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(.ultraThinMaterial.opacity(0.5))
+                        .fill(Color.primary.opacity(0.04))
                 )
+                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 12))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
                         .strokeBorder(
@@ -319,26 +320,31 @@ struct LoginView: View {
     private var footerSection: some View {
         VStack(spacing: 10) {
             #if DEBUG
-            Button(action: {
+            // CRITICAL FIX: Simplified button - no material backgrounds that can block touches on iOS 26
+            Button {
+                CirklHaptics.medium()
+                print("🔧 Skip (Dev) tapped - calling authenticate()")
                 appState.authenticate()
-            }) {
+            } label: {
                 Text("Skip (Dev)")
                     .font(.caption)
                     .fontWeight(.medium)
                     .foregroundColor(DesignTokens.Colors.success)
                     .padding(.horizontal, 20)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 10)
                     .background(
                         Capsule()
-                            .fill(.ultraThinMaterial.opacity(0.5))
+                            .fill(DesignTokens.Colors.success.opacity(0.15))
                     )
                     .overlay(
                         Capsule()
-                            .stroke(DesignTokens.Colors.success.opacity(0.3), lineWidth: 1)
+                            .stroke(DesignTokens.Colors.success.opacity(0.4), lineWidth: 1)
                     )
-                    .contentShape(Capsule())
             }
             .buttonStyle(.plain)
+            .contentShape(Capsule())
+            // Expanded hit area for better touch detection
+            .frame(minWidth: 120, minHeight: 44)
             #endif
 
             Text("En continuant, tu acceptes nos conditions d'utilisation")
@@ -409,7 +415,7 @@ struct LoginView: View {
     }
 }
 
-// MARK: - Social Login Button Component - ADAPTIVE
+// MARK: - Social Login Button Component - Native Liquid Glass
 struct SocialLoginButton: View {
     let icon: String
     let text: String
@@ -434,8 +440,9 @@ struct SocialLoginButton: View {
             .frame(height: 70)
             .background(
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(useGlass ? AnyShapeStyle(.ultraThinMaterial.opacity(0.5)) : AnyShapeStyle(backgroundColor))
+                    .fill(useGlass ? AnyShapeStyle(Color.primary.opacity(0.04)) : AnyShapeStyle(backgroundColor))
             )
+            .glassEffect(useGlass ? .regular.interactive() : .clear, in: .rect(cornerRadius: 14))
             .overlay(
                 Group {
                     if let border = borderColor {

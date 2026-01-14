@@ -5,6 +5,7 @@ struct OrbitalConnectionsView: View {
     @State private var selectedConnection: String? = nil
     @State private var searchText = ""
     @State private var voiceActive = false
+    @State private var showSettings = false
     @StateObject private var performanceManager = PerformanceManager()
     @Namespace private var connectionTransition
     
@@ -56,8 +57,10 @@ struct OrbitalConnectionsView: View {
                             
                             Spacer()
                             
-                            // Settings - BLACK icon
-                            Button(action: {}) {
+                            // Settings button - Opens SettingsView
+                            Button {
+                                showSettings = true
+                            } label: {
                                 Image(systemName: "gearshape.fill")
                                     .font(.system(size: 18))
                                     .foregroundColor(DesignTokens.Colors.textSecondary)
@@ -145,12 +148,15 @@ struct OrbitalConnectionsView: View {
                 rotationAngle = 360
             }
         }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
+        }
     }
 }
 
 // MARK: - Adaptive Liquid Glass Background
+// PERFORMANCE FIX: Removed all blob animations - static background now
 struct LightLiquidGlassBackground: View {
-    @State private var animateGradient = false
     @Environment(\.colorScheme) private var colorScheme
 
     // Couleurs adaptatives selon le mode
@@ -176,15 +182,15 @@ struct LightLiquidGlassBackground: View {
 
     var body: some View {
         ZStack {
-            // Adaptive base gradient
+            // PERFORMANCE FIX: Static gradient (no animation)
             LinearGradient(
                 colors: gradientColors,
-                startPoint: animateGradient ? .topLeading : .bottomTrailing,
-                endPoint: animateGradient ? .bottomTrailing : .topLeading
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
             )
 
-            // Floating blobs - adaptatives
-            ForEach(0..<5) { i in
+            // PERFORMANCE FIX: Static blobs - no animation
+            ForEach(0..<3) { i in
                 SwiftUI.Circle()
                     .fill(
                         RadialGradient(
@@ -200,33 +206,26 @@ struct LightLiquidGlassBackground: View {
                     )
                     .frame(width: 300, height: 300)
                     .offset(
-                        x: CGFloat.random(in: -150...150),
-                        y: CGFloat.random(in: -200...200)
+                        x: CGFloat([-100, 120, -50][i]),
+                        y: CGFloat([-150, 100, 200][i])
                     )
                     .blur(radius: 30)
-                    .animation(
-                        .easeInOut(duration: Double.random(in: 10...20))
-                        .repeatForever(autoreverses: true),
-                        value: animateGradient
-                    )
             }
         }
         .ignoresSafeArea()
-        .onAppear { animateGradient.toggle() }
     }
 }
 
 // MARK: - Apple Intelligence Search Bar
+// PERFORMANCE FIX: Removed all animations - static search bar
 struct AppleIntelligenceSearchBar: View {
     @Binding var text: String
-    @State private var rotationAngle: Double = 0
-    @State private var pulseScale: CGFloat = 1.0
-    
+
     var body: some View {
         HStack(spacing: 12) {
-            // Animated bubble icon like Apple Intelligence
+            // PERFORMANCE FIX: Static bubble icon (no animation)
             ZStack {
-                // Gradient ring
+                // Static gradient ring
                 SwiftUI.Circle()
                     .fill(
                         AngularGradient(
@@ -238,19 +237,17 @@ struct AppleIntelligenceSearchBar: View {
                                 Color.cyan,
                                 Color.orange
                             ]),
-                            center: .center,
-                            startAngle: .degrees(rotationAngle),
-                            endAngle: .degrees(rotationAngle + 360)
+                            center: .center
                         )
                     )
                     .frame(width: 28, height: 28)
                     .blur(radius: 8)
-                
+
                 // Black center
                 SwiftUI.Circle()
                     .fill(Color.black)
                     .frame(width: 24, height: 24)
-                
+
                 // Glossy overlay
                 SwiftUI.Circle()
                     .stroke(
@@ -263,46 +260,29 @@ struct AppleIntelligenceSearchBar: View {
                     )
                     .frame(width: 26, height: 26)
             }
-            .scaleEffect(pulseScale)
-            
+
             TextField("Ask anything you want to find...", text: $text)
                 .font(.system(size: 15))
                 .foregroundColor(DesignTokens.Colors.textPrimary)
-            
-            Button(action: {}) {
-                Image(systemName: "mic.fill")
-                    .font(.system(size: 16))
-                    .foregroundColor(DesignTokens.Colors.textSecondary)
-            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .glassEffect(.regular, in: .rect(cornerRadius: 16))
         .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 5)
-        .onAppear {
-            withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
-                pulseScale = 1.05
-            }
-            withAnimation(.linear(duration: 4).repeatForever(autoreverses: false)) {
-                rotationAngle = 360
-            }
-        }
     }
 }
 
 // MARK: - Premium Glass Sphere
+// PERFORMANCE FIX: Removed all animations - each sphere was running 2 infinite loops
 struct PremiumGlassSphere: View {
     let name: String
     let color: Color
     let isSelected: Bool
-    @State private var animateLiquid = false
-    @State private var rotateY: Double = 0
-    @State private var breathe: CGFloat = 1.0
-    
+
     var body: some View {
         VStack(spacing: 8) {
             ZStack {
-                // Animated flowing background gradient
+                // PERFORMANCE FIX: Static gradient (no animation)
                 SwiftUI.Circle()
                     .fill(
                         RadialGradient(
@@ -311,20 +291,20 @@ struct PremiumGlassSphere: View {
                                 .init(color: color.opacity(0.2), location: 0.6),
                                 .init(color: Color.white.opacity(0.8), location: 1.0)
                             ]),
-                            center: animateLiquid ? .topLeading : .bottomTrailing,
+                            center: .topLeading,
                             startRadius: 10,
                             endRadius: 45
                         )
                     )
                     .frame(width: 70, height: 70)
-                
+
                 // Glass material layer - iOS 26 Liquid Glass
                 SwiftUI.Circle()
                     .frame(width: 70, height: 70)
                     .background(Color.white.opacity(0.1))
                     .clipShape(Circle())
                     .glassEffect(.regular, in: .circle)
-                
+
                 // Perfect glass reflection highlight
                 SwiftUI.Circle()
                     .fill(
@@ -341,12 +321,12 @@ struct PremiumGlassSphere: View {
                     )
                     .frame(width: 70, height: 70)
                     .blendMode(.screen)
-                
+
                 // User icon
                 Image(systemName: "person.fill")
                     .font(.system(size: 28))
                     .foregroundStyle(color)
-                
+
                 // Rim highlight
                 SwiftUI.Circle()
                     .stroke(
@@ -360,15 +340,8 @@ struct PremiumGlassSphere: View {
                     .frame(width: 70, height: 70)
             }
             .shadow(color: color.opacity(0.3), radius: 15, x: 0, y: 8)
-            .scaleEffect(isSelected ? 1.2 : breathe)
-            .rotation3DEffect(
-                .degrees(rotateY),
-                axis: (x: 0, y: 1, z: 0),
-                anchor: .center,
-                anchorZ: 0,
-                perspective: 0.6
-            )
-            
+            .scaleEffect(isSelected ? 1.2 : 1.0)
+
             // Name label
             Text(name)
                 .font(.system(size: 13, weight: .semibold))
@@ -378,28 +351,17 @@ struct PremiumGlassSphere: View {
                 .glassEffect(.regular, in: .rect(cornerRadius: 12))
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isSelected)
-        .onAppear {
-            withAnimation(.easeInOut(duration: 3).repeatForever(autoreverses: true)) {
-                animateLiquid = true
-                breathe = 1.02
-            }
-            withAnimation(.easeInOut(duration: 6).repeatForever(autoreverses: true)) {
-                rotateY = 15
-            }
-        }
     }
 }
 
 // MARK: - Premium Central Sphere (Gil)
+// PERFORMANCE FIX: Reduced from 3 animations to 1 (orbital ring rotation only)
 struct PremiumCentralSphere: View {
-    @State private var animateLiquid = false
-    @State private var rotateY: Double = 0
-    @State private var pulse: CGFloat = 1.0
     @State private var orbitalRings: Double = 0
-    
+
     var body: some View {
         ZStack {
-            // Orbital decoration rings
+            // Orbital decoration rings - KEEP ONE ANIMATION for visual interest
             ForEach(0..<3) { i in
                 SwiftUI.Circle()
                     .stroke(
@@ -417,10 +379,10 @@ struct PremiumCentralSphere: View {
                     .rotationEffect(.degrees(orbitalRings + Double(i * 60)))
                     .opacity(0.6 - Double(i) * 0.15)
             }
-            
+
             // Main premium glass sphere
             ZStack {
-                // Liquid glass base
+                // PERFORMANCE FIX: Static liquid glass base
                 SwiftUI.Circle()
                     .fill(
                         RadialGradient(
@@ -430,20 +392,20 @@ struct PremiumCentralSphere: View {
                                 .init(color: Color.cyan.opacity(0.2), location: 0.7),
                                 .init(color: Color.white.opacity(0.95), location: 1.0)
                             ]),
-                            center: animateLiquid ? .init(x: 0.3, y: 0.2) : .init(x: 0.7, y: 0.8),
+                            center: .init(x: 0.3, y: 0.2),
                             startRadius: 15,
                             endRadius: 65
                         )
                     )
                     .frame(width: 110, height: 110)
-                
+
                 // Glass material layer - iOS 26 Liquid Glass
                 SwiftUI.Circle()
                     .frame(width: 110, height: 110)
                     .background(Color.purple.opacity(0.1))
                     .clipShape(Circle())
                     .glassEffect(.regular, in: .circle)
-                
+
                 // Perfect spherical highlight
                 SwiftUI.Circle()
                     .fill(
@@ -460,7 +422,7 @@ struct PremiumCentralSphere: View {
                     )
                     .frame(width: 110, height: 110)
                     .blendMode(.screen)
-                
+
                 // Gil text
                 Text("Gil")
                     .font(.system(size: 36, weight: .bold, design: .rounded))
@@ -471,8 +433,8 @@ struct PremiumCentralSphere: View {
                             endPoint: .bottom
                         )
                     )
-                
-                // Animated border
+
+                // Animated border - uses same orbitalRings animation
                 SwiftUI.Circle()
                     .stroke(
                         AngularGradient(
@@ -488,39 +450,24 @@ struct PremiumCentralSphere: View {
                     .frame(width: 110, height: 110)
             }
             .shadow(color: .purple.opacity(0.4), radius: 25, x: 0, y: 12)
-            .scaleEffect(pulse)
-            .rotation3DEffect(
-                .degrees(rotateY),
-                axis: (x: 0, y: 1, z: 0),
-                anchor: .center,
-                anchorZ: 0,
-                perspective: 0.5
-            )
         }
         .onAppear {
-            withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
-                pulse = 1.08
-                animateLiquid = true
-            }
+            // PERFORMANCE FIX: Only ONE animation for the entire central sphere
             withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
                 orbitalRings = 360
-            }
-            withAnimation(.easeInOut(duration: 10).repeatForever(autoreverses: true)) {
-                rotateY = 25
             }
         }
     }
 }
 
 // MARK: - Premium Glass Connection Line
+// PERFORMANCE FIX: Removed dash animation - each line was running an infinite loop
 struct PremiumGlassConnectionLine: View {
     let from: CGPoint
     let to: CGPoint
     let color: Color
     let isSelected: Bool
-    @State private var phase: CGFloat = 0
-    @State private var glowIntensity: Double = 0.3
-    
+
     var body: some View {
         ZStack {
             // Outer glow layer
@@ -535,12 +482,12 @@ struct PremiumGlassConnectionLine: View {
                 )
             }
             .stroke(
-                color.opacity(glowIntensity),
+                color.opacity(0.3),
                 style: StrokeStyle(lineWidth: 6, lineCap: .round)
             )
             .blur(radius: 8)
-            
-            // Main glass line
+
+            // Main glass line - PERFORMANCE FIX: Static dash (no animation)
             Path { path in
                 path.move(to: from)
                 path.addQuadCurve(
@@ -564,65 +511,54 @@ struct PremiumGlassConnectionLine: View {
                 style: StrokeStyle(
                     lineWidth: isSelected ? 3.0 : 2.0,
                     lineCap: .round,
-                    dash: [12, 6],
-                    dashPhase: phase
+                    dash: [12, 6]
                 )
             )
         }
         .opacity(isSelected ? 1.0 : 0.7)
         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isSelected)
-        .onAppear {
-            withAnimation(.linear(duration: 3).repeatForever(autoreverses: false)) {
-                phase = 18
-            }
-        }
     }
 }
 
 // MARK: - Liquid Bubble Voice Button
+// PERFORMANCE FIX: Reduced from 3 animations to 1 (gradient rotation only)
 struct LiquidBubbleVoiceButton: View {
     @Binding var isActive: Bool
     @State private var animationPhase: CGFloat = 0
-    @State private var breathingScale: CGFloat = 1.0
-    @State private var shimmerRotation: Double = 0
-    
+
     var body: some View {
-        Button(action: { 
+        Button(action: {
             withAnimation(.spring()) {
                 isActive.toggle()
             }
         }) {
             ZStack {
-                // Multiple gradient layers
-                ForEach(0..<3) { index in
-                    SwiftUI.Circle()
-                        .fill(
-                            AngularGradient(
-                                gradient: Gradient(stops: [
-                                    .init(color: Color.blue, location: 0.0),
-                                    .init(color: Color.cyan, location: 0.2),
-                                    .init(color: Color.orange, location: 0.4),
-                                    .init(color: Color.pink, location: 0.6),
-                                    .init(color: Color.purple, location: 0.8),
-                                    .init(color: Color.blue, location: 1.0)
-                                ]),
-                                center: .center,
-                                startAngle: .degrees(animationPhase + Double(index * 120)),
-                                endAngle: .degrees(animationPhase + 360 + Double(index * 120))
-                            )
+                // PERFORMANCE FIX: Simplified gradient layers - only 1 layer, 1 animation
+                SwiftUI.Circle()
+                    .fill(
+                        AngularGradient(
+                            gradient: Gradient(stops: [
+                                .init(color: Color.blue, location: 0.0),
+                                .init(color: Color.cyan, location: 0.2),
+                                .init(color: Color.orange, location: 0.4),
+                                .init(color: Color.pink, location: 0.6),
+                                .init(color: Color.purple, location: 0.8),
+                                .init(color: Color.blue, location: 1.0)
+                            ]),
+                            center: .center,
+                            startAngle: .degrees(animationPhase),
+                            endAngle: .degrees(animationPhase + 360)
                         )
-                        .frame(width: 70 - CGFloat(index * 5), height: 70 - CGFloat(index * 5))
-                        .blur(radius: CGFloat(index))
-                        .opacity(0.8 - Double(index) * 0.2)
-                        .scaleEffect(breathingScale + CGFloat(index) * 0.02)
-                }
-                
+                    )
+                    .frame(width: 70, height: 70)
+                    .blur(radius: 2)
+
                 // Black center
                 SwiftUI.Circle()
                     .fill(Color.black)
                     .frame(width: 60, height: 60)
-                
-                // Glossy highlights
+
+                // PERFORMANCE FIX: Static glossy highlight (no animation)
                 SwiftUI.Circle()
                     .trim(from: 0, to: 0.5)
                     .stroke(
@@ -634,9 +570,8 @@ struct LiquidBubbleVoiceButton: View {
                         lineWidth: 2
                     )
                     .frame(width: 58, height: 58)
-                    .rotationEffect(.degrees(shimmerRotation))
                     .blur(radius: 1)
-                
+
                 // Top reflection
                 Ellipse()
                     .fill(
@@ -649,7 +584,7 @@ struct LiquidBubbleVoiceButton: View {
                     .frame(width: 25, height: 15)
                     .offset(y: -18)
                     .blur(radius: 1)
-                
+
                 // Microphone icon
                 Image(systemName: isActive ? "waveform" : "mic.fill")
                     .font(.system(size: 24, weight: .medium))
@@ -662,14 +597,9 @@ struct LiquidBubbleVoiceButton: View {
         .scaleEffect(isActive ? 1.15 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isActive)
         .onAppear {
+            // PERFORMANCE FIX: Only ONE animation
             withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
                 animationPhase = 360
-            }
-            withAnimation(.linear(duration: 6).repeatForever(autoreverses: false)) {
-                shimmerRotation = 360
-            }
-            withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
-                breathingScale = 1.08
             }
         }
     }

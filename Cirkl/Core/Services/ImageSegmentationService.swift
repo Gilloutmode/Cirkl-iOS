@@ -2,19 +2,37 @@ import SwiftUI
 import Vision
 import CoreImage
 import CoreImage.CIFilterBuiltins
+import Shimmer
 
 // MARK: - Image Segmentation Service (Person Background Removal)
 /// Service qui utilise Vision Framework pour détourer automatiquement les personnes
 /// et créer des images avec fond transparent pour l'effet glass bubble
+///
+/// PERFORMANCE FIX: Uses NSCache instead of Dictionary for:
+/// - Thread-safe access
+/// - Automatic memory management under pressure
+/// - Configurable memory limits
+///
+/// STARTUP OPTIMIZATION: Uses a semaphore to limit concurrent Vision requests
+/// and a startup delay to let UI render first
 @MainActor
 final class ImageSegmentationService: ObservableObject {
     static let shared = ImageSegmentationService()
 
-    // Cache des images segmentées (évite de retraiter à chaque affichage)
-    private var segmentedImagesCache: [String: UIImage] = [:]
+    // PERFORMANCE FIX: NSCache instead of Dictionary for thread-safety and memory management
+    private let segmentedImagesCache = NSCache<NSString, UIImage>()
 
     // Context Core Image pour le traitement
     private let ciContext: CIContext
+
+    // STARTUP OPTIMIZATION: Track if initial UI has loaded
+    private var isInitialLoadComplete = false
+    private let startupDelay: UInt64 = 500_000_000 // 500ms delay before starting segmentation
+
+    // CONCURRENCY CONTROL: Limit simultaneous Vision requests to avoid overwhelming GPU
+    private let maxConcurrentRequests = 2
+    private var activeRequestCount = 0
+    private var pendingRequests: [(String, CheckedContinuation<UIImage?, Never>)] = []
 
     private init() {
         // Créer un contexte optimisé pour le traitement d'images
@@ -22,6 +40,19 @@ final class ImageSegmentationService: ObservableObject {
             .useSoftwareRenderer: false,
             .highQualityDownsample: true
         ])
+
+        // PERFORMANCE FIX: Configure cache limits to prevent memory bloat
+        segmentedImagesCache.countLimit = 20  // Max 20 images in cache
+        segmentedImagesCache.totalCostLimit = 50_000_000  // ~50MB max
+
+        // STARTUP OPTIMIZATION: Mark initial load complete after delay
+        Task {
+            try? await Task.sleep(nanoseconds: startupDelay)
+            isInitialLoadComplete = true
+            #if DEBUG
+            print("🚀 ImageSegmentationService: Initial load delay complete, ready for requests")
+            #endif
+        }
     }
 
     // MARK: - Public API
@@ -30,41 +61,106 @@ final class ImageSegmentationService: ObservableObject {
     /// - Parameter imageName: Nom de l'image dans les Assets
     /// - Returns: UIImage avec fond transparent, ou l'originale si échec
     func getSegmentedImage(named imageName: String) async -> UIImage? {
-        // Vérifier le cache d'abord
-        if let cached = segmentedImagesCache[imageName] {
+        // PERFORMANCE FIX: NSCache requires NSString keys
+        let cacheKey = imageName as NSString
+
+        // Vérifier le cache d'abord - retourne immédiatement si en cache
+        if let cached = segmentedImagesCache.object(forKey: cacheKey) {
+            #if DEBUG
             print("✅ Cache hit for \(imageName)")
+            #endif
+            return cached
+        }
+
+        // STARTUP OPTIMIZATION: Wait for initial load delay before processing
+        // This lets the UI render smoothly before heavy Vision work starts
+        if !isInitialLoadComplete {
+            try? await Task.sleep(nanoseconds: startupDelay)
+        }
+
+        // CONCURRENCY CONTROL: Queue request if too many are active
+        if activeRequestCount >= maxConcurrentRequests {
+            return await withCheckedContinuation { continuation in
+                pendingRequests.append((imageName, continuation))
+            }
+        }
+
+        return await processSegmentation(for: imageName, cacheKey: cacheKey)
+    }
+
+    /// Process the actual segmentation work
+    private func processSegmentation(for imageName: String, cacheKey: NSString) async -> UIImage? {
+        activeRequestCount += 1
+        defer {
+            activeRequestCount -= 1
+            processNextPendingRequest()
+        }
+
+        // Double-check cache (another request might have completed)
+        if let cached = segmentedImagesCache.object(forKey: cacheKey) {
             return cached
         }
 
         // Charger l'image originale
         guard let originalImage = UIImage(named: imageName) else {
+            #if DEBUG
             print("❌ Image not found: \(imageName)")
+            #endif
             return nil
         }
 
+        #if DEBUG
         print("🔄 Processing segmentation for \(imageName)...")
+        #endif
 
         // Effectuer la segmentation
         if let segmented = await segmentPerson(from: originalImage) {
-            segmentedImagesCache[imageName] = segmented
+            // Store with estimated memory cost (bytes = width * height * 4 for RGBA)
+            let cost = segmented.cgImage.map { $0.width * $0.height * 4 } ?? 0
+            segmentedImagesCache.setObject(segmented, forKey: cacheKey, cost: cost)
+            #if DEBUG
             print("✅ Segmentation complete for \(imageName)")
+            #endif
             return segmented
         }
 
+        #if DEBUG
         print("⚠️ Segmentation failed for \(imageName), returning original")
+        #endif
         // Fallback: retourner l'originale
         return originalImage
     }
 
+    /// Process the next pending request in the queue
+    private func processNextPendingRequest() {
+        guard !pendingRequests.isEmpty, activeRequestCount < maxConcurrentRequests else { return }
+
+        let (imageName, continuation) = pendingRequests.removeFirst()
+        let cacheKey = imageName as NSString
+
+        Task {
+            let result = await processSegmentation(for: imageName, cacheKey: cacheKey)
+            continuation.resume(returning: result)
+        }
+    }
+
     /// Précharge et segmente toutes les images de profil
+    /// PERFORMANCE FIX: Parallelize image processing to avoid blocking main thread
     func preloadAllProfileImages() async {
         let profileNames = [
             "photo_gil", "photo_denis", "photo_shay",
             "photo_salome", "photo_dan", "photo_gilles", "photo_judith"
         ]
 
-        for name in profileNames {
-            _ = await getSegmentedImage(named: name)
+        // PERFORMANCE FIX: Process images in parallel using TaskGroup
+        // This prevents the "gesture gate timed out" error from blocking main thread
+        await withTaskGroup(of: Void.self) { group in
+            for name in profileNames {
+                group.addTask(priority: .utility) { [weak self] in
+                    guard let self = self else { return }
+                    _ = await self.getSegmentedImage(named: name)
+                }
+            }
         }
     }
 
@@ -254,12 +350,12 @@ final class ImageSegmentationService: ObservableObject {
 
     /// Vide le cache des images segmentées
     func clearCache() {
-        segmentedImagesCache.removeAll()
+        segmentedImagesCache.removeAllObjects()
     }
 
     /// Vérifie si une image est déjà en cache
     func isCached(_ imageName: String) -> Bool {
-        return segmentedImagesCache[imageName] != nil
+        return segmentedImagesCache.object(forKey: imageName as NSString) != nil
     }
 }
 
@@ -294,7 +390,7 @@ struct SegmentedAsyncImage: View {
                     .frame(width: size.width, height: size.height)
                     .clipShape(Circle())
             } else if isLoading {
-                // Placeholder pendant le chargement avec spinner
+                // Placeholder pendant le chargement avec shimmer
                 Circle()
                     .fill(
                         RadialGradient(
@@ -308,10 +404,17 @@ struct SegmentedAsyncImage: View {
                         )
                     )
                     .frame(width: size.width, height: size.height)
+                    .shimmering(
+                        gradient: Gradient(colors: [
+                            placeholderColor.opacity(0.2),
+                            placeholderColor.opacity(0.4),
+                            placeholderColor.opacity(0.2)
+                        ])
+                    )
                     .overlay(
-                        ProgressView()
-                            .scaleEffect(0.8)
-                            .tint(placeholderColor.opacity(0.6))
+                        Image(systemName: "person.fill")
+                            .font(.system(size: size.width * 0.3))
+                            .foregroundStyle(placeholderColor.opacity(0.3))
                     )
             } else {
                 // Fallback si pas d'image - icône personne

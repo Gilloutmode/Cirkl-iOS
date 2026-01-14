@@ -95,7 +95,9 @@ final class ChatHistoryService {
     // MARK: - Public Methods
 
     /// Load all messages for current session
-    func loadMessages() -> [ChatMessage] {
+    /// NOTE: Runs on MainActor because SwiftData ModelContext is not thread-safe
+    /// The fetch is fast enough (~1-2ms) for typical chat history sizes
+    func loadMessages() async -> [ChatMessage] {
         guard let context = modelContext else { return [] }
 
         let descriptor = FetchDescriptor<ChatMessageEntity>(
@@ -117,7 +119,26 @@ final class ChatHistoryService {
         }
     }
 
+    /// Synchronous version for backwards compatibility (use async version when possible)
+    func loadMessagesSync() -> [ChatMessage] {
+        guard let context = modelContext else { return [] }
+
+        let descriptor = FetchDescriptor<ChatMessageEntity>(
+            predicate: #Predicate { $0.sessionId == currentSessionId },
+            sortBy: [SortDescriptor(\.timestamp, order: .forward)]
+        )
+
+        do {
+            let entities = try context.fetch(descriptor)
+            return entities.map { $0.toChatMessage() }
+        } catch {
+            return []
+        }
+    }
+
     /// Save a new message
+    /// NOTE: Runs on MainActor because SwiftData ModelContext is not thread-safe
+    /// Autosave is enabled by default, so explicit save() is not needed for most cases
     func saveMessage(_ message: ChatMessage) {
         guard let context = modelContext else { return }
 
@@ -132,7 +153,7 @@ final class ChatHistoryService {
         )
 
         context.insert(entity)
-
+        // SwiftData autosaves, but we do an explicit save for immediate persistence
         do {
             try context.save()
             #if DEBUG
