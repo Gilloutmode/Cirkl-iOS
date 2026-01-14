@@ -11,9 +11,9 @@ struct CirklProfileBubble: View {
     // Accessibility
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    @State private var breathingPhase: Double = 0
+    // PERFORMANCE FIX: Removed breathingPhase - animation was not visually used
     @State private var isHovered = false
-    
+
     var body: some View {
         VStack(spacing: 8) {
             // Bulle principale
@@ -31,7 +31,7 @@ struct CirklProfileBubble: View {
                                 lineWidth: isSelected ? 2.5 : 1.5
                             )
                     )
-                
+
                 // Icône de profil
                 Image(systemName: "person.crop.circle.fill")
                     .font(.system(size: 35, weight: .medium))
@@ -49,7 +49,7 @@ struct CirklProfileBubble: View {
             .scaleEffect(isSelected ? 1.15 : (isHovered ? 1.05 : 1.0))
             .animation(.spring(response: 0.3, dampingFraction: 0.7, blendDuration: 0.3), value: isSelected)
             .animation(.spring(response: 0.3, dampingFraction: 0.7, blendDuration: 0.3), value: isHovered)
-            
+
             // Nom sous la bulle - adaptatif light/dark
             Text(connection.name)
                 .font(.system(size: 13, weight: .medium))
@@ -65,28 +65,22 @@ struct CirklProfileBubble: View {
         .onHover { hovering in
             isHovered = hovering
         }
-        .onAppear {
-            // Breathing animation disabled when Reduce Motion is enabled
-            guard !reduceMotion else { return }
-            withAnimation(.easeInOut(duration: 3 + Double.random(in: 0...2)).repeatForever(autoreverses: true)) {
-                breathingPhase = 1.0
-            }
-        }
+        // PERFORMANCE FIX: Removed breathing animation - it wasn't visually affecting the view
     }
 }
 
 /// Bulle centrale utilisateur (Gil) avec Liquid Glass 3D et effet arc-en-ciel
+/// PERFORMANCE FIX: Reduced from 2 animations to 1 (rainbow rotation only)
 struct CirklCentralBubble: View {
     // Accessibility
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var rainbowRotation: Double = 0
-    @State private var pulseScale: Double = 1.0
-    
+
     var body: some View {
         VStack(spacing: 8) {
             ZStack {
-                // Effet de halo lumineux
+                // Effet de halo lumineux - PERFORMANCE FIX: Static (no pulse animation)
                 Circle()
                     .fill(
                         RadialGradient(
@@ -103,15 +97,14 @@ struct CirklCentralBubble: View {
                     )
                     .frame(width: 140, height: 140)
                     .blur(radius: 20)
-                    .scaleEffect(pulseScale)
-                
+
                 // Bulle principale avec Liquid Glass natif iOS 26
                 Circle()
                     .fill(Color.purple.opacity(0.1))
                     .frame(width: 100, height: 100)
                     .glassEffect(.regular, in: .circle)
                     .shadow(color: Color.purple.opacity(0.4), radius: 20, x: 0, y: 8)
-                
+
                 // Bordure arc-en-ciel animée
                 Circle()
                     .stroke(
@@ -127,7 +120,7 @@ struct CirklCentralBubble: View {
                         lineWidth: 3
                     )
                     .frame(width: 100, height: 100)
-                
+
                 // Photo de profil centrale
                 Image(systemName: "person.crop.circle.fill")
                     .font(.system(size: 50, weight: .medium))
@@ -142,7 +135,7 @@ struct CirklCentralBubble: View {
                         )
                     )
             }
-            
+
             // Nom avec effet spécial - adaptatif light/dark
             Text("Gil")
                 .font(.system(size: 16, weight: .bold))
@@ -162,15 +155,10 @@ struct CirklCentralBubble: View {
                 )
         }
         .onAppear {
-            // Animations disabled when Reduce Motion is enabled
+            // PERFORMANCE FIX: Only 1 animation (rainbow rotation) - removed pulse
             guard !reduceMotion else { return }
-            // Animation de rotation arc-en-ciel
             withAnimation(.linear(duration: 4).repeatForever(autoreverses: false)) {
                 rainbowRotation = 360
-            }
-            // Animation de pulsation
-            withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
-                pulseScale = 1.2
             }
         }
     }
