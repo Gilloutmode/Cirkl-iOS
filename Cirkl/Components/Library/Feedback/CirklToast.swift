@@ -54,6 +54,7 @@ struct CirklToast: View {
     let message: String
     var duration: TimeInterval = 3.0
     var onDismiss: (() -> Void)?
+    var onUndo: (() -> Void)?
 
     // MARK: - Environment
 
@@ -81,6 +82,26 @@ struct CirklToast: View {
                 .lineLimit(2)
 
             Spacer(minLength: 0)
+
+            // Undo button (if available)
+            if let onUndo = onUndo {
+                Button(action: {
+                    CirklHaptics.light()
+                    onUndo()
+                }) {
+                    Text("Annuler")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(type.color)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule()
+                                .fill(type.color.opacity(0.15))
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Annuler l'action")
+            }
 
             // Dismiss button
             Button(action: dismiss) {
@@ -160,8 +181,9 @@ struct CirklToast: View {
             isVisible = true
         }
 
-        // Auto-dismiss
-        DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+        // Auto-dismiss - use Task for proper concurrency
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(duration))
             dismiss()
         }
     }
@@ -171,7 +193,9 @@ struct CirklToast: View {
             isVisible = false
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        // Use Task for proper concurrency
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(300))
             onDismiss?()
         }
     }
@@ -191,8 +215,8 @@ final class ToastManager {
 
     private init() {}
 
-    func show(_ type: ToastType, message: String, duration: TimeInterval = 3.0) {
-        let toast = ToastItem(type: type, message: message, duration: duration)
+    func show(_ type: ToastType, message: String, duration: TimeInterval = 3.0, undoAction: (() -> Void)? = nil) {
+        let toast = ToastItem(type: type, message: message, duration: duration, undoAction: undoAction)
 
         if currentToast == nil {
             currentToast = toast
@@ -205,10 +229,19 @@ final class ToastManager {
         currentToast = nil
 
         if !queue.isEmpty {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-                self?.currentToast = self?.queue.removeFirst()
+            // CONCURRENCY FIX: Use Task instead of DispatchQueue for proper Swift concurrency
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(300))
+                if !self.queue.isEmpty {
+                    self.currentToast = self.queue.removeFirst()
+                }
             }
         }
+    }
+
+    func triggerUndo() {
+        currentToast?.undoAction?()
+        dismiss()
     }
 
     // Convenience methods
@@ -216,15 +249,42 @@ final class ToastManager {
     func info(_ message: String) { show(.info, message: message) }
     func warning(_ message: String) { show(.warning, message: message) }
     func error(_ message: String) { show(.error, message: message) }
+
+    // Undo variants - longer duration to give time to undo
+    func showWithUndo(_ type: ToastType, message: String, undoAction: @escaping () -> Void) {
+        show(type, message: message, duration: 5.0, undoAction: undoAction)
+    }
+
+    func successWithUndo(_ message: String, undoAction: @escaping () -> Void) {
+        showWithUndo(.success, message: message, undoAction: undoAction)
+    }
+
+    func warningWithUndo(_ message: String, undoAction: @escaping () -> Void) {
+        showWithUndo(.warning, message: message, undoAction: undoAction)
+    }
 }
 
 // MARK: - Toast Item
 
-struct ToastItem: Identifiable, Equatable {
+struct ToastItem: Identifiable {
     let id = UUID()
     let type: ToastType
     let message: String
     let duration: TimeInterval
+    let undoAction: (() -> Void)?
+
+    init(type: ToastType, message: String, duration: TimeInterval = 3.0, undoAction: (() -> Void)? = nil) {
+        self.type = type
+        self.message = message
+        self.duration = duration
+        self.undoAction = undoAction
+    }
+
+    var hasUndo: Bool { undoAction != nil }
+
+    static func == (lhs: ToastItem, rhs: ToastItem) -> Bool {
+        lhs.id == rhs.id
+    }
 }
 
 // MARK: - Toast Container View
@@ -246,7 +306,10 @@ struct ToastContainerModifier: ViewModifier {
                     duration: toast.duration,
                     onDismiss: {
                         ToastManager.shared.dismiss()
-                    }
+                    },
+                    onUndo: toast.hasUndo ? {
+                        ToastManager.shared.triggerUndo()
+                    } : nil
                 )
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .zIndex(999)
@@ -311,6 +374,21 @@ extension View {
     .overlay(alignment: .top) {
         CirklToast(type: .error, message: "Impossible d'envoyer le message")
             .padding(.top, 60)
+    }
+    .preferredColorScheme(.dark)
+}
+
+#Preview("Toast with Undo") {
+    ZStack {
+        DesignTokens.Colors.background.ignoresSafeArea()
+    }
+    .overlay(alignment: .top) {
+        CirklToast(
+            type: .warning,
+            message: "Connexion supprimée",
+            onUndo: { print("Undo tapped") }
+        )
+        .padding(.top, 60)
     }
     .preferredColorScheme(.dark)
 }
