@@ -85,9 +85,10 @@ struct LiquidGlassModifier: ViewModifier {
     let style: GlassEffectStyle
     let shape: GlassShape
     @State private var isPressed = false
-    @State private var shimmerPhase: Double = 0
-    @State private var breathingPhase: Double = 0
-    
+    // PERFORMANCE FIX: Removed shimmerPhase and breathingPhase animations
+    // These were causing "unsafeForcedSync" warnings and massive CPU load
+    // Each glass element was starting its own infinite animation loop
+
     func body(content: Content) -> some View {
         content
             .background {
@@ -98,15 +99,16 @@ struct LiquidGlassModifier: ViewModifier {
             }
             .scaleEffect(isPressed && style.isInteractive ? 0.98 : 1.0)
             .animation(.interactiveSpring(response: 0.4, dampingFraction: 0.6), value: isPressed)
-            .onAppear {
-                startAnimations()
-            }
+            // PERFORMANCE FIX: Removed onAppear { startAnimations() }
+            // No more infinite animation loops per glass element
             .onTapGesture {
                 if style.isInteractive {
                     withAnimation(.easeInOut(duration: 0.15)) {
                         isPressed = true
                     }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    // Use Task instead of DispatchQueue for proper concurrency
+                    Task { @MainActor in
+                        try? await Task.sleep(nanoseconds: 150_000_000)
                         withAnimation(.easeOut(duration: 0.2)) {
                             isPressed = false
                         }
@@ -168,50 +170,32 @@ struct LiquidGlassModifier: ViewModifier {
     
     @ViewBuilder
     private func glassHighlights() -> some View {
-        ZStack {
-            // Reflet principal
-            shapeView()
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.3),
-                            Color.clear
-                        ],
-                        startPoint: .top,
-                        endPoint: .center
-                    )
+        // PERFORMANCE FIX: Simplified highlights - no animated shimmer
+        // Static highlight gives the glass effect without animation overhead
+        shapeView()
+            .fill(
+                LinearGradient(
+                    colors: [
+                        Color.white.opacity(0.25),
+                        Color.clear
+                    ],
+                    startPoint: .top,
+                    endPoint: .center
                 )
-                .mask {
-                    shapeView()
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color.white,
-                                    Color.clear
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                }
-            
-            // Effet de shimmer animé
-            if style.isInteractive {
+            )
+            .mask {
                 shapeView()
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color.clear,
-                                Color.white.opacity(0.3),
+                                Color.white,
                                 Color.clear
                             ],
-                            startPoint: UnitPoint(x: shimmerPhase - 0.3, y: 0),
-                            endPoint: UnitPoint(x: shimmerPhase + 0.3, y: 1)
+                            startPoint: .top,
+                            endPoint: .bottom
                         )
                     )
-                    .opacity(0.5)
             }
-        }
     }
     
     private func shapeView() -> AnyShape {
@@ -227,17 +211,6 @@ struct LiquidGlassModifier: ViewModifier {
         }
     }
     
-    private func startAnimations() {
-        if style.isInteractive {
-            withAnimation(.linear(duration: 3).repeatForever(autoreverses: false)) {
-                shimmerPhase = 2
-            }
-        }
-        
-        withAnimation(.easeInOut(duration: 4).repeatForever(autoreverses: true)) {
-            breathingPhase = 1
-        }
-    }
 }
 
 // MARK: - Glass Effect Container
