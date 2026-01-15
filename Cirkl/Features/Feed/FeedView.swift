@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - Feed View
 /// Onglet actualités réseau avec filtres et liste scrollable
-/// Style Instagram notifications
+/// Style Instagram notifications avec 3 types de cards spécialisées
 
 struct FeedView: View {
 
@@ -96,12 +96,14 @@ struct FeedView: View {
                 filterHeader
                     .padding(.horizontal, DesignTokens.Spacing.md)
 
-                // Feed items
+                // Feed items - dispatched by type
                 ForEach(viewModel.filteredItems) { item in
-                    FeedCard(item: item) {
-                        handleItemTap(item)
-                    }
-                    .padding(.horizontal, DesignTokens.Spacing.md)
+                    feedCard(for: item)
+                        .padding(.horizontal, DesignTokens.Spacing.md)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .move(edge: .top)),
+                            removal: .opacity.combined(with: .scale(scale: 0.9))
+                        ))
                 }
 
                 // Bottom spacer
@@ -112,6 +114,35 @@ struct FeedView: View {
         }
         .refreshable {
             await viewModel.refresh()
+        }
+    }
+
+    // MARK: - Card Dispatcher
+
+    @ViewBuilder
+    private func feedCard(for item: FeedItem) -> some View {
+        switch item.type {
+        case .update:
+            UpdateCard(item: item) {
+                handleItemTap(item)
+            }
+
+        case .synergy:
+            SynergyCard(
+                item: item,
+                onCreateConnection: {
+                    viewModel.createSynergyConnection(item.id)
+                    CirklHaptics.success()
+                },
+                onDismiss: {
+                    viewModel.dismissSynergy(item.id)
+                }
+            )
+
+        case .networkPulse:
+            NetworkPulseCard(item: item) {
+                handleItemTap(item)
+            }
         }
     }
 
@@ -153,8 +184,10 @@ struct FeedView: View {
         CirklHaptics.light()
 
         #if DEBUG
-        print("📰 Tapped: \(item.title)")
+        print("📰 Tapped: \(item.connectionName ?? item.type.displayName)")
         #endif
+
+        // TODO: Navigate to connection profile or detail
     }
 }
 

@@ -1,13 +1,45 @@
 import SwiftUI
 
-// MARK: - Feed Card
-/// Card d'actualité avec avatar, titre, message et timestamp
-/// Style Instagram notifications avec Liquid Glass
+// MARK: - Feed Card (Generic Fallback)
+/// Card générique pour les items du feed
+/// Utilisé comme fallback, préférer les cards spécialisées (UpdateCard, SynergyCard, NetworkPulseCard)
 
 struct FeedCard: View {
 
     let item: FeedItem
     let onTap: () -> Void
+
+    // MARK: - Computed Properties
+
+    /// Titre dérivé selon le type
+    private var title: String {
+        switch item.type {
+        case .update:
+            return item.connectionName ?? "Mise à jour"
+        case .synergy:
+            return "Synergie détectée"
+        case .networkPulse:
+            return item.connectionName ?? "Rappel réseau"
+        }
+    }
+
+    /// Message dérivé selon le type
+    private var message: String {
+        switch item.type {
+        case .update:
+            return item.updateContent ?? "Nouvelle mise à jour"
+        case .synergy:
+            if let p1 = item.synergyPerson1Name, let p2 = item.synergyPerson2Name {
+                return "\(p1) et \(p2) pourraient collaborer"
+            }
+            return "Match détecté entre deux connexions"
+        case .networkPulse:
+            if let days = item.daysSinceContact {
+                return "Aucun contact depuis \(days) jours"
+            }
+            return "Cette connexion s'éloigne"
+        }
+    }
 
     var body: some View {
         Button(action: onTap) {
@@ -22,13 +54,13 @@ struct FeedCard: View {
                         Text(item.type.emoji)
                             .font(.system(size: 14))
 
-                        Text(item.title)
+                        Text(title)
                             .font(DesignTokens.Typography.headline)
                             .foregroundStyle(DesignTokens.Colors.textPrimary)
                     }
 
                     // Message
-                    Text(item.message)
+                    Text(message)
                         .font(DesignTokens.Typography.body)
                         .foregroundStyle(DesignTokens.Colors.textSecondary)
                         .lineLimit(3)
@@ -36,7 +68,11 @@ struct FeedCard: View {
 
                     // Connection context + timestamp
                     HStack {
-                        if let connectionName = item.connectionName {
+                        if let context = item.contextWithUser {
+                            Text(context)
+                                .font(DesignTokens.Typography.caption1)
+                                .foregroundStyle(item.accentColor)
+                        } else if let connectionName = item.connectionName {
                             Text(connectionName)
                                 .font(DesignTokens.Typography.caption1)
                                 .foregroundStyle(item.accentColor)
