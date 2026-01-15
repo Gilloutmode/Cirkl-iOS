@@ -32,8 +32,8 @@ struct ContentView: View {
             }
             // 3. Main app - user is logged in and has completed onboarding
             else {
-                // Interface principale avec nouveau design Living Glass
-                OrbitalView()
+                // Interface principale avec TabView
+                CirklTabView()
                     .environmentObject(appState)
                     .environmentObject(connectionState)
                     .environmentObject(performanceManager)
@@ -54,6 +54,57 @@ struct ContentView: View {
             // Initialiser les optimisations de performance
             await performanceManager.initializeOptimizations()
         }
+    }
+}
+
+// MARK: - CIRKL TAB VIEW
+/// Navigation principale avec tabs Orbital et Feed
+struct CirklTabView: View {
+    @EnvironmentObject var appState: AppStateManager
+    @EnvironmentObject var connectionState: ConnectionStateManager
+    @EnvironmentObject var performanceManager: PerformanceManager
+    @State private var selectedTab: CirklTab = .orbital
+
+    enum CirklTab: String, CaseIterable {
+        case orbital = "orbital"
+        case feed = "feed"
+
+        var icon: String {
+            switch self {
+            case .orbital: return "circle.hexagongrid.fill"
+            case .feed: return "newspaper.fill"
+            }
+        }
+
+        var title: String {
+            switch self {
+            case .orbital: return "Réseau"
+            case .feed: return "Actualités"
+            }
+        }
+    }
+
+    var body: some View {
+        TabView(selection: $selectedTab) {
+            // Orbital tab
+            OrbitalView()
+                .environmentObject(appState)
+                .environmentObject(connectionState)
+                .environmentObject(performanceManager)
+                .tag(CirklTab.orbital)
+                .tabItem {
+                    Label(CirklTab.orbital.title, systemImage: CirklTab.orbital.icon)
+                }
+
+            // Feed tab
+            FeedView()
+                .tag(CirklTab.feed)
+                .tabItem {
+                    Label(CirklTab.feed.title, systemImage: CirklTab.feed.icon)
+                }
+        }
+        .tint(DesignTokens.Colors.electricBlue)
+        .preferredColorScheme(.dark)
     }
 }
 
