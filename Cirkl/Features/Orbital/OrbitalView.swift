@@ -38,6 +38,10 @@ struct OrbitalView: View {
     @State private var cachedBaseContacts: [OrbitalContact] = []
     @State private var lastContactsHash: Int = 0
 
+    // SYNERGY ANIMATIONS: État pour les synergies détectées
+    @State private var detectedSynergies: [DetectedSynergy] = []
+    @State private var connectionPositions: [String: CGPoint] = [:]
+
     // Utilisateur courant (Gil) pour la vérification
     private var currentUser: User {
         User(
@@ -361,8 +365,16 @@ struct OrbitalView: View {
                             searchQuery: viewModel.searchQuery
                         )
 
+                        // SYNERGY LINES: Lignes lumineuses entre les bulles en synergie
+                        if !detectedSynergies.isEmpty {
+                            SynergyLinesOverlay(
+                                synergies: detectedSynergies,
+                                connectionPositions: connectionPositions
+                            )
+                        }
+
                         // Bulles des connexions (draggables + filtrables + tap pour profil)
-                        OrbitalBubblesLayer(
+                        OrbitalBubblesLayerWithSynergy(
                             contacts: allContacts,
                             centerX: centerX,
                             centerY: centerY,
@@ -370,9 +382,13 @@ struct OrbitalView: View {
                             height: height,
                             bubbleOffsets: $bubbleOffsets,
                             searchQuery: viewModel.searchQuery,
+                            synergies: detectedSynergies,
                             onContactTap: { contact in
                                 CirklHaptics.bubbleTap()
                                 selectedContact = contact
+                            },
+                            onPositionsUpdated: { positions in
+                                connectionPositions = positions
                             }
                         )
                     }
@@ -463,6 +479,13 @@ struct OrbitalView: View {
             await neo4jService.fetchConnections()
             // PERFORMANCE FIX: Initial cache population
             updateContactsIfNeeded()
+
+            // SYNERGY DETECTION: Lancer l'analyse des synergies
+            await detectSynergies()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .synergyDetected)) { _ in
+            // Mettre à jour les synergies quand de nouvelles sont détectées
+            detectedSynergies = DebriefingManager.shared.detectedSynergies
         }
         // PERFORMANCE FIX: Update cache when dependencies change (instead of recomputing on every render)
         .onChange(of: neo4jService.connections) { _, _ in
@@ -478,6 +501,51 @@ struct OrbitalView: View {
         .onChange(of: viewModel.searchQuery) { _, _ in
             updateContactsIfNeeded()
         }
+    }
+
+    // MARK: - Synergy Detection
+
+    /// Détecte les synergies entre les connexions
+    private func detectSynergies() async {
+        // Convertir les contacts Neo4j en Connection pour l'analyse
+        let connections = neo4jService.connections.compactMap { neo4jContact -> Connection? in
+            // Convert String id to UUID
+            guard let uuid = UUID(uuidString: neo4jContact.id) else { return nil }
+
+            // Get closeness from relationshipProfile or default to moderate
+            let closeness = neo4jContact.relationshipProfile?.closeness.rawValue ?? 3
+            let sharedInterests = neo4jContact.relationshipProfile?.sharedInterests ?? []
+
+            return Connection(
+                id: uuid,
+                name: neo4jContact.name,
+                meetingPlace: neo4jContact.meetingPlace,
+                role: neo4jContact.role,
+                company: neo4jContact.company,
+                industry: neo4jContact.industry,
+                relationshipStrength: CGFloat(closeness) / 5.0,
+                tags: neo4jContact.tags,
+                sharedInterests: sharedInterests
+            )
+        }
+
+        // Lancer l'analyse des synergies
+        let synergies = await SynergyDetectionService.shared.analyzeConnections(connections)
+
+        // Stocker dans le manager et mettre à jour l'état local
+        for synergy in synergies {
+            DebriefingManager.shared.addSynergy(synergy)
+        }
+
+        await MainActor.run {
+            detectedSynergies = DebriefingManager.shared.detectedSynergies
+        }
+
+        #if DEBUG
+        if !synergies.isEmpty {
+            print("🔗 Detected \(synergies.count) synergies in OrbitalView")
+        }
+        #endif
     }
 }
 

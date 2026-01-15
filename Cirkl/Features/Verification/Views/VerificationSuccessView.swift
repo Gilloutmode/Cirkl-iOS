@@ -10,6 +10,10 @@ struct VerificationSuccessView: View {
     let onComplete: () -> Void
     var isFirstConnection: Bool = false
 
+    // NEW: Connection info for reveal flow
+    var connectionId: String?
+    var connectionPublicProfile: ConnectionPublicProfile?
+
     // MARK: - Accessibility
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -18,6 +22,7 @@ struct VerificationSuccessView: View {
     @State private var contentOpacity: Double = 0
     @State private var confettiCounter = 0
     @State private var showFirstConnectionBadge = false
+    @State private var showConnectionReveal = false
 
     // MARK: - Body
     var body: some View {
@@ -197,12 +202,12 @@ struct VerificationSuccessView: View {
 
     // MARK: - Complete Button
     private var completeButton: some View {
-        Button(action: onComplete) {
+        Button(action: handleComplete) {
             HStack(spacing: 10) {
-                Text("Voir la connexion")
+                Text(connectionPublicProfile != nil ? "Découvrir la connexion" : "Voir la connexion")
                     .font(.headline)
 
-                Image(systemName: "arrow.right")
+                Image(systemName: connectionPublicProfile != nil ? "sparkles" : "arrow.right")
                     .font(.headline)
             }
             .foregroundStyle(.white)
@@ -223,6 +228,27 @@ struct VerificationSuccessView: View {
         }
         .opacity(contentOpacity)
         .padding(.bottom, 32)
+        .fullScreenCover(isPresented: $showConnectionReveal) {
+            if let id = connectionId, let profile = connectionPublicProfile {
+                ConnectionRevealView(
+                    connectionId: id,
+                    publicProfile: profile,
+                    onComplete: onComplete
+                )
+            }
+        }
+    }
+
+    // MARK: - Actions
+
+    private func handleComplete() {
+        // If we have connection info, show the reveal view
+        if connectionId != nil && connectionPublicProfile != nil {
+            showConnectionReveal = true
+        } else {
+            // Otherwise just complete
+            onComplete()
+        }
     }
 
     // MARK: - Helpers
