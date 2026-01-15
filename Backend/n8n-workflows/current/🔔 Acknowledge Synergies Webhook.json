@@ -1,0 +1,142 @@
+{
+  "name": "🔔 Acknowledge Synergies Webhook",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "acknowledge-synergies",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "fa41f23e-7e3f-4232-bd29-dbcd3212ffce",
+      "name": "📱 Acknowledge Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        768,
+        400
+      ],
+      "webhookId": "cirkl-acknowledge-synergies"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://neo4j-production-1adf.up.railway.app/db/neo4j/tx/commit",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Basic bmVvNGo6OWdtYnoxd3JuOTVhZ2w2dTBiMHIyOHZmd2lidDdjZDk="
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"statements\": [\n    {\n      \"statement\": \"MATCH (p:Person {userId: $userId}) SET p.buttonState = 'idle', p.pendingSynergies = '[]', p.lastSynergyCheck = datetime() RETURN p.userId as userId, p.buttonState as newState\",\n      \"parameters\": {\n        \"userId\": $json.body.userId || $json.userId || 'unknown'\n      }\n    }\n  ]\n}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 5000
+        }
+      },
+      "id": "a9297cdc-89df-467a-9ed1-cc803a8ab60a",
+      "name": "💾 Reset Button State in Neo4j",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1024,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"success\": true,\n  \"userId\": $('📱 Acknowledge Webhook').first().json.body?.userId || $('📱 Acknowledge Webhook').first().json.userId,\n  \"buttonState\": \"idle\",\n  \"message\": \"Synergies acknowledged, button state reset to idle\",\n  \"timestamp\": new Date().toISOString()\n} }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "c0e6a893-46fb-4ade-b90a-6eeb3435cd5d",
+      "name": "📤 Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1296,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🔔 Acknowledge Synergies Webhook\n\n### Purpose\nReset button state to idle after user acknowledges synergies/opportunities in chat.\n\n### Flow\n1. iOS app calls webhook when user responds to synergy message\n2. Update Neo4j: buttonState → idle, clear pendingSynergies\n3. Return success response\n\n### API\n\n**POST /webhook/acknowledge-synergies**\n```json\n{\n  \"userId\": \"gil\"\n}\n```\n\n**Response**\n```json\n{\n  \"success\": true,\n  \"buttonState\": \"idle\",\n  \"message\": \"Synergies acknowledged\"\n}\n```",
+        "height": 380,
+        "width": 320
+      },
+      "id": "5bc36609-7ed0-4017-aa41-77aa4189cc79",
+      "name": "📝 Documentation",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        384,
+        288
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "📱 Acknowledge Webhook": {
+      "main": [
+        [
+          {
+            "node": "💾 Reset Button State in Neo4j",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Reset Button State in Neo4j": {
+      "main": [
+        [
+          {
+            "node": "📤 Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "95d64e4b-5c0d-4ee1-823b-c13eb5f13a15",
+  "meta": {
+    "instanceId": "32831241200b534db91d34a916ee7fb845fffeb1fcb7fe2246f893ee8c6765a5"
+  },
+  "id": "pjBg2tW4aI1NVxMN",
+  "tags": []
+}

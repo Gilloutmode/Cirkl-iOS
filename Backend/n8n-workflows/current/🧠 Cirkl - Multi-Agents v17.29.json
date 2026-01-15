@@ -1,0 +1,2547 @@
+{
+  "name": "🧠 Cirkl - Multi-Agents v17.29",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# 🚀 CirKL v17.29 - iOS DUAL PLATFORM COMPLETE\n\n## ✅ NOUVEAUTÉS v17.29:\n1. ✅ iOS Webhook Trigger: POST /webhook/cirkl-ios\n2. ✅ Source Router: Détection auto Telegram/iOS/Test\n3. ✅ iOS Auth Validator: Token validation + Multi-user profiles\n4. ✅ Audio Platform Router: iOS (base64) vs Telegram (file_id)\n5. ✅ iOS Audio Processor: Base64 → OpenAI Whisper\n6. ✅ Platform Response Router: JSON (iOS) vs Telegram messages\n7. ✅ iOS Response: JSON webhook response\n8. ✅ GSheets Logging: Platform + Device info columns\n\n### ARCHITECTURE DUAL PLATFORM:\n- 📱 iOS: Webhook → Source Router → Auth → Processing → iOS Response\n- 💬 Telegram: Trigger → Source Router → Auth → Processing → Send Message\n\n### iOS REQUEST SCHEMA:\n```json\n{\n  \"userId\": \"string\",\n  \"messageType\": \"text|audio\",\n  \"content\": \"string|base64\",\n  \"sessionId\": \"string\",\n  \"deviceInfo\": {...},\n  \"authToken\": \"cirkl_xxx\"\n}\n```\n\n### MULTI-USER PROFILES:\n- gil: energetic, frequent emojis\n- denis: strategic, moderate emojis\n- gilles: technical, minimal emojis\n\n### LOGGING ENHANCED:\n- Platform (iOS/Telegram)\n- Device_Model, App_Version, OS_Version\n\n## ✅ NOUVEAUTÉS v17.29:\n1. ✅ Connection Action Router: Détecte append vs update\n2. ✅ Action Switch: Route vers append ou update\n3. ✅ Update Connection Data: Prépare payload update\n4. ✅ GSheets Update Connection: Update row by ID\n\n### iOS UPDATE FLOW:\nPour mettre à jour une connexion depuis iOS:\n```json\n{\n  \"action\": \"update_connection\",\n  \"connectionId\": \"conn_xxx\",\n  \"relationshipProfile\": {\n    \"spheres\": [\"professional\", \"personal\"],\n    \"natures\": [\"friend\", \"colleague\"],\n    \"closeness\": 4,\n    \"interactionFrequency\": \"weekly\"\n  }\n}\n```",
+        "height": 650,
+        "width": 450,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -117584,
+        24064
+      ],
+      "id": "ba34daeb-b10d-4954-bc9e-c531448033fc",
+      "name": "Architecture Documentation v17.5"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -124080,
+        25168
+      ],
+      "id": "452430b7-348c-44d1-8938-9d11bea7ea45",
+      "name": "Telegram Trigger",
+      "webhookId": "4a00b0ed-a364-4d42-90bf-b5eba02d6b6f",
+      "credentials": {
+        "telegramApi": {
+          "id": "Tf68WM1wKlR4lhiu",
+          "name": "Cirkl BOT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -124080,
+        24976
+      ],
+      "id": "d0f7678c-4138-46a4-8d51-2472f8f644cf",
+      "name": "Chat Trigger (Test)",
+      "webhookId": "b3f4f27b-704e-4e16-a5c4-c200bfbd55e5"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messageType || 'text' }}",
+                    "rightValue": "text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messageType || 'text' }}",
+                    "rightValue": "audio",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -123408,
+        25168
+      ],
+      "id": "a1467324-aa39-452b-affc-6ff35da8068d",
+      "name": "Message Type Router"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🧠 MCP Context Enrichment - v17.5 DUAL PLATFORM (iOS + Telegram)\nconst inputData = $input.first().json;\n\n// Check if data comes from Source Router\nconst isFromSourceRouter = inputData._routing && inputData.source;\nconst source = inputData.source || 'unknown';\n\nlet userId, firstName, messageText, chatId, sessionId, deviceInfo;\n\nif (isFromSourceRouter) {\n  // ✅ Data already normalized by Source Router\n  userId = inputData.userId || 'default';\n  firstName = inputData.userName || 'Utilisateur';\n  messageText = inputData.messageText || 'Bonjour';\n  chatId = inputData.chatId;\n  sessionId = inputData.sessionId;\n  deviceInfo = inputData.deviceInfo;\n} else {\n  // 🔄 Fallback: Legacy Telegram format\n  const telegram = inputData.message || {};\n  userId = String(telegram.from?.id || telegram.chat?.id || 'default');\n  firstName = telegram.from?.first_name || 'Utilisateur';\n  messageText = telegram.text || inputData.chatInput || 'Bonjour';\n  chatId = telegram.chat?.id || null;\n  sessionId = `tg-${userId}-${Date.now()}`;\n  deviceInfo = {};\n}\n\nconst sessionIdFinal = sessionId || `session-${userId}-${Date.now()}`;\n\nreturn {\n  userId: userId,\n  userName: firstName,\n  messageText: messageText,\n  sessionId: sessionIdFinal,\n  chatId: chatId,\n  source: source,\n  deviceInfo: deviceInfo,\n  _auth: inputData._auth,\n  userProfile: inputData.userProfile,\n  rawInput: inputData.rawInput || inputData,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -122512,
+        25024
+      ],
+      "id": "2168ab23-5273-4188-bfdf-a8f27ecd2740",
+      "name": "MCP Context Enrichment",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ !$json.messageText || $json.messageText === '' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.1,
+      "position": [
+        -122288,
+        25024
+      ],
+      "id": "79dcc5b7-d59d-4842-85b2-499fbf8b58d6",
+      "name": "Validate MCP Data",
+      "continueOnFail": true,
+      "notes": "✅ NOUVEAU - Validation des données MCP"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8a4f6e5a-5678-4d3e-9b1c-2d3e4f5a6b7c",
+              "name": "userId",
+              "value": "={{ $json.message.from.id }}",
+              "type": "number"
+            },
+            {
+              "id": "9b5f7e6a-6789-4e3f-ac2d-3e4f5a6b7c8d",
+              "name": "userName",
+              "value": "={{ $json.message.from.first_name }}",
+              "type": "string"
+            },
+            {
+              "id": "ac6f8e7b-789a-4f3e-bd3e-4f5a6b7c8d9e",
+              "name": "chatId",
+              "value": "={{ $json.message.chat.id }}",
+              "type": "number"
+            },
+            {
+              "id": "bd7f9e8c-89ab-5f3e-ce4f-5a6b7c8d9eaf",
+              "name": "voiceFileId",
+              "value": "={{ $json.message.voice.file_id }}",
+              "type": "string"
+            },
+            {
+              "id": "ce8fae9d-9abc-6f3e-df5f-6b7c8d9eafb0",
+              "name": "timestamp",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -122960,
+        25216
+      ],
+      "id": "ad09a6ab-910f-4a24-8d68-4bab726315ec",
+      "name": "Preserve Telegram Context"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.voiceFileId }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -122736,
+        25216
+      ],
+      "id": "5e7478dc-deab-41f7-bb8a-8fe8b4d446d3",
+      "name": "Get Voice File",
+      "webhookId": "b2be5f17-3a10-4f17-a612-d190f72111fb",
+      "credentials": {
+        "telegramApi": {
+          "id": "Tf68WM1wKlR4lhiu",
+          "name": "Cirkl BOT"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -122512,
+        25216
+      ],
+      "id": "4a714df0-ea30-4dd8-b8dd-8c96e32b1dd6",
+      "name": "OpenAI Transcription",
+      "credentials": {
+        "openAiApi": {
+          "id": "rN03lkUSMUTmFWoD",
+          "name": "New OpenAi connexion"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🎙️ Merge Audio Context - v16.1 AUDIO PROCESSING CORRIGÉ\nconst timeout = (ms) => new Promise((_, reject) => \n  setTimeout(() => reject(new Error('Timeout')), ms)\n);\n\nasync function processAudio() {\n  try {\n    if (!$input.all().length) {\n      throw new Error('No input data');\n    }\n    \n    const inputData = $input.first().json;\n    \n    const userId = inputData.userId;\n    const userName = inputData.userName || 'Utilisateur';\n    const chatId = inputData.chatId;\n    const transcribedText = inputData.text || '';\n    const timestamp = inputData.timestamp;\n    \n    let userContext = {\n      sessionId: `tg-${userId}`,\n      telegramUserId: userId,\n      userName: userName,\n      userStyle: 'friendly',\n      greeting: `Salut ${userName} !`,\n      questionStyle: 'friendly',\n      emojis: 'moderate',\n      responseLength: 'concise',\n      focus: 'general'\n    };\n    \n    if (userId === 1435265762 || userId === '1435265762') {\n      userContext = {\n        ...userContext,\n        userName: 'Gil',\n        userStyle: 'energetic',\n        greeting: 'Salut Gil ! 🚀',\n        personalityTraits: 'Visionnaire, Enthousiaste, Connecteur',\n        questionStyle: 'direct_enthusiastic',\n        emojis: 'frequent',\n        responseLength: 'dynamic',\n        focus: 'vision_opportunities'\n      };\n    }\n    \n    let messageIntent = 'general';\n    let requiresMemoryLookup = false;\n    let delegateToAgent = 'MemoryAgent';\n    \n    const patterns = {\n      newConnection: ['rencontré', 'vu', 'croisé', 'fait la connaissance', 'discuté avec'],\n      memory: ['souviens', 'rappelle', 'passion', 'intérêt', 'aime', 'préfère'],\n      personal: ['mes passions', 'ce que j\\'aime', 'mes intérêts'],\n      opportunity: ['opportunité', 'synergie', 'collaboration', 'projet'],\n      analytics: ['statistiques', 'combien', 'nombre de', 'analyse']\n    };\n    \n    const messageLower = transcribedText.toLowerCase();\n    \n    if (patterns.newConnection.some(p => messageLower.includes(p))) {\n      messageIntent = 'new_connection';\n      delegateToAgent = 'ConnectionAgent';\n    } else if (patterns.memory.some(p => messageLower.includes(p))) {\n      messageIntent = 'memory_search';\n      requiresMemoryLookup = true;\n      delegateToAgent = 'MemoryAgent';\n    } else if (patterns.personal.some(p => messageLower.includes(p))) {\n      messageIntent = 'personal_question';\n      requiresMemoryLookup = true;\n      delegateToAgent = 'MemoryAgent';\n    } else if (patterns.opportunity.some(p => messageLower.includes(p))) {\n      messageIntent = 'opportunity_matching';\n      delegateToAgent = 'MatchingAgent';\n    } else if (patterns.analytics.some(p => messageLower.includes(p))) {\n      messageIntent = 'analytics';\n      delegateToAgent = 'AnalyticsAgent';\n    }\n    \n    const mcpMetadata = {\n      conversationId: `conv_${Date.now()}_${userId}`,\n      timestamp: timestamp,\n      intent: messageIntent,\n      delegateToAgent: delegateToAgent,\n      requiresMemory: requiresMemoryLookup,\n      emotionalContext: 'neutral',\n      priority: messageIntent === 'new_connection' ? 'high' : 'normal',\n      messageType: 'audio'\n    };\n    \n    return {\n      messageText: transcribedText,\n      userMessage: transcribedText,\n      chatId: chatId,\n      userContext: userContext,\n      messageIntent: messageIntent,\n      mcpMetadata: mcpMetadata,\n      delegateToAgent: delegateToAgent,\n      originalFormat: 'audio',\n      userId: userId,\n      userName: userName,\n      cirkl_context: mcpMetadata,\n      user_profile: userContext,\n      _debug: {\n        hasMessageText: Boolean(transcribedText),\n        messageLength: transcribedText.length,\n        source: 'Merge Audio Context v16.1',\n        timestamp: timestamp\n      }\n    };\n  } catch (error) {\n    console.error('Audio Context Error:', error);\n    return {\n      messageText: 'Erreur audio',\n      userMessage: 'Erreur audio',\n      chatId: null,\n      userContext: {},\n      messageIntent: 'general',\n      mcpMetadata: {},\n      delegateToAgent: 'MemoryAgent',\n      originalFormat: 'audio',\n      _debug: {\n        error: error.message,\n        source: 'Merge Audio Context v16.1 - FALLBACK'\n      }\n    };\n  }\n}\n\n// Exécution avec timeout\nreturn await Promise.race([\n  processAudio(),\n  timeout(3000).catch(() => ({\n    messageText: 'Erreur audio',\n    userMessage: 'Erreur audio',\n    chatId: null,\n    userContext: {},\n    messageIntent: 'general',\n    mcpMetadata: {},\n    delegateToAgent: 'MemoryAgent',\n    originalFormat: 'audio',\n    _debug: {\n      error: 'Timeout after 3s',\n      source: 'Merge Audio Context v16.1 - TIMEOUT'\n    }\n  }))\n]);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -122288,
+        25216
+      ],
+      "id": "8342b98a-7a58-4507-9570-39dd310230c7",
+      "name": "Merge Audio Context",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🎯 Zep Session Manager - v16.1 SESSION MANAGEMENT CORRIGÉ\nconst timeout = (ms) => new Promise((_, reject) => \n  setTimeout(() => reject(new Error('Timeout')), ms)\n);\n\nasync function manageSession() {\n  try {\n    if (!$input.all().length) {\n      throw new Error('No input data');\n    }\n    \n    const inputData = $input.first().json;\n    \n    // Extraction sécurisée des données\n    const userId = inputData.userContext?.telegramUserId || \n                   inputData.userContext?.userId || \n                   inputData.userId || \n                   'default';\n    \n    const sessionId = userId !== 'default' ? `tg-${userId}` : 'tg-default';\n    const cleanSessionId = sessionId.replace(/[^a-zA-Z0-9-_]/g, '-');\n    \n    // CRUCIAL: Récupération du messageText avec TOUS les fallbacks\n    const messageText = inputData.messageText || \n                       inputData.userMessage || \n                       inputData.message?.text || \n                       inputData.text || \n                       inputData.query || \n                       'Bonjour';\n    \n    // Structure de mémoire pour Zep\n    const memory = {\n      sessionId: cleanSessionId,\n      messages: [],\n      summary: null\n    };\n    \n    // RETURN COMPLET avec propagation de TOUTES les données\n    return {\n      // Données Zep\n      sessionId: cleanSessionId,\n      memoryInterface: memory,\n      metadata: {\n        type: 'zep_session',\n        version: 'v16.1',\n        timestamp: new Date().toISOString()\n      },\n      \n      // PROPAGATION COMPLÈTE des données d'entrée\n      messageText: messageText,\n      userMessage: messageText,\n      userContext: inputData.userContext || {},\n      mcpMetadata: inputData.mcpMetadata || {},\n      originalFormat: inputData.originalFormat || 'text',\n      messageIntent: inputData.messageIntent || 'general',\n      delegateToAgent: inputData.delegateToAgent || 'MemoryAgent',\n      chatId: inputData.chatId || inputData.userContext?.chatId,\n      userName: inputData.userContext?.userName || inputData.userName || 'User',\n      userId: userId,\n      \n      // Contexte CirKL\n      cirkl_context: inputData.cirkl_context || inputData.mcpMetadata || {},\n      user_profile: inputData.user_profile || inputData.userContext || {},\n      \n      // TOUTES les données originales\n      rawInput: inputData,\n      \n      // Debug info\n      _debug: {\n        receivedMessageText: Boolean(inputData.messageText),\n        messageTextValue: messageText,\n        messageTextLength: messageText.length,\n        source: 'Zep Session Manager v16.1',\n        timestamp: new Date().toISOString()\n      }\n    };\n  } catch (error) {\n    console.error('Zep Session Error:', error);\n    return {\n      sessionId: 'tg-default',\n      messageText: 'Bonjour',\n      userMessage: 'Bonjour',\n      userContext: {},\n      mcpMetadata: {},\n      delegateToAgent: 'MemoryAgent',\n      _debug: {\n        error: error.message,\n        source: 'Zep Session Manager v16.1 - FALLBACK'\n      }\n    };\n  }\n}\n\n// Exécution avec timeout\nreturn await Promise.race([\n  manageSession(),\n  timeout(3000).catch(() => ({\n    sessionId: 'tg-default',\n    messageText: 'Bonjour',\n    userMessage: 'Bonjour',\n    userContext: {},\n    mcpMetadata: {},\n    delegateToAgent: 'MemoryAgent',\n    _debug: {\n      error: 'Timeout after 3s',\n      source: 'Zep Session Manager v16.1 - TIMEOUT'\n    }\n  }))\n]);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -122064,
+        25168
+      ],
+      "id": "72a75632-3cff-4be4-b304-caf7af888df8",
+      "name": "Zep Session Manager",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "=https://api.getzep.com/api/v2/sessions/{{ $json.sessionId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Api-Key z_1dWlkIjoiZjc2MWI0MDktOWZhOS00YzRkLWE0MTEtYjQwNDNjMjJlMzc1In0.p_dIJByY2ZHIFaO5Doz2mePfIBs2ObrXlwws6X1neVcBx9pt4yclUo4WsrMAvG-xGpRRPqK0aRhY3GXMiBBrDw"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 5000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -121840,
+        25264
+      ],
+      "id": "357cf10a-fcbd-4f92-b9a3-7b150b1ddd30",
+      "name": "Check Session Exists",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -121616,
+        25168
+      ],
+      "id": "39099da7-de98-4c8e-af50-211432d60960",
+      "name": "Preserve Context Data",
+      "alwaysOutputData": true,
+      "continueOnFail": true,
+      "notes": "✅ CORRIGÉ - Mode append"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.error?.response?.status || ($json.statusCode === 404 ? 404 : 200) }}",
+              "rightValue": 404,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.1,
+      "position": [
+        -121392,
+        25168
+      ],
+      "id": "6a1f7528-3804-4d2a-a767-71092c25d00f",
+      "name": "Session Needs Creation?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.getzep.com/api/v2/sessions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Api-Key z_1dWlkIjoiZjc2MWI0MDktOWZhOS00YzRkLWE0MTEtYjQwNDNjMjJlMzc1In0.p_dIJByY2ZHIFaO5Doz2mePfIBs2ObrXlwws6X1neVcBx9pt4yclUo4WsrMAvG-xGpRRPqK0aRhY3GXMiBBrDw"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"session_id\": $input.first().json.sessionId,\n  \"user_id\": $input.first().json.sessionId,\n  \"metadata\": {\n    \"timestamp\": new Date().toISOString()\n  }\n}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 5000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -121168,
+        25264
+      ],
+      "id": "8ece9cb8-02da-4947-9fb4-e2d6870b486d",
+      "name": "Create New Session",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -120944,
+        25168
+      ],
+      "id": "cad030ce-efa1-4f24-b29f-29d54a831b01",
+      "name": "Merge Zep Branches",
+      "alwaysOutputData": true,
+      "continueOnFail": true,
+      "notes": "✅ CORRIGÉ - Mode append"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🔄 Restore Full Context - v16.1 DONNÉES RESTAURÉES COMPLÈTES CORRIGÉ\nconst timeout = (ms) => new Promise((_, reject) => \n  setTimeout(() => reject(new Error('Timeout')), ms)\n);\n\nasync function restoreContext() {\n  try {\n    if (!$input.all().length) {\n      throw new Error('No input data');\n    }\n    \n    const inputData = $input.first().json;\n    const originalData = $input.first().json;\n    \n    // Extraction de la réponse Zep si elle existe\n    const zepResponse = inputData.data ? JSON.parse(inputData.data || '{}') : inputData;\n    \n    // RECONSTRUCTION complète avec toutes les données\n    const restoredData = {\n      // DONNÉES CRITIQUES RESTAURÉES AVEC FALLBACKS\n      messageText: originalData.messageText || inputData.messageText || 'Bonjour',\n      userMessage: originalData.userMessage || originalData.messageText || inputData.messageText || 'Bonjour',\n      userContext: originalData.userContext || inputData.userContext || { userName: 'User' },\n      mcpMetadata: originalData.mcpMetadata || inputData.mcpMetadata || {},\n      delegateToAgent: originalData.delegateToAgent || inputData.delegateToAgent || 'MemoryAgent',\n      messageIntent: originalData.messageIntent || inputData.messageIntent || 'general',\n      originalFormat: originalData.originalFormat || inputData.originalFormat || 'text',\n      chatId: originalData.chatId || inputData.chatId,\n      userName: originalData.userName || inputData.userName || 'User',\n      userId: originalData.userId || inputData.userId,\n      sessionId: originalData.sessionId || inputData.sessionId,\n      \n      // Contexte CirKL restauré\n      cirkl_context: originalData.cirkl_context || originalData.mcpMetadata || {},\n      user_profile: originalData.user_profile || originalData.userContext || {},\n      \n      // Données Zep si disponibles\n      zepSession: zepResponse,\n      sessionExists: !inputData.error,\n      \n      // Toutes les données originales pour backup\n      rawInput: originalData.rawInput || originalData,\n      \n      // Debug info\n      _debug: {\n        hasMessageText: Boolean(originalData.messageText || inputData.messageText),\n        messageTextValue: originalData.messageText || inputData.messageText || 'NO MESSAGE',\n        delegateToAgent: originalData.delegateToAgent || inputData.delegateToAgent || 'NO DELEGATE',\n        source: 'Restore Full Context v16.1',\n        timestamp: new Date().toISOString()\n      }\n    };\n    \n    console.log('DEBUG - Restored Data:', {\n      messageText: restoredData.messageText,\n      delegateToAgent: restoredData.delegateToAgent,\n      messageIntent: restoredData.messageIntent\n    });\n    \n    return restoredData;\n  } catch (error) {\n    console.error('Restore Context Error:', error);\n    return {\n      messageText: 'Bonjour',\n      userMessage: 'Bonjour',\n      userContext: { userName: 'User' },\n      mcpMetadata: {},\n      delegateToAgent: 'MemoryAgent',\n      messageIntent: 'general',\n      _debug: {\n        error: error.message,\n        source: 'Restore Full Context v16.1 - FALLBACK'\n      }\n    };\n  }\n}\n\n// Exécution avec timeout\nreturn await Promise.race([\n  restoreContext(),\n  timeout(3000).catch(() => ({\n    messageText: 'Bonjour',\n    userMessage: 'Bonjour',\n    userContext: { userName: 'User' },\n    mcpMetadata: {},\n    delegateToAgent: 'MemoryAgent',\n    messageIntent: 'general',\n    _debug: {\n      error: 'Timeout after 3s',\n      source: 'Restore Full Context v16.1 - TIMEOUT'\n    }\n  }))\n]);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -120720,
+        25168
+      ],
+      "id": "79920aa1-a8f8-4e0e-9378-8c0071b2bbf8",
+      "name": "Restore Full Context",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -120272,
+        25168
+      ],
+      "id": "f0ffd42a-5314-4467-8de6-ad51072cdc6b",
+      "name": "Preserve Context Before Graphiti",
+      "alwaysOutputData": true,
+      "continueOnFail": true,
+      "notes": "✅ CORRIGÉ - Mode append"
+    },
+    {
+      "parameters": {
+        "url": "https://graphiti-production-648d.up.railway.app/health",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 5000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -120496,
+        25264
+      ],
+      "id": "9ad128af-f892-40ca-9c34-def7b37c88b1",
+      "name": "Graphiti Health Check",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $input.first().json.messageText || $json.messageText || $json.userMessage || $('Restore Full Context').item.json.messageText || \"Bonjour, comment puis-je t'aider?\" }}",
+        "options": {
+          "systemMessage": "Tu es l'assistant CirKL. Un système a déjà détecté l'intent et sélectionné l'outil approprié.\n\n⚠️ IMPORTANT: L'intent a été pré-détecté. Regarde le champ \"delegateToAgent\" dans les données d'entrée.\n\nRÈGLE ABSOLUE: Tu DOIS appeler l'outil indiqué dans \"delegateToAgent\":\n- Si delegateToAgent = \"ConnectionAgent\" → Appelle \"Connection Agent Tool\"\n- Si delegateToAgent = \"MemoryAgent\" → Appelle \"Memory Agent Tool\"\n- Si delegateToAgent = \"AnalyticsAgent\" → Appelle \"Analytics Agent Tool\"\n- Si delegateToAgent = \"MatchingAgent\" → Appelle \"Matching Agent Tool\"\n\nPROCESSUS:\n1. Lis delegateToAgent dans les données\n2. Appelle l'outil correspondant avec le messageText\n3. Reformule la réponse de façon amicale avec des emojis 🚀👋💡\n\nStyle: Amical, enthousiaste, comme un assistant personnel.",
+          "returnIntermediateSteps": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -119424,
+        25168
+      ],
+      "id": "b827f81d-cf8d-4e8e-a8c1-5577ba99e964",
+      "name": "CirKL Orchestrator",
+      "alwaysOutputData": false,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5.2-chat-latest",
+          "mode": "list",
+          "cachedResultName": "gpt-5.2-chat-latest"
+        },
+        "options": {
+          "maxTokens": 8192,
+          "timeout": 15000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -119824,
+        25392
+      ],
+      "id": "1c1b40e0-f7c6-4a25-8c68-8bb2acf2ea0b",
+      "name": "OpenAI Model Primary",
+      "credentials": {
+        "openAiApi": {
+          "id": "rN03lkUSMUTmFWoD",
+          "name": "New OpenAi connexion"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5.2-chat-latest",
+          "mode": "list",
+          "cachedResultName": "gpt-5.2-chat-latest"
+        },
+        "options": {
+          "maxTokens": 8192,
+          "timeout": 10000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -119424,
+        25600
+      ],
+      "id": "f27ec443-1de7-4306-b531-5f7efd639c84",
+      "name": "OpenAI Model Agents",
+      "credentials": {
+        "openAiApi": {
+          "id": "rN03lkUSMUTmFWoD",
+          "name": "New OpenAi connexion"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Utilise cet outil quand l'utilisateur dit avoir RENCONTRÉ, VU, ou CROISÉ une nouvelle personne.\nMots-clés: rencontré, vu, croisé, présenté, discuté avec, fait la connaissance.",
+        "text": "={{ $json.messageText || $json.userMessage || $input.first().json.messageText }}",
+        "options": {
+          "systemMessage": "# 🤝 Connection Agent v16.1 - GESTIONNAIRE ROBUSTE\n\n## 🛡️ GESTION D'ERREUR PRIORITAIRE\n\nSi les tools Neo4j échouent :\n1. CONTINUE avec les données disponibles\n2. LOG l'erreur mais NE PAS arrêter le processus\n3. UTILISE les fallbacks (Google Sheets)\n4. STRUCTURE une réponse partielle mais fonctionnelle\n\n## 📊 FORMAT DE SORTIE AVEC FALLBACK\n\n```json\n{\n  \"connectionProfile\": {\n    \"name\": \"[Nom extrait]\",\n    \"role\": null,\n    \"company\": null,\n    \"location\": null,\n    \"meetingContext\": \"Données extraites sans vérification Neo4j\",\n    \"meetingDate\": null,\n    \"emotionalResonance\": 6,\n    \"lookingFor\": \"À découvrir\",\n    \"canOffer\": \"À découvrir\",\n    \"interests\": [],\n    \"tags\": [\"new-contact\"]\n  },\n  \"duplicateAnalysis\": {\n    \"isDuplicate\": false,\n    \"similarProfiles\": [],\n    \"confidence\": 0.5,\n    \"note\": \"Vérification Neo4j échouée - analyse basique effectuée\"\n  },\n  \"extractionQuality\": {\n    \"completeness\": 0.3,\n    \"missingCritical\": [\"role\", \"company\", \"verification\"],\n    \"suggestedQuestion\": \"Peux-tu me dire quel est le rôle de cette personne ?\"\n  },\n  \"neo4jQueries\": {\n    \"usersChecked\": false,\n    \"connectionsChecked\": false,\n    \"resultsFound\": 0,\n    \"error\": \"Neo4j temporairement indisponible\"\n  }\n}\n```"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        -119696,
+        25392
+      ],
+      "id": "0b742fa0-5a1b-4b4c-80d4-8bd04b287673",
+      "name": "Connection Agent Tool"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Utilise cet outil quand l'utilisateur pose une QUESTION sur une personne ou demande des SOUVENIRS.\nMots-clés: souviens, rappelle, qui est, connais-tu, parle-moi de.\nC'est l'outil PAR DÉFAUT si aucun autre ne correspond.",
+        "text": "={{ $json.messageText || $json.userMessage || $input.first().json.messageText }}",
+        "options": {
+          "systemMessage": "# 🧠 Memory Agent v16.1 - GESTIONNAIRE ROBUSTE\n\n## 🛡️ GESTION D'ERREUR\n\nSi Neo4j ou Graphiti échouent :\n1. UTILISE Google Sheets comme fallback\n2. STRUCTURE une réponse partielle mais valide\n3. NE PAS arrêter le processus\n\n## 📊 FORMAT DE SORTIE AVEC FALLBACK\n\n```json\n{\n  \"memorySearch\": {\n    \"query\": \"[Requête analysée]\",\n    \"type\": \"general\",\n    \"results\": [],\n    \"totalFound\": 0,\n    \"searchTime\": \"timeout\",\n    \"dataSource\": \"fallback\",\n    \"error\": \"Neo4j indisponible - données partielles\"\n  },\n  \"insights\": {\n    \"patterns\": [],\n    \"opportunities\": [],\n    \"suggestions\": [\"Vérifier la connexion Neo4j\"]\n  },\n  \"recommendation\": \"Utilisation du cache local en attendant\"\n}\n```"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        -119360,
+        25392
+      ],
+      "id": "da2a0f7a-fc8b-4127-9fce-e35a12e6ff34",
+      "name": "Memory Agent Tool"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Utilise cet outil quand l'utilisateur cherche des OPPORTUNITÉS ou SYNERGIES dans son réseau.\nMots-clés: opportunité, collaboration, projet, partenariat, synergie, qui pourrait.",
+        "text": "={{ $json.messageText || $json.userMessage || $input.first().json.messageText }}",
+        "options": {
+          "systemMessage": "# 🎯 Matching Agent v16.1 - ORCHESTRATEUR ROBUSTE\n\n## 🛡️ MODE FALLBACK\n\nSi Neo4j échoue, utilise les données Google Sheets pour :\n1. Analyser les patterns basiques\n2. Suggérer des connexions évidentes\n3. Fournir une réponse minimale mais utile\n\n## 📊 FORMAT FALLBACK\n\n```json\n{\n  \"matchingAnalysis\": {\n    \"primaryConnection\": \"[Personne analysée]\",\n    \"topMatches\": [],\n    \"totalOpportunities\": 0,\n    \"networkEffect\": 0,\n    \"dataSource\": \"fallback\",\n    \"error\": \"Analyse limitée - Neo4j indisponible\"\n  },\n  \"recommendations\": {\n    \"immediate\": [\"Réessayer plus tard\"],\n    \"shortTerm\": [],\n    \"longTerm\": []\n  }\n}\n```"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        -118928,
+        25392
+      ],
+      "id": "d23ee4f7-55a4-4175-9738-3a7ee53371e3",
+      "name": "Matching Agent Tool"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Utilise cet outil quand l'utilisateur demande des CHIFFRES ou STATISTIQUES sur son réseau.\nMots-clés: combien, nombre de, statistiques, total, pourcentage, analyse.",
+        "text": "={{ $json.messageText || $json.userMessage || $input.first().json.messageText }}",
+        "options": {
+          "systemMessage": "# 📊 Analytics Agent v16.1 - INTELLIGENCE ROBUSTE\n\n## 🛡️ ANALYTICS FALLBACK\n\nSi Neo4j échoue :\n1. Utilise Google Sheets pour stats basiques\n2. Fournit des estimations\n3. Indique clairement les limitations\n\n## 📊 FORMAT FALLBACK\n\n```json\n{\n  \"userAnalytics\": {\n    \"userName\": \"[Nom]\",\n    \"metrics\": {\n      \"totalConnections\": \"Non disponible\",\n      \"weeklyGrowth\": \"N/A\",\n      \"avgAuthenticity\": \"N/A\",\n      \"networkValue\": \"Calcul en cours\",\n      \"topConnector\": false\n    },\n    \"dataSource\": \"fallback\",\n    \"error\": \"Données partielles - Neo4j indisponible\"\n  },\n  \"actionableInsights\": [\n    \"Réessayer l'analyse plus tard\"\n  ]\n}\n```"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        -118640,
+        25392
+      ],
+      "id": "75d1ca77-b868-4c74-be46-755d4c77033a",
+      "name": "Analytics Agent Tool"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Récupère les utilisateurs (Person nodes) depuis Neo4j avec gestion d'erreur robuste",
+        "method": "POST",
+        "url": "https://neo4j-production-1adf.up.railway.app/db/neo4j/tx/commit",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Basic bmVvNGo6OWdtYnoxd3JuOTVhZ2w2dTBiMHIyOHZmd2lidDdjZDk="
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"statements\": [\n    {\n      \"statement\": \"MATCH (p:Person) RETURN p.name as name LIMIT 20\",\n      \"parameters\": {},\n      \"resultDataContents\": [\"row\"]\n    }\n  ]\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 5000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        -119296,
+        25600
+      ],
+      "id": "c845043c-11dc-4747-9833-36a73b4b8026",
+      "name": "Neo4j Read Users",
+      "continueOnFail": true,
+      "notes": "✅ CORRIGÉ - Configuration complète avec gestion d'erreur"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Récupère les connexions (relations CONNECTED_TO entre Person) depuis Neo4j avec RelationshipProfile complet (spheres, natures, closenessLevel, interactionFrequency, meetingContext, sharedInterests, sharedCircles)",
+        "method": "POST",
+        "url": "https://neo4j-production-1adf.up.railway.app/db/neo4j/tx/commit",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Basic bmVvNGo6OWdtYnoxd3JuOTVhZ2w2dTBiMHIyOHZmd2lidDdjZDk="
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"statements\": [\n    {\n      \"statement\": \"MATCH (p1:Person)-[c:CONNECTED_TO]->(p2:Person) RETURN p1.name as from, p2.name as to, p2.role as role, p2.company as company, c.context as context, c.location as location, c.emotionalScore as emotionalScore, c.spheres as spheres, c.natures as natures, c.closenessLevel as closenessLevel, c.interactionFrequency as interactionFrequency, c.meetingContext as meetingContext, c.sharedInterests as sharedInterests, c.sharedCircles as sharedCircles, c.createdAt as createdAt, c.lastUpdated as lastUpdated LIMIT 50\",\n      \"parameters\": {},\n      \"resultDataContents\": [\"row\", \"graph\"]\n    }\n  ]\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 5000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        -119168,
+        25600
+      ],
+      "id": "dea57444-650f-43b8-9bb1-682334e0447c",
+      "name": "Neo4j Read Connections",
+      "continueOnFail": true,
+      "notes": "✅ v17.28 - Auth + RelationshipProfile in response"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Vérifie la santé de l'API Graphiti. Utiliser pour vérifier disponibilité mémoire temporelle.",
+        "url": "https://graphiti-production-648d.up.railway.app/health",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 5000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        -118528,
+        25600
+      ],
+      "id": "f259e3ca-79a2-4c70-827c-e1667192eee3",
+      "name": "Graphiti Health Check Tool",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1jEZ6lgpBbJ0OsEkuaYcVc3dM7xym0KjOld4oJg9WDW0",
+          "mode": "list",
+          "cachedResultName": "CirKL MVP - Structure de Base"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 110093580,
+          "mode": "list",
+          "cachedResultName": "Users"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.6,
+      "position": [
+        -119040,
+        25600
+      ],
+      "id": "64d66b81-a817-48af-8452-d14c6fec9607",
+      "name": "GSheets Read Users",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "QThik6pkSDGoqjj6",
+          "name": "Google Sheets account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1jEZ6lgpBbJ0OsEkuaYcVc3dM7xym0KjOld4oJg9WDW0",
+          "mode": "list",
+          "cachedResultName": "CirKL MVP - Structure de Base"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1466564246,
+          "mode": "list",
+          "cachedResultName": "Connexions"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.6,
+      "position": [
+        -118800,
+        25600
+      ],
+      "id": "993a71c3-28c2-468e-96c2-4e1f3f33ce81",
+      "name": "GSheets Read Connexions",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "QThik6pkSDGoqjj6",
+          "name": "Google Sheets account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🎙️ Response Processor - v17.27 FIX chatId\nconst timeout = (ms) => new Promise((_, reject) =>\n  setTimeout(() => reject(new Error('Timeout')), ms)\n);\n\nasync function processResponse() {\n  try {\n    if (!$input.all().length) {\n      throw new Error('No input data');\n    }\n\n    const inputData = $input.first().json || {};\n\n    console.log('v17.27 Response Processor: Input keys:', Object.keys(inputData));\n\n    // 🔴 v17.27 FIX: Récupérer TOUT depuis customData (survit à l'Agent)\n    let source = 'telegram';\n    let chatId = null;  // 🆕 FIX TELEGRAM\n    let userId = 'unknown';\n    let userName = 'Utilisateur';\n    let userMessage = '';\n    let sessionId = '';\n    let intent = 'general';\n    let tool = 'MemoryAgent';\n\n    try {\n      source = $execution.customData.get('platform_source') || 'telegram';\n      chatId = $execution.customData.get('chat_id') || null;  // 🆕 FIX TELEGRAM\n      userId = $execution.customData.get('user_id') || inputData.userId || 'unknown';\n      userName = $execution.customData.get('user_name') || inputData.userName || 'Utilisateur';\n      userMessage = $execution.customData.get('user_message') || inputData.messageText || '';\n      sessionId = $execution.customData.get('session_id') || inputData.sessionId || '';\n      intent = $execution.customData.get('detected_intent') || 'general';\n      tool = $execution.customData.get('selected_tool') || 'MemoryAgent';\n\n      console.log('v17.27: Retrieved from customData:');\n      console.log('  - source:', source);\n      console.log('  - chatId:', chatId);  // 🆕 DEBUG\n      console.log('  - intent:', intent);\n    } catch (e) {\n      console.log('v17.27: customData error:', e.message);\n    }\n\n    // Récupérer la réponse de l'orchestrateur\n    const orchestratorOutput = inputData.text || inputData.output || '';\n    const intermediateSteps = inputData.intermediateSteps || [];\n\n    console.log('v17.27: Orchestrator output length:', orchestratorOutput.length);\n\n    let extractedData = {};\n    let hasNewConnection = false;\n    let connectionProfile = null;\n    let agentUsed = tool;\n\n    // Analyser les étapes intermédiaires\n    if (intermediateSteps.length > 0) {\n      for (const step of intermediateSteps) {\n        const toolName = step?.action?.tool || '';\n        let observation = step?.observation || '';\n\n        if (toolName.toLowerCase().includes('connection')) {\n          agentUsed = 'ConnectionAgent';\n          intent = 'new_connection';\n        } else if (toolName.toLowerCase().includes('memory')) {\n          agentUsed = 'MemoryAgent';\n        } else if (toolName.toLowerCase().includes('analytics')) {\n          agentUsed = 'AnalyticsAgent';\n        } else if (toolName.toLowerCase().includes('matching')) {\n          agentUsed = 'MatchingAgent';\n        }\n\n        if (typeof observation === 'string') {\n          try {\n            if (observation.startsWith('[') || observation.startsWith('{')) {\n              const parsed = JSON.parse(observation);\n              if (parsed.connectionProfile) {\n                connectionProfile = parsed.connectionProfile;\n                hasNewConnection = true;\n              }\n            }\n          } catch (e) {}\n        }\n      }\n    }\n\n    // Nettoyer la réponse\n    let cleanResponse = orchestratorOutput;\n    cleanResponse = cleanResponse.split('```')[0];\n    cleanResponse = cleanResponse.replace(/\\{[^}]*\\}/g, '');\n    cleanResponse = cleanResponse.replace(/\\[[^\\]]*\\]/g, '');\n    cleanResponse = cleanResponse.replace(/\\s+/g, ' ').trim();\n\n    // Fallback si réponse vide\n    if (!cleanResponse || cleanResponse.length < 10) {\n      const fallbackResponses = {\n        'new_connection': `Super ${userName}! 🚀 J'ai bien noté cette nouvelle rencontre!`,\n        'memory_search': `${userName}, je cherche dans ta mémoire CirKL... 🔍`,\n        'opportunity': `${userName}, j'analyse ton réseau pour les opportunités! 🎯`,\n        'analytics': `Voici un aperçu de ton réseau, ${userName}! 📊`,\n        'greeting': `Salut ${userName}! 👋 Comment puis-je t'aider?`,\n        'general': `Salut ${userName}! 👋 Je suis là pour t'aider avec ton réseau CirKL.`\n      };\n      cleanResponse = fallbackResponses[intent] || fallbackResponses.general;\n    }\n\n    if (cleanResponse.length > 4096) {\n      cleanResponse = cleanResponse.substring(0, 4090) + '...';\n    }\n\n    const audioScore = hasNewConnection ? 7 : 0;\n    const format = audioScore >= 6 ? 'audio' : 'text';\n\n    const result = {\n      source: source,\n      chatId: chatId,  // 🔴 v17.27 FIX: chatId depuis customData!\n      messageIntent: intent,\n      _intentDetection: {\n        detectedIntent: intent,\n        selectedTool: tool,\n        confidence: 0.85,\n        version: 'v17.27'\n      },\n      delegateToAgent: tool,\n      agentUsed: agentUsed,\n\n      response: cleanResponse,\n      format: format,\n      audioScore: audioScore,\n\n      hasNewConnection: hasNewConnection,\n      connectionProfile: connectionProfile,\n      extractedData: extractedData,\n\n      userMessage: userMessage,\n      userName: userName,\n      userId: userId,\n      sessionId: sessionId,\n\n      _debug: {\n        source: 'Response Processor v17.27',\n        platform: source,\n        chatIdFromCustomData: chatId,  // 🆕 DEBUG\n        orchestratorOutputLength: orchestratorOutput.length,\n        stepsCount: intermediateSteps.length,\n        customDataUsed: true,\n        timestamp: new Date().toISOString()\n      }\n    };\n\n    console.log('v17.27 Response Processor: Final - source:', source, 'chatId:', chatId);\n\n    return result;\n\n  } catch (error) {\n    console.error('v17.27 Response Processor Error:', error);\n\n    let errorSource = 'telegram';\n    let errorChatId = null;\n    let errorUserName = 'Utilisateur';\n    try {\n      errorSource = $execution.customData.get('platform_source') || 'telegram';\n      errorChatId = $execution.customData.get('chat_id') || null;\n      errorUserName = $execution.customData.get('user_name') || 'Utilisateur';\n    } catch (e) {}\n\n    return {\n      source: errorSource,\n      chatId: errorChatId,  // 🔴 FIX: Même en erreur, passer chatId\n      messageIntent: 'general',\n      response: `Désolé ${errorUserName}, petit souci technique. 🔧 Reformule ta demande!`,\n      format: 'text',\n      audioScore: 0,\n      hasNewConnection: false,\n      _debug: { error: error.message, source: 'Response Processor v17.27 - ERROR' }\n    };\n  }\n}\n\nreturn await Promise.race([\n  processResponse(),\n  timeout(8000).catch(() => {\n    let timeoutSource = 'telegram';\n    let timeoutChatId = null;\n    let timeoutUserName = 'Utilisateur';\n    try {\n      timeoutSource = $execution.customData.get('platform_source') || 'telegram';\n      timeoutChatId = $execution.customData.get('chat_id') || null;\n      timeoutUserName = $execution.customData.get('user_name') || 'Utilisateur';\n    } catch (e) {}\n    return {\n      source: timeoutSource,\n      chatId: timeoutChatId,  // 🔴 FIX: Même en timeout\n      messageIntent: 'general',\n      response: `${timeoutUserName}, ça prend un peu de temps... 🤔 Essaie de reformuler!`,\n      format: 'text',\n      audioScore: 0,\n      _debug: { error: 'Timeout 8s', source: 'Response Processor v17.27 - TIMEOUT' }\n    };\n  })\n]);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -118272,
+        25168
+      ],
+      "id": "9c8ece04-df2c-4a25-968c-cf1ffd482579",
+      "name": "Response Processor",
+      "continueOnFail": true,
+      "notes": "✅ v17.3 - FIX source field preservation for iOS routing"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ !$json.response || $json.response === '' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.1,
+      "position": [
+        -118048,
+        25472
+      ],
+      "id": "488161da-7dc1-4ae0-9c3a-8a1b26314ab0",
+      "name": "Validate Response",
+      "continueOnFail": true,
+      "notes": "✅ NOUVEAU - Validation de la réponse"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.hasNewConnection }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.1,
+      "position": [
+        -118048,
+        25664
+      ],
+      "id": "14577cd2-9b65-4cfa-aa4d-8ad0c38a3c53",
+      "name": "Check New Connection"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.format }}",
+                    "rightValue": "text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.format }}",
+                    "rightValue": "hybrid",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.format }}",
+                    "rightValue": "audio",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -117600,
+        25216
+      ],
+      "id": "65d4bfb1-afe5-47c5-abe2-ff72abd4fc2f",
+      "name": "Format Router"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://neo4j-production-1adf.up.railway.app/db/neo4j/tx/commit",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Basic bmVvNGo6OWdtYnoxd3JuOTVhZ2w2dTBiMHIyOHZmd2lidDdjZDk="
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"statements\": [\n    {\n      \"statement\": \"CREATE (c:Conversation {id: $id, userId: $userId, message: $message, response: $response, timestamp: datetime()}) RETURN c\",\n      \"parameters\": {\n        \"id\": $json.loggingData.Conversation_ID,\n        \"userId\": $json.loggingData.User_ID || $json.loggingData.User_Name,\n        \"message\": $json.loggingData.User_Message,\n        \"response\": $json.loggingData.AI_Response\n      }\n    }\n  ]\n}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 5000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -118048,
+        24736
+      ],
+      "id": "a59cc8ff-00fb-4adf-a9a9-5eb1b5798a2c",
+      "name": "Neo4j Log Conversation",
+      "continueOnFail": true,
+      "notes": "✅ v17.2 - Auth header ajouté"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1jEZ6lgpBbJ0OsEkuaYcVc3dM7xym0KjOld4oJg9WDW0",
+          "mode": "list",
+          "cachedResultName": "CirKL MVP - Structure de Base"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 353010502,
+          "mode": "list",
+          "cachedResultName": "Conversations"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Conversation_ID": "={{ $json.loggingData.Conversation_ID }}",
+            "Timestamp": "={{ $json.loggingData.Timestamp }}",
+            "User_Name": "={{ $json.loggingData.User_Name }}",
+            "Session_ID": "={{ $json.loggingData.Session_ID }}",
+            "Message_Type": "={{ $json.loggingData.Message_Type }}",
+            "User_Message": "={{ $json.loggingData.User_Message }}",
+            "AI_Response": "={{ $json.loggingData.AI_Response }}",
+            "Audio_Score": "={{ $json.loggingData.Audio_Score }}",
+            "Connection_Name": "={{ $json.loggingData.Connection_Name }}",
+            "Agents_Used": "={{ $json.loggingData.Agents_Used }}",
+            "Tools_Used": "={{ $json.loggingData.Tools_Used }}",
+            "Data_Source": "={{ $json.loggingData.Data_Source }}",
+            "Errors_Handled": "={{ $json.loggingData.Errors_Handled }}",
+            "Platform": "={{ $json.source || $json.loggingData.Platform || 'telegram' }}",
+            "Device_Model": "={{ $json.deviceInfo?.deviceModel || $json.loggingData.Device_Model || '' }}",
+            "App_Version": "={{ $json.deviceInfo?.appVersion || $json.loggingData.App_Version || '' }}",
+            "OS_Version": "={{ $json.deviceInfo?.osVersion || $json.loggingData.OS_Version || '' }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -118048,
+        24928
+      ],
+      "id": "a18560f7-408c-496d-b8a6-723dcd50310f",
+      "name": "GSheets Log Conversations",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "QThik6pkSDGoqjj6",
+          "name": "Google Sheets account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId || $('Response Processor').item?.json.chatId || $('Restore Full Context').item?.json.chatId || $('Zep Session Manager').item?.json.chatId || $('MCP Context Enrichment').item?.json.chatId || $('Telegram Trigger').item?.json.message.chat.id }}",
+        "text": "={{ $json.response }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -117376,
+        25136
+      ],
+      "id": "e53a9dd7-54ed-42ff-ac8c-80e357b825d3",
+      "name": "Send Text Message",
+      "webhookId": "e1e658c4-7e10-4346-9bad-43b437e2bfbe",
+      "credentials": {
+        "telegramApi": {
+          "id": "Tf68WM1wKlR4lhiu",
+          "name": "Cirkl BOT"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.elevenlabs.io/v1/text-to-speech/O31r762Gb3WFygrEOGh0?output_format=mp3_44100_128",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "={{$vars.ELEVENLABS_API_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "audio/mpeg"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"text\": $json.response,\n  \"model_id\": \"eleven_multilingual_v2\",\n  \"voice_settings\": {\n    \"stability\": 0.75,\n    \"similarity_boost\": 0.85,\n    \"style\": 0.25,\n    \"use_speaker_boost\": true\n  }\n}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -117376,
+        25328
+      ],
+      "id": "198b888e-d79d-4d09-9f5b-849d9d4c1073",
+      "name": "Generate Audio",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Pln0NXRrt6cbQOGp",
+          "name": "ElevenLabs"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "sendAudio",
+        "chatId": "={{ $json.chatId || $('Response Processor').item?.json.chatId || $('Restore Full Context').item?.json.chatId || $('Telegram Trigger').item?.json.message.chat.id }}",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -117152,
+        25328
+      ],
+      "id": "1afd3c32-5c1f-4757-b995-c728938b7eb6",
+      "name": "Send Audio Message",
+      "webhookId": "a509a632-c91b-4139-9903-9192ae01f7c1",
+      "credentials": {
+        "telegramApi": {
+          "id": "Tf68WM1wKlR4lhiu",
+          "name": "Cirkl BOT"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🤖 Prepare Connection Data - v17.28 MULTI-DIMENSIONAL RELATIONSHIPS\n// Support complet pour RelationshipProfile (spheres, natures, closeness, etc.)\n\nconst timeout = (ms) => new Promise((_, reject) =>\n  setTimeout(() => reject(new Error('Timeout')), ms)\n);\n\nasync function prepareConnection() {\n  try {\n    if (!$input.all().length) {\n      throw new Error('No input data');\n    }\n\n    const inputData = $input.first().json;\n\n    const connectionProfile = inputData.connectionProfile || inputData.extractedData?.connectionProfile || {};\n    const userContext = inputData.userContext || inputData.user_profile || {};\n    const mcpMetadata = inputData.mcpMetadata || inputData.cirkl_context || {};\n\n    // ===========================================\n    // 🆕 EXTRACTION DU RELATIONSHIP PROFILE\n    // ===========================================\n    const relationshipProfile = connectionProfile.relationshipProfile || inputData.relationshipProfile || {};\n\n    // Spheres de relation (professional, personal, family, community, creative)\n    let spheres = relationshipProfile.spheres || [];\n    if (!spheres.length && connectionProfile.role) {\n      const roleLower = connectionProfile.role.toLowerCase();\n      if (roleLower.includes('ceo') || roleLower.includes('director') ||\n          roleLower.includes('manager') || roleLower.includes('consultant')) {\n        spheres.push('professional');\n      }\n    }\n    if (!spheres.length && connectionProfile.meetingContext) {\n      const contextLower = connectionProfile.meetingContext.toLowerCase();\n      if (contextLower.includes('conférence') || contextLower.includes('travail') ||\n          contextLower.includes('business') || contextLower.includes('networking')) {\n        spheres.push('professional');\n      } else if (contextLower.includes('famille') || contextLower.includes('family')) {\n        spheres.push('family');\n      } else if (contextLower.includes('ami') || contextLower.includes('friend') ||\n                 contextLower.includes('soirée')) {\n        spheres.push('personal');\n      }\n    }\n    if (!spheres.length) {\n      spheres = ['professional'];\n    }\n\n    // Natures de relation\n    let natures = relationshipProfile.natures || [];\n    if (!natures.length) {\n      const roleLower = (connectionProfile.role || '').toLowerCase();\n      if (roleLower.includes('mentor')) {\n        natures.push('mentor');\n      } else if (roleLower.includes('client')) {\n        natures.push('client');\n      } else if (roleLower.includes('partner') || roleLower.includes('partenaire')) {\n        natures.push('partner');\n      } else if (roleLower.includes('investor') || roleLower.includes('investisseur')) {\n        natures.push('investor');\n      } else if (spheres.includes('professional')) {\n        natures.push('colleague');\n      } else if (spheres.includes('personal')) {\n        natures.push('friend');\n      } else if (spheres.includes('family')) {\n        natures.push('family');\n      }\n    }\n    if (!natures.length) {\n      natures = ['acquaintance'];\n    }\n\n    // Closeness Level (1-5)\n    let closeness = relationshipProfile.closeness || relationshipProfile.closenessLevel || 3;\n    if (typeof closeness === 'string') {\n      closeness = parseInt(closeness) || 3;\n    }\n    closeness = Math.max(1, Math.min(5, closeness));\n\n    // Autres champs RelationshipProfile\n    const interactionFrequency = relationshipProfile.interactionFrequency ||\n                                 connectionProfile.interactionFrequency || 'monthly';\n    const meetingContext = relationshipProfile.meetingContext ||\n                          connectionProfile.meetingContext ||\n                          connectionProfile.firstImpression || '';\n    let sharedInterests = relationshipProfile.sharedInterests || [];\n    if (!sharedInterests.length && connectionProfile.tags) {\n      sharedInterests = connectionProfile.tags.filter(tag =>\n        ['tech', 'ai', 'design', 'music', 'travel', 'sports', 'entrepreneuriat'].includes(tag.toLowerCase())\n      );\n    }\n    const sharedCircles = relationshipProfile.sharedCircles || [];\n\n    // ENRICHISSEMENT AUTOMATIQUE (Legacy)\n    let industry = connectionProfile.industry || '';\n    let tags = connectionProfile.tags || [];\n\n    if (connectionProfile.company && !industry) {\n      const companyLower = connectionProfile.company.toLowerCase();\n      if (companyLower.includes('bnp') || companyLower.includes('bank')) {\n        industry = 'Finance';\n        tags.push('finance', 'banking');\n      } else if (companyLower.includes('l\\'oréal') || companyLower.includes('loreal')) {\n        industry = 'Cosmétiques';\n        tags.push('cosmetics', 'retail');\n      } else if (companyLower.includes('tech') || companyLower.includes('digital')) {\n        industry = 'Tech';\n        tags.push('technology', 'digital');\n      } else if (companyLower.includes('ai') || companyLower.includes('intelligence')) {\n        industry = 'AI';\n        tags.push('artificial-intelligence', 'ml');\n      }\n    }\n\n    if (connectionProfile.role) {\n      const roleLower = connectionProfile.role.toLowerCase();\n      if (roleLower.includes('ceo') || roleLower.includes('chief executive')) {\n        tags.push('CEO', 'leadership', 'decision-maker');\n      } else if (roleLower.includes('cto') || roleLower.includes('chief tech')) {\n        tags.push('CTO', 'tech-leadership');\n      } else if (roleLower.includes('founder') || roleLower.includes('fondateur')) {\n        tags.push('founder', 'entrepreneur');\n      } else if (roleLower.includes('director') || roleLower.includes('directeur')) {\n        tags.push('director', 'management');\n      } else if (roleLower.includes('developer') || roleLower.includes('engineer')) {\n        tags.push('technical', 'engineering');\n      }\n    }\n\n    let emotionalResonance = connectionProfile.emotionalResonance || '';\n    if (!emotionalResonance) {\n      emotionalResonance = String(closeness + 4);\n    }\n\n    // PRÉPARATION DES DONNÉES COMPLÈTES\n    const connectionData = {\n      ID: String(Date.now()),\n      Timestamp: new Date().toISOString(),\n      Reporter: userContext.userName || inputData.userName || 'Gil',\n      Connection_Name: connectionProfile.name || '',\n      Meeting_Date: connectionProfile.meetingDate || new Date().toISOString().split('T')[0],\n      Location: connectionProfile.location || '',\n      Current_Role: connectionProfile.role || '',\n      Company: connectionProfile.company || '',\n      Industry: industry,\n      Looking_For: connectionProfile.lookingFor || 'À découvrir',\n      Can_Offer: connectionProfile.canOffer || 'À découvrir',\n      Emotional_Resonance: String(emotionalResonance),\n      First_Impression: connectionProfile.firstImpression || meetingContext || '',\n      Next_Action: connectionProfile.nextAction || 'À définir ensemble',\n      Tags: tags.join(', '),\n      Sharing_Level: 'team',\n      Conversation_Context: inputData.userMessage || inputData.loggingData?.User_Message || '',\n      AI_Insights: (inputData.response || '').substring(0, 200),\n      Status: 'new',\n      Last_Updated: new Date().toISOString(),\n      Data_Source: inputData.extractedData?.dataSource || 'mixed',\n\n      // 🆕 RELATIONSHIP PROFILE\n      Spheres: spheres.join(', '),\n      Natures: natures.join(', '),\n      Closeness: String(closeness),\n      Interaction_Frequency: interactionFrequency,\n      Meeting_Context_Profile: meetingContext,\n      Shared_Interests: sharedInterests.join(', '),\n      Shared_Circles: sharedCircles.join(', '),\n\n      relationship_profile: {\n        spheres: spheres,\n        natures: natures,\n        closeness: closeness,\n        interactionFrequency: interactionFrequency,\n        meetingContext: meetingContext,\n        sharedInterests: sharedInterests,\n        sharedCircles: sharedCircles\n      }\n    };\n\n    return {\n      ...connectionData,\n      connectionProfile: connectionProfile,\n      userContext: userContext,\n      mcpMetadata: mcpMetadata,\n      loggingData: inputData.loggingData,\n      response: inputData.response,\n      chatId: inputData.chatId,\n      _debug: {\n        hasProfile: Boolean(connectionProfile.name),\n        tagsCount: tags.length,\n        emotionalResonance: emotionalResonance,\n        hasRelationshipProfile: true,\n        spheres: spheres,\n        natures: natures,\n        closeness: closeness,\n        source: 'Prepare Connection Data v17.28 - MULTI-DIMENSIONAL'\n      }\n    };\n  } catch (error) {\n    console.error('Connection Data Error:', error);\n    return {\n      ID: String(Date.now()),\n      Timestamp: new Date().toISOString(),\n      Reporter: 'Error',\n      Connection_Name: 'Error',\n      Spheres: '',\n      Natures: '',\n      Closeness: '3',\n      relationship_profile: {\n        spheres: [],\n        natures: [],\n        closeness: 3,\n        interactionFrequency: 'monthly',\n        meetingContext: '',\n        sharedInterests: [],\n        sharedCircles: []\n      },\n      _debug: {\n        error: error.message,\n        source: 'Prepare Connection Data v17.28 - FALLBACK'\n      }\n    };\n  }\n}\n\nreturn await Promise.race([\n  prepareConnection(),\n  timeout(3000).catch(() => ({\n    ID: String(Date.now()),\n    Timestamp: new Date().toISOString(),\n    Reporter: 'Timeout',\n    Connection_Name: 'Timeout',\n    Spheres: '',\n    Natures: '',\n    Closeness: '3',\n    relationship_profile: {\n      spheres: [],\n      natures: [],\n      closeness: 3,\n      interactionFrequency: 'monthly',\n      meetingContext: '',\n      sharedInterests: [],\n      sharedCircles: []\n    },\n    _debug: {\n      error: 'Timeout after 3s',\n      source: 'Prepare Connection Data v17.28 - TIMEOUT'\n    }\n  }))\n]);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -117824,
+        25664
+      ],
+      "id": "6a8c5214-6ee4-4859-ac05-f1ea42270793",
+      "name": "Prepare Connection Data",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graphiti-production-648d.up.railway.app/api/connection/add",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"user_id\": $json.Reporter || \"Gil\",\n  \"connection_name\": $json.Connection_Name,\n  \"role\": $json.Current_Role || null,\n  \"company\": $json.Company || null,\n  \"location\": $json.Location || \"\",\n  \"meeting_context\": $json.First_Impression || \"Nouvelle connexion\",\n  \"authenticity_score\": parseFloat($json.Emotional_Resonance) / 10 || 0.5,\n  \"conversation\": $json.Conversation_Context || \"\",\n  \"timestamp\": $json.Timestamp,\n  \"relationship_profile\": {\n    \"spheres\": $json.relationship_profile?.spheres || [\"professional\"],\n    \"natures\": $json.relationship_profile?.natures || [\"acquaintance\"],\n    \"closeness_level\": $json.relationship_profile?.closeness || 3,\n    \"interaction_frequency\": $json.relationship_profile?.interactionFrequency || \"monthly\",\n    \"meeting_context\": $json.relationship_profile?.meetingContext || \"\",\n    \"shared_interests\": $json.relationship_profile?.sharedInterests || [],\n    \"shared_circles\": $json.relationship_profile?.sharedCircles || []\n  }\n}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 5000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -117824,
+        25856
+      ],
+      "id": "dbc26f75-a863-4fad-8265-0bb9e4555564",
+      "name": "Graphiti Add Connection",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://neo4j-production-1adf.up.railway.app/db/neo4j/tx/commit",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Basic bmVvNGo6OWdtYnoxd3JuOTVhZ2w2dTBiMHIyOHZmd2lidDdjZDk="
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"statements\": [\n    {\n      \"statement\": \"MERGE (p1:Person {name: $person1}) ON CREATE SET p1.createdAt = datetime() MERGE (p2:Person {name: $person2}) ON CREATE SET p2.role = $role, p2.company = $company, p2.industry = $industry, p2.createdAt = datetime() ON MATCH SET p2.role = COALESCE($role, p2.role), p2.company = COALESCE($company, p2.company), p2.industry = COALESCE($industry, p2.industry) MERGE (p1)-[r:CONNECTED_TO]->(p2) ON CREATE SET r.context = $context, r.location = $location, r.emotionalScore = $emotionalScore, r.spheres = $spheres, r.natures = $natures, r.closenessLevel = $closenessLevel, r.interactionFrequency = $interactionFrequency, r.meetingContext = $meetingContext, r.sharedInterests = $sharedInterests, r.sharedCircles = $sharedCircles, r.createdAt = datetime() ON MATCH SET r.lastUpdated = datetime(), r.spheres = COALESCE($spheres, r.spheres), r.natures = COALESCE($natures, r.natures), r.closenessLevel = COALESCE($closenessLevel, r.closenessLevel), r.interactionFrequency = COALESCE($interactionFrequency, r.interactionFrequency), r.meetingContext = COALESCE($meetingContext, r.meetingContext), r.sharedInterests = COALESCE($sharedInterests, r.sharedInterests), r.sharedCircles = COALESCE($sharedCircles, r.sharedCircles) RETURN p1, r, p2\",\n      \"parameters\": {\n        \"person1\": $json.Reporter || \"Gil\",\n        \"person2\": $json.Connection_Name,\n        \"role\": $json.Current_Role || \"\",\n        \"company\": $json.Company || \"\",\n        \"industry\": $json.Industry || \"\",\n        \"context\": $json.First_Impression || \"Nouvelle connexion\",\n        \"location\": $json.Location || \"\",\n        \"emotionalScore\": $json.Emotional_Resonance || 5,\n        \"spheres\": $json.relationship_profile?.spheres || [\"professional\"],\n        \"natures\": $json.relationship_profile?.natures || [\"acquaintance\"],\n        \"closenessLevel\": $json.relationship_profile?.closeness || 3,\n        \"interactionFrequency\": $json.relationship_profile?.interactionFrequency || \"monthly\",\n        \"meetingContext\": $json.relationship_profile?.meetingContext || \"\",\n        \"sharedInterests\": $json.relationship_profile?.sharedInterests || [],\n        \"sharedCircles\": $json.relationship_profile?.sharedCircles || []\n      }\n    }\n  ]\n}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 5000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -117600,
+        25760
+      ],
+      "id": "9ea8daec-0dc6-4e64-bfe8-cd7b2e721d17",
+      "name": "Neo4j Write Connection",
+      "continueOnFail": true,
+      "notes": "✅ v17.28 - Auth + RelationshipProfile Multi-Dimensional"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1jEZ6lgpBbJ0OsEkuaYcVc3dM7xym0KjOld4oJg9WDW0",
+          "mode": "list",
+          "cachedResultName": "CirKL MVP - Structure de Base"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1466564246,
+          "mode": "list",
+          "cachedResultName": "Connexions"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID": "={{ $json.ID }}",
+            "Timestamp": "={{ $json.Timestamp }}",
+            "Reporter": "={{ $json.Reporter }}",
+            "Connection_Name": "={{ $json.Connection_Name }}",
+            "Meeting_Date": "={{ $json.Meeting_Date }}",
+            "Location": "={{ $json.Location }}",
+            "Current_Role": "={{ $json.Current_Role }}",
+            "Company": "={{ $json.Company }}",
+            "Industry": "={{ $json.Industry }}",
+            "Looking_For": "={{ $json.Looking_For }}",
+            "Can_Offer": "={{ $json.Can_Offer }}",
+            "Emotional_Resonance": "={{ $json.Emotional_Resonance }}",
+            "First_Impression": "={{ $json.First_Impression }}",
+            "Next_Action": "={{ $json.Next_Action }}",
+            "Tags": "={{ $json.Tags }}",
+            "Sharing_Level": "={{ $json.Sharing_Level }}",
+            "Conversation_Context": "={{ $json.Conversation_Context }}",
+            "AI_Insights": "={{ $json.AI_Insights }}",
+            "Status": "={{ $json.Status }}",
+            "Last_Updated": "={{ $json.Last_Updated }}",
+            "Data_Source": "={{ $json.Data_Source }}",
+            "Spheres": "={{ $json.Spheres }}",
+            "Natures": "={{ $json.Natures }}",
+            "Closeness": "={{ $json.Closeness }}",
+            "Interaction_Frequency": "={{ $json.Interaction_Frequency }}",
+            "Meeting_Context_Profile": "={{ $json.Meeting_Context_Profile }}",
+            "Shared_Interests": "={{ $json.Shared_Interests }}",
+            "Shared_Circles": "={{ $json.Shared_Circles }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -117376,
+        25760
+      ],
+      "id": "2bdef952-31b3-4c18-af13-124d0b833613",
+      "name": "GSheets Write Connection",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "QThik6pkSDGoqjj6",
+          "name": "Google Sheets account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graphiti-production-648d.up.railway.app/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"query\": \"opportunities synergies \" + $json.Connection_Name,\n  \"group_ids\": [\"cirkl_\" + $json.Reporter],\n  \"max_facts\": 10\n}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 5000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -117152,
+        25760
+      ],
+      "id": "8c488224-0563-4827-adca-176eef5f9319",
+      "name": "Graphiti Detect Opportunities",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cirkl-ios",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -124080,
+        25360
+      ],
+      "id": "8e3df99a-99a0-4724-bdff-2ea68360f037",
+      "name": "iOS Webhook Trigger",
+      "webhookId": "cirkl-ios-webhook-001"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🔀 Source Router - v17.27 FIX chatId\nconst inputData = $input.first().json;\nlet source = 'unknown';\nlet normalizedData = {};\n\nconsole.log('v17.27 Source Router: Input keys:', Object.keys(inputData));\n\n// Extraire le body si présent (webhook HTTP pour iOS)\nconst body = inputData.body || inputData;\n\n// 1. iOS Detection\nif (body.userId || (inputData.userId && !inputData.message)) {\n  source = 'ios';\n  const userId = body.userId || inputData.userId;\n  const content = body.content || inputData.content || body.messageText || '';\n  const userName = body.userName || inputData.userName || userId || 'iOS User';\n\n  normalizedData = {\n    source: 'ios',\n    userId: userId,\n    messageType: body.messageType || inputData.messageType || 'text',\n    messageText: content,\n    content: content,\n    sessionId: body.sessionId || inputData.sessionId || `ios-${userId}-${Date.now()}`,\n    deviceInfo: body.deviceInfo || inputData.deviceInfo || {},\n    authToken: body.authToken || inputData.authToken || null,\n    chatId: null,  // iOS n'a pas de chatId Telegram\n    userName: userName,\n    rawInput: inputData\n  };\n\n  console.log('v17.27: iOS detected - userId:', userId);\n}\n// 2. Telegram Detection\nelse if (inputData.message?.from?.id || inputData.message?.chat?.id) {\n  source = 'telegram';\n  const msg = inputData.message || {};\n  const chatId = msg.chat?.id || null;\n\n  normalizedData = {\n    source: 'telegram',\n    userId: String(msg.from?.id || msg.chat?.id || 'unknown'),\n    messageType: msg.voice ? 'audio' : 'text',\n    messageText: msg.text || '',\n    content: msg.text || '',\n    sessionId: `tg-${msg.from?.id || msg.chat?.id}-${Date.now()}`,\n    deviceInfo: {},\n    authToken: null,\n    chatId: chatId,  // 🔴 IMPORTANT: chatId Telegram\n    userName: msg.from?.first_name || 'Telegram User',\n    rawInput: inputData\n  };\n\n  console.log('v17.27: Telegram detected - chatId:', chatId);\n}\n// 3. Chat Test Detection\nelse if (inputData.chatInput || inputData.messages) {\n  source = 'chat_test';\n  normalizedData = {\n    source: 'chat_test',\n    userId: 'test_user',\n    messageType: 'text',\n    messageText: inputData.chatInput || inputData.messages?.[0]?.content || '',\n    content: inputData.chatInput || inputData.messages?.[0]?.content || '',\n    sessionId: `test-${Date.now()}`,\n    deviceInfo: {},\n    authToken: null,\n    chatId: null,\n    userName: 'Test User',\n    rawInput: inputData\n  };\n}\n\nnormalizedData._routing = {\n  detectedSource: source,\n  timestamp: new Date().toISOString(),\n  routerVersion: '17.27'\n};\n\n// 🔴 v17.27 FIX: Stocker TOUTES les données importantes dans customData\n// Ces données survivent au LangChain Agent!\n$execution.customData.set('platform_source', normalizedData.source);\n$execution.customData.set('chat_id', normalizedData.chatId);  // 🆕 FIX TELEGRAM\n$execution.customData.set('user_id', normalizedData.userId);\n$execution.customData.set('user_name', normalizedData.userName);\n$execution.customData.set('user_message', normalizedData.messageText);\n$execution.customData.set('session_id', normalizedData.sessionId);\n\nconsole.log('v17.27 Source Router: Stored in customData:');\nconsole.log('  - source:', normalizedData.source);\nconsole.log('  - chatId:', normalizedData.chatId);\nconsole.log('  - userId:', normalizedData.userId);\n\nreturn normalizedData;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -123856,
+        25168
+      ],
+      "id": "7890e95c-1327-41fe-bf04-72ca165578e9",
+      "name": "Source Router",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🔐 iOS Auth Validator - v17.26 Dev Mode\nconst inputData = $input.first().json;\n\n// En mode dev, on accepte toutes les requêtes iOS\n// En production, vérifier authToken contre la base\n\nconst userId = inputData.userId || 'unknown';\nconst authToken = inputData.authToken;\n\n// TODO: Implémenter vraie validation en production\n// const validTokens = await fetchValidTokens();\n// if (!validTokens.includes(authToken)) throw new Error('Unauthorized');\n\nconsole.log('v17.26 Auth: Validated userId:', userId);\n\n// Passer toutes les données\nreturn {\n  ...inputData,\n  _auth: {\n    validated: true,\n    userId: userId,\n    timestamp: new Date().toISOString(),\n    version: 'v17.26-dev'\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -123632,
+        25168
+      ],
+      "id": "e45b6d09-315f-4e20-9459-0b2d077839db",
+      "name": "iOS Auth Validator",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.source }}",
+                    "rightValue": "telegram",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Telegram"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.source }}",
+                    "rightValue": "ios",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "iOS"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -123184,
+        25264
+      ],
+      "id": "9d6c41a5-e94c-45a2-801a-8e7294bb1e55",
+      "name": "Audio Platform Router"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🎵 iOS Audio Processor - Convert base64 to binary for OpenAI\nconst inputData = $input.first().json;\nconst base64Audio = inputData.rawInput?.content || inputData.content || '';\n\n// Decode base64 to buffer\nconst audioBuffer = Buffer.from(base64Audio, 'base64');\n\n// Determine audio format (default to m4a for iOS)\nconst mimeType = 'audio/m4a';\nconst fileName = `ios_audio_${Date.now()}.m4a`;\n\n// Return with binary data attached\nreturn {\n  json: {\n    userId: inputData.userId,\n    userName: inputData.userName,\n    sessionId: inputData.sessionId,\n    deviceInfo: inputData.deviceInfo,\n    source: 'ios',\n    messageType: 'audio',\n    _auth: inputData._auth,\n    userProfile: inputData.userProfile\n  },\n  binary: {\n    audioFile: {\n      data: base64Audio,\n      mimeType: mimeType,\n      fileName: fileName\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -122736,
+        25408
+      ],
+      "id": "ff974f23-850e-4eff-8e61-ef90e67db84a",
+      "name": "iOS Audio Processor"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/audio/transcriptions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "audioFile"
+            },
+            {
+              "name": "model",
+              "value": "whisper-1"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -122512,
+        25408
+      ],
+      "id": "54993924-fc23-4e8d-9d73-84c256d96949",
+      "name": "iOS OpenAI Transcription",
+      "credentials": {
+        "openAiApi": {
+          "id": "rN03lkUSMUTmFWoD",
+          "name": "New OpenAi connexion"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🔀 iOS Audio Context Merge\nconst inputData = $input.first().json;\nconst transcribedText = inputData.text || '';\n\nreturn {\n  ...inputData,\n  messageText: transcribedText,\n  transcribedAudio: true,\n  originalMessageType: 'audio'\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -122288,
+        25408
+      ],
+      "id": "1b4c0e22-49fe-4897-a7cb-54b65fa3f42c",
+      "name": "iOS Audio Context Merge"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.source }}",
+                    "rightValue": "ios",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "iOS"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.source || 'telegram' }}",
+                    "rightValue": "telegram",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Telegram"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -117824,
+        25120
+      ],
+      "id": "02d3c5ea-b983-429d-a659-91918a038215",
+      "name": "Platform Response Router"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"success\": true,\n  \"response\": $json.response,\n  \"intent\": $json.messageIntent,\n  \"buttonState\": $json.buttonState || \"idle\",\n  \"metadata\": {\n    \"hasNewConnection\": $json.hasNewConnection || false,\n    \"connectionProfile\": $json.connectionProfile || null,\n    \"suggestions\": [],\n    \"format\": $json.format || \"text\",\n    \"agentUsed\": $json.agentUsed || \"unknown\",\n    \"intentConfidence\": $json._intentDetection?.confidence || 0,\n    \"platform\": \"ios\",\n    \"buttonState\": $json.buttonState || \"idle\"\n  },\n  \"audioUrl\": null,\n  \"timestamp\": $now.toISO(),\n  \"version\": \"v17.28\",\n  \"debug\": $json._debug || {}\n} }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -117600,
+        25024
+      ],
+      "id": "8f0a4837-6cff-4961-9472-91963f6dcbb3",
+      "name": "iOS Response"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🔴 Source Injector - v17.27 FIX chatId\nconst inputData = $input.first().json;\n\n// Récupérer source et chatId depuis customData (priorité)\nlet source = inputData.source || 'telegram';\nlet chatId = inputData.chatId || null;\n\ntry {\n  const customSource = $execution.customData.get('platform_source');\n  const customChatId = $execution.customData.get('chat_id');\n\n  if (customSource) {\n    source = customSource;\n  }\n  if (customChatId) {\n    chatId = customChatId;\n  }\n\n  console.log('v17.27 Source Injector: Using customData - source:', source, 'chatId:', chatId);\n} catch (e) {\n  console.log('v17.27 Source Injector: customData failed');\n}\n\nreturn {\n  ...inputData,\n  source: source,\n  chatId: chatId  // 🔴 FIX: Garantir que chatId est présent\n};"
+      },
+      "name": "Source Injector",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -118048,
+        25120
+      ],
+      "id": "7c848e10-59c3-45db-8a2b-8c7de7f9b5db"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🎯 Intent Detector - v17.26 Enhanced\nconst inputData = $input.first().json;\n\n// Récupérer le message de différentes sources\nconst messageText = inputData.messageText ||\n                   inputData.content ||\n                   inputData.userMessage ||\n                   inputData.rawInput?.content ||\n                   '';\n\nconst userName = inputData.userName || 'Utilisateur';\nconst source = inputData.source || 'unknown';\n\nconsole.log('v17.26 Intent: Analyzing message:', messageText.substring(0, 100));\n\n// Détection d'intent améliorée\nconst msg = messageText.toLowerCase();\nlet intent = 'general';\nlet tool = 'MemoryAgent';\nlet confidence = 0.7;\n\n// Patterns de détection\nconst patterns = {\n  new_connection: {\n    keywords: ['rencontr', 'vu ', 'croisé', 'présenté', 'connu', 'fait la connaissance', 'nouveau contact'],\n    tool: 'ConnectionAgent',\n    confidence: 0.9\n  },\n  opportunity: {\n    keywords: ['opportunit', 'collabor', 'projet', 'synergie', 'partenariat', 'business'],\n    tool: 'MatchingAgent',\n    confidence: 0.85\n  },\n  analytics: {\n    keywords: ['combien', 'stats', 'nombre', 'analyse', 'statistique', 'réseau', 'contacts'],\n    tool: 'AnalyticsAgent',\n    confidence: 0.85\n  },\n  memory_search: {\n    keywords: ['souviens', 'rappelle', 'qui est', 'connais', 'sais-tu', 'info sur', 'parle-moi de'],\n    tool: 'MemoryAgent',\n    confidence: 0.85\n  },\n  greeting: {\n    keywords: ['bonjour', 'salut', 'hello', 'hey', 'coucou', 'bonsoir'],\n    tool: 'MemoryAgent',\n    confidence: 0.95\n  }\n};\n\n// Trouver le meilleur match\nfor (const [intentName, config] of Object.entries(patterns)) {\n  for (const keyword of config.keywords) {\n    if (msg.includes(keyword)) {\n      intent = intentName;\n      tool = config.tool;\n      confidence = config.confidence;\n      console.log('v17.26 Intent: Matched', intentName, 'via keyword:', keyword);\n      break;\n    }\n  }\n  if (intent !== 'general') break;\n}\n\n// Stocker dans customData pour survie après Agent\ntry {\n  $execution.customData.set('detected_intent', intent);\n  $execution.customData.set('selected_tool', tool);\n} catch (e) {}\n\nconsole.log('v17.26 Intent Result:', { intent, tool, confidence });\n\nreturn {\n  ...inputData,\n  messageIntent: intent,\n  delegateToAgent: tool,\n  _intentDetection: {\n    detectedIntent: intent,\n    selectedTool: tool,\n    confidence: confidence,\n    analyzedMessage: messageText.substring(0, 100),\n    version: 'v17.26'\n  }\n};"
+      },
+      "id": "29a6d4ad-4ce2-4a57-b105-2de9dc9af352",
+      "name": "Intent Detector v17.18",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -120048,
+        25168
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🔀 Connection Action Router - v17.29\n// Détecte si c'est une nouvelle connexion (append) ou une mise à jour (update)\n\nconst inputData = $input.first().json;\n\nlet action = 'append';\n\nconst requestedAction = inputData.connectionAction ||\n                        inputData.action ||\n                        inputData.extractedData?.action ||\n                        'new_connection';\n\nconst connectionId = inputData.connectionProfile?.id ||\n                     inputData.extractedData?.connectionId ||\n                     inputData.connectionId ||\n                     null;\n\nif (requestedAction === 'update_connection' || requestedAction === 'update_relationship') {\n  action = 'update';\n} else if (connectionId && requestedAction !== 'new_connection') {\n  if (!inputData.hasNewConnection) {\n    action = 'update';\n  }\n}\n\nconsole.log('v17.29 Action Router: action=' + action + ', connectionId=' + connectionId);\n\nreturn {\n  ...inputData,\n  _connectionAction: action,\n  _connectionId: connectionId,\n  _routerDebug: {\n    version: 'v17.29',\n    requestedAction: requestedAction,\n    detectedAction: action,\n    connectionId: connectionId,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -117824,
+        25664
+      ],
+      "id": "761891e8-77a3-4ce7-b2f4-6a0c481243e7",
+      "name": "Connection Action Router",
+      "continueOnFail": true,
+      "notes": "🆕 v17.29 - Détecte append vs update"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json._connectionAction }}",
+                    "rightValue": "append",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "append"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json._connectionAction }}",
+                    "rightValue": "update",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "update"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -117600,
+        25664
+      ],
+      "id": "97224670-e07f-4c4b-9388-b42471a6842d",
+      "name": "Action Switch",
+      "notes": "🆕 v17.29 - Route append/update"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 📝 Update Connection Data - v17.29\n// Prépare les données pour la mise à jour d'une connexion existante\n\nconst inputData = $input.first().json;\nconst connectionProfile = inputData.connectionProfile || inputData.extractedData?.connectionProfile || {};\nconst relationshipProfile = connectionProfile.relationshipProfile || inputData.relationshipProfile || {};\n\nconst connectionId = inputData._connectionId || connectionProfile.id || inputData.connectionId || '';\n\nif (!connectionId) {\n  console.error('v17.29 ERROR: No connectionId found for update!');\n  return { _error: 'No connectionId provided', _connectionAction: 'error' };\n}\n\nconst now = new Date();\nconst lastUpdated = now.toISOString().slice(0, 19).replace('T', ' ');\n\nconst updateData = {\n  ID: connectionId,\n  Last_Updated: lastUpdated,\n  Spheres: Array.isArray(relationshipProfile.spheres) ? relationshipProfile.spheres.join(', ') : (relationshipProfile.spheres || ''),\n  Natures: Array.isArray(relationshipProfile.natures) ? relationshipProfile.natures.join(', ') : (relationshipProfile.natures || ''),\n  Closeness: String(relationshipProfile.closeness || relationshipProfile.closenessLevel || '3'),\n  Interaction_Frequency: relationshipProfile.interactionFrequency || 'monthly',\n  Meeting_Context_Profile: relationshipProfile.meetingContext || connectionProfile.meetingContext || '',\n  Shared_Interests: Array.isArray(relationshipProfile.sharedInterests) ? relationshipProfile.sharedInterests.join(', ') : (relationshipProfile.sharedInterests || ''),\n  Shared_Circles: Array.isArray(relationshipProfile.sharedCircles) ? relationshipProfile.sharedCircles.join(', ') : (relationshipProfile.sharedCircles || '')\n};\n\nif (connectionProfile.currentRole) updateData.Current_Role = connectionProfile.currentRole;\nif (connectionProfile.company) updateData.Company = connectionProfile.company;\nif (connectionProfile.status) updateData.Status = connectionProfile.status;\n\nconsole.log('v17.29 Update Data: ID=' + connectionId);\n\nreturn {\n  ...updateData,\n  _updateDebug: { version: 'v17.29', connectionId: connectionId, timestamp: new Date().toISOString() },\n  _originalContext: { userId: inputData.userId, userName: inputData.userName, source: inputData.source, chatId: inputData.chatId }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -117600,
+        25952
+      ],
+      "id": "9cab2096-034c-41d8-a95f-5d2af168313f",
+      "name": "Update Connection Data",
+      "continueOnFail": true,
+      "notes": "🆕 v17.29 - Prépare données update"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1jEZ6lgpBbJ0OsEkuaYcVc3dM7xym0KjOld4oJg9WDW0",
+          "mode": "list",
+          "cachedResultName": "CirKL MVP - Structure de Base"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1466564246,
+          "mode": "list",
+          "cachedResultName": "Connexions"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID": "={{ $json.ID }}",
+            "Last_Updated": "={{ $json.Last_Updated }}",
+            "Spheres": "={{ $json.Spheres }}",
+            "Natures": "={{ $json.Natures }}",
+            "Closeness": "={{ $json.Closeness }}",
+            "Interaction_Frequency": "={{ $json.Interaction_Frequency }}",
+            "Meeting_Context_Profile": "={{ $json.Meeting_Context_Profile }}",
+            "Shared_Interests": "={{ $json.Shared_Interests }}",
+            "Shared_Circles": "={{ $json.Shared_Circles }}"
+          },
+          "matchingColumns": [
+            "ID"
+          ],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -117376,
+        25952
+      ],
+      "id": "8609c501-587c-4072-b1d7-3923bef4cbcf",
+      "name": "GSheets Update Connection",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "QThik6pkSDGoqjj6",
+          "name": "Google Sheets account"
+        }
+      },
+      "continueOnFail": true,
+      "notes": "🆕 v17.29 - Update existing row by ID"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Source Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Trigger (Test)": {
+      "main": [
+        [
+          {
+            "node": "Source Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message Type Router": {
+      "main": [
+        [
+          {
+            "node": "MCP Context Enrichment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Audio Platform Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MCP Context Enrichment": {
+      "main": [
+        [
+          {
+            "node": "Validate MCP Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate MCP Data": {
+      "main": [
+        [
+          {
+            "node": "MCP Context Enrichment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Zep Session Manager",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preserve Telegram Context": {
+      "main": [
+        [
+          {
+            "node": "Get Voice File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Voice File": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Transcription",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Transcription": {
+      "main": [
+        [
+          {
+            "node": "Merge Audio Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Audio Context": {
+      "main": [
+        [
+          {
+            "node": "Zep Session Manager",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zep Session Manager": {
+      "main": [
+        [
+          {
+            "node": "Preserve Context Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check Session Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Session Exists": {
+      "main": [
+        [
+          {
+            "node": "Preserve Context Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Preserve Context Data": {
+      "main": [
+        [
+          {
+            "node": "Session Needs Creation?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Session Needs Creation?": {
+      "main": [
+        [
+          {
+            "node": "Create New Session",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Zep Branches",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Create New Session": {
+      "main": [
+        [
+          {
+            "node": "Merge Zep Branches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Zep Branches": {
+      "main": [
+        [
+          {
+            "node": "Restore Full Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Full Context": {
+      "main": [
+        [
+          {
+            "node": "Preserve Context Before Graphiti",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Graphiti Health Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preserve Context Before Graphiti": {
+      "main": [
+        [
+          {
+            "node": "Intent Detector v17.18",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Graphiti Health Check": {
+      "main": [
+        [
+          {
+            "node": "Preserve Context Before Graphiti",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "CirKL Orchestrator": {
+      "main": [
+        [
+          {
+            "node": "Response Processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Model Primary": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "CirKL Orchestrator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Model Agents": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Connection Agent Tool",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Memory Agent Tool",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Matching Agent Tool",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Analytics Agent Tool",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Connection Agent Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "CirKL Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memory Agent Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "CirKL Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Matching Agent Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "CirKL Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analytics Agent Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "CirKL Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Neo4j Read Users": {
+      "ai_tool": [
+        [
+          {
+            "node": "Connection Agent Tool",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Memory Agent Tool",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Analytics Agent Tool",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Neo4j Read Connections": {
+      "ai_tool": [
+        [
+          {
+            "node": "Connection Agent Tool",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Memory Agent Tool",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Matching Agent Tool",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Analytics Agent Tool",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Graphiti Health Check Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Memory Agent Tool",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Analytics Agent Tool",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GSheets Read Users": {
+      "ai_tool": [
+        [
+          {
+            "node": "Connection Agent Tool",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Memory Agent Tool",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Analytics Agent Tool",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GSheets Read Connexions": {
+      "ai_tool": [
+        [
+          {
+            "node": "Connection Agent Tool",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Memory Agent Tool",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Matching Agent Tool",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Analytics Agent Tool",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Response Processor": {
+      "main": [
+        [
+          {
+            "node": "Validate Response",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check New Connection",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Neo4j Log Conversation",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GSheets Log Conversations",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Source Injector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Response": {
+      "main": [
+        [
+          {
+            "node": "Response Processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check New Connection": {
+      "main": [
+        [
+          {
+            "node": "Connection Action Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Router": {
+      "main": [
+        [
+          {
+            "node": "Send Text Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Text Message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate Audio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Audio": {
+      "main": [
+        [
+          {
+            "node": "Send Audio Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Connection Data": {
+      "main": [
+        [
+          {
+            "node": "Neo4j Write Connection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Graphiti Add Connection": {
+      "main": [
+        [
+          {
+            "node": "Neo4j Write Connection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Neo4j Write Connection": {
+      "main": [
+        [
+          {
+            "node": "GSheets Write Connection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GSheets Write Connection": {
+      "main": [
+        [
+          {
+            "node": "Graphiti Detect Opportunities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "iOS Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Source Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Source Router": {
+      "main": [
+        [
+          {
+            "node": "iOS Auth Validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "iOS Auth Validator": {
+      "main": [
+        [
+          {
+            "node": "Message Type Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audio Platform Router": {
+      "main": [
+        [
+          {
+            "node": "Preserve Telegram Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "iOS Audio Processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "iOS Audio Processor": {
+      "main": [
+        [
+          {
+            "node": "iOS OpenAI Transcription",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "iOS OpenAI Transcription": {
+      "main": [
+        [
+          {
+            "node": "iOS Audio Context Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "iOS Audio Context Merge": {
+      "main": [
+        [
+          {
+            "node": "Zep Session Manager",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Platform Response Router": {
+      "main": [
+        [
+          {
+            "node": "iOS Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Source Injector": {
+      "main": [
+        [
+          {
+            "node": "Platform Response Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Intent Detector v17.18": {
+      "main": [
+        [
+          {
+            "node": "CirKL Orchestrator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Connection Action Router": {
+      "main": [
+        [
+          {
+            "node": "Action Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Action Switch": {
+      "main": [
+        [
+          {
+            "node": "Prepare Connection Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Connection Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Connection Data": {
+      "main": [
+        [
+          {
+            "node": "GSheets Update Connection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GSheets Update Connection": {
+      "main": [
+        [
+          {
+            "node": "Graphiti Detect Opportunities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": true
+  },
+  "versionId": "f849c2b0-2cd1-450d-88b3-5d42089e6652",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "32831241200b534db91d34a916ee7fb845fffeb1fcb7fe2246f893ee8c6765a5"
+  },
+  "id": "R9YMWqXrs0st04nb",
+  "tags": []
+}

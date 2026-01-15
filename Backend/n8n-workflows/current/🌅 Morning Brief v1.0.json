@@ -1,0 +1,194 @@
+{
+  "name": "🌅 Morning Brief v1.0",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "morning-brief",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-morning-brief",
+      "name": "📱 Morning Brief Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [400, 300],
+      "webhookId": "cirkl-morning-brief"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://neo4j-production-1adf.up.railway.app/db/neo4j/tx/commit",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Content-Type", "value": "application/json"},
+            {"name": "Accept", "value": "application/json"},
+            {"name": "Authorization", "value": "Basic bmVvNGo6OWdtYnoxd3JuOTVhZ2w2dTBiMHIyOHZmd2lidDdjZDk="}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"statements\": [\n    {\n      \"statement\": \"MATCH (p:Person {userId: $userId}) OPTIONAL MATCH (p)-[:CONNECTED_TO]->(active:Person) WHERE active.lastInteraction > datetime() - duration('P30D') OPTIONAL MATCH (p)-[:CONNECTED_TO]->(dormant:Person) WHERE dormant.lastInteraction < datetime() - duration('P60D') RETURN p.userId as userId, p.name as userName, p.synchronicityScore as score, count(DISTINCT active) as activeCount, count(DISTINCT dormant) as dormantCount\",\n      \"parameters\": {\n        \"userId\": $json.body?.userId || $json.userId || 'default'\n      }\n    },\n    {\n      \"statement\": \"MATCH (p:Person {userId: $userId})-[:CONNECTED_TO]->(c:Person) WHERE c.lastInteraction < datetime() - duration('P60D') RETURN c.name as name, c.userId as connectionId, c.lastInteraction as lastInteraction ORDER BY c.lastInteraction ASC LIMIT 5\",\n      \"parameters\": {\n        \"userId\": $json.body?.userId || $json.userId || 'default'\n      }\n    },\n    {\n      \"statement\": \"MATCH (p:Person {userId: $userId})-[:CONNECTED_TO]->(c:Person) WHERE c.lastKnownRole IS NOT NULL AND c.lastKnownRole <> c.role RETURN c.name as name, c.userId as connectionId, c.role as newRole, c.company as company, c.lastKnownRole as previousRole LIMIT 5\",\n      \"parameters\": {\n        \"userId\": $json.body?.userId || $json.userId || 'default'\n      }\n    }\n  ]\n}) }}",
+        "options": {
+          "response": {"response": {"neverError": true}},
+          "timeout": 15000
+        }
+      },
+      "id": "neo4j-get-network-data",
+      "name": "📊 Neo4j - Get Network Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Neo4j response\nconst neo4jResponse = $input.first().json;\nconst userId = $('📱 Morning Brief Webhook').first().json.body?.userId || $('📱 Morning Brief Webhook').first().json.userId || 'default';\n\nlet userData = {\n  userId: userId,\n  userName: 'Utilisateur',\n  score: 0,\n  activeCount: 0,\n  dormantCount: 0\n};\n\nlet dormantConnections = [];\nlet jobChanges = [];\n\n// Parse stats (first query)\nif (neo4jResponse?.results?.[0]?.data?.[0]?.row) {\n  const [uid, name, score, active, dormant] = neo4jResponse.results[0].data[0].row;\n  userData = {\n    userId: uid || userId,\n    userName: name || 'Utilisateur',\n    score: score || 0,\n    activeCount: active || 0,\n    dormantCount: dormant || 0\n  };\n}\n\n// Parse dormant connections (second query)\nif (neo4jResponse?.results?.[1]?.data) {\n  dormantConnections = neo4jResponse.results[1].data.map(row => ({\n    name: row.row[0],\n    connectionId: row.row[1],\n    lastInteraction: row.row[2]\n  }));\n}\n\n// Parse job changes (third query)\nif (neo4jResponse?.results?.[2]?.data) {\n  jobChanges = neo4jResponse.results[2].data.map(row => ({\n    name: row.row[0],\n    connectionId: row.row[1],\n    newRole: row.row[2],\n    company: row.row[3],\n    previousRole: row.row[4]\n  }));\n}\n\nreturn [{\n  json: {\n    ...userData,\n    dormantConnections,\n    jobChanges,\n    hasJobChanges: jobChanges.length > 0,\n    hasDormant: dormantConnections.length > 0\n  }\n}];"
+      },
+      "id": "parse-neo4j-data",
+      "name": "🔄 Parse Neo4j Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graphiti-production-648d.up.railway.app/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"query\": \"opportunities anniversaries milestones important events\",\n  \"group_ids\": [\"cirkl_\" + $json.userId],\n  \"max_facts\": 10\n}) }}",
+        "options": {
+          "response": {"response": {"neverError": true}},
+          "timeout": 15000
+        }
+      },
+      "id": "graphiti-search",
+      "name": "🔍 Graphiti - Search Opportunities",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combine Neo4j and Graphiti data\nconst neo4jData = $('🔄 Parse Neo4j Data').first().json;\nconst graphitiResponse = $input.first().json;\n\n// Extract relevant facts from Graphiti\nconst opportunities = [];\nif (graphitiResponse?.facts && Array.isArray(graphitiResponse.facts)) {\n  for (const fact of graphitiResponse.facts.slice(0, 3)) {\n    opportunities.push({\n      content: fact.fact || fact.content || '',\n      source: fact.source_node_name,\n      target: fact.target_node_name\n    });\n  }\n}\n\nreturn [{\n  json: {\n    ...neo4jData,\n    opportunities,\n    hasOpportunities: opportunities.length > 0\n  }\n}];"
+      },
+      "id": "merge-data",
+      "name": "🔗 Merge All Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1360, 300]
+    },
+    {
+      "parameters": {
+        "modelId": {"__rl": true, "value": "gpt-4o", "mode": "list", "cachedResultName": "GPT-4O"},
+        "messages": {
+          "values": [
+            {
+              "content": "={{ \"Tu es l'assistant CirKL matinal. Génère un brief personnalisé et engageant.\\n\\nDONNÉES DU RÉSEAU DE \" + $json.userName + \":\\n- Score Synchronicity: \" + $json.score + \"\\n- Connexions actives (30 derniers jours): \" + $json.activeCount + \"\\n- Connexions dormantes (>60 jours): \" + $json.dormantCount + \"\\n\\nCHANGEMENTS DE POSTES RÉCENTS:\\n\" + ($json.jobChanges.length > 0 ? $json.jobChanges.map(j => \"- \" + j.name + \" est maintenant \" + j.newRole + \" chez \" + j.company).join(\"\\n\") : \"Aucun changement récent\") + \"\\n\\nCONNEXIONS DORMANTES:\\n\" + ($json.dormantConnections.length > 0 ? $json.dormantConnections.map(d => \"- \" + d.name).join(\"\\n\") : \"Aucune connexion dormante\") + \"\\n\\nOPPORTUNITÉS DÉTECTÉES:\\n\" + ($json.opportunities.length > 0 ? $json.opportunities.map(o => \"- \" + o.content).join(\"\\n\") : \"Aucune opportunité particulière\") + \"\\n\\nRÈGLES:\\n1. Commence par 'Bonjour \" + $json.userName + \" ! 🌅'\\n2. Mentionne 1-2 faits marquants maximum\\n3. Sois concis mais chaleureux\\n4. Termine par une question ou suggestion d'action\\n5. Maximum 150 mots\\n6. Utilise des emojis avec parcimonie\" }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 500
+        }
+      },
+      "id": "gpt-generate-brief",
+      "name": "🧠 GPT - Generate Brief",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [1600, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Format final response for iOS\nconst mergedData = $('🔗 Merge All Data').first().json;\nconst gptResponse = $input.first().json;\n\nconst briefText = gptResponse.message?.content || gptResponse.text || \"Bonjour ! 🌅 Ton réseau t'attend.\";\n\n// Build highlights\nconst highlights = [];\n\n// Add job changes\nfor (const job of mergedData.jobChanges.slice(0, 2)) {\n  highlights.push({\n    type: 'job_change',\n    title: 'Changement de poste',\n    description: `${job.name} est maintenant ${job.newRole} chez ${job.company}`,\n    connectionId: job.connectionId,\n    connectionName: job.name\n  });\n}\n\n// Add dormant connections\nif (mergedData.dormantConnections.length > 0) {\n  highlights.push({\n    type: 'dormant',\n    title: 'Connexions à réveiller',\n    description: `${mergedData.dormantConnections.length} connexion(s) dormante(s) depuis 60+ jours`,\n    connectionId: mergedData.dormantConnections[0]?.connectionId,\n    connectionName: mergedData.dormantConnections[0]?.name\n  });\n}\n\n// Add opportunities from Graphiti\nfor (const opp of mergedData.opportunities.slice(0, 1)) {\n  highlights.push({\n    type: 'opportunity',\n    title: 'Opportunité',\n    description: opp.content.substring(0, 100),\n    connectionId: null,\n    connectionName: opp.source || opp.target\n  });\n}\n\n// Build action items\nconst actionItems = [];\n\nif (mergedData.jobChanges.length > 0) {\n  const topJob = mergedData.jobChanges[0];\n  actionItems.push({\n    title: `Féliciter ${topJob.name}`,\n    description: `Nouveau poste: ${topJob.newRole} chez ${topJob.company}`,\n    priority: 'high',\n    connectionId: topJob.connectionId\n  });\n}\n\nif (mergedData.dormantConnections.length > 0) {\n  const topDormant = mergedData.dormantConnections[0];\n  actionItems.push({\n    title: `Recontacter ${topDormant.name}`,\n    description: 'Pas de contact depuis plus de 60 jours',\n    priority: 'medium',\n    connectionId: topDormant.connectionId\n  });\n}\n\n// Calculate rank\nlet rank = 'Débutant';\nif (mergedData.score >= 800) rank = 'Top 3%';\nelse if (mergedData.score >= 600) rank = 'Top 10%';\nelse if (mergedData.score >= 400) rank = 'Top 25%';\nelse if (mergedData.score >= 200) rank = 'Top 50%';\n\nreturn [{\n  json: {\n    briefText: briefText,\n    highlights: highlights,\n    stats: {\n      synchronicityScore: mergedData.score || 0,\n      scoreChange: Math.floor(Math.random() * 20) - 5, // Placeholder - should be calculated from history\n      rank: rank,\n      activeConnections: mergedData.activeCount || 0,\n      dormantConnections: mergedData.dormantCount || 0\n    },\n    actionItems: actionItems,\n    generatedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "format-response",
+      "name": "📤 Format iOS Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1840, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {"name": "Content-Type", "value": "application/json"}
+            ]
+          }
+        }
+      },
+      "id": "respond-webhook",
+      "name": "📱 Respond to iOS",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2080, 300]
+    },
+    {
+      "parameters": {
+        "content": "## 🌅 Morning Brief v1.0\n\n### Purpose\nGenerate personalized daily morning brief for CirKL users.\n\n### Endpoint\n`POST /webhook/morning-brief`\n\n### Input\n```json\n{\n  \"userId\": \"gil\"\n}\n```\n\n### Output\n```json\n{\n  \"briefText\": \"Bonjour Gil ! 🌅...\",\n  \"highlights\": [...],\n  \"stats\": {...},\n  \"actionItems\": [...],\n  \"generatedAt\": \"2026-01-15T08:00:00Z\"\n}\n```\n\n### Flow\n1. Receive userId from iOS\n2. Query Neo4j for network stats, dormant connections, job changes\n3. Query Graphiti for opportunities\n4. Generate personalized brief with GPT\n5. Return formatted JSON for iOS\n\n### iOS Integration\nCall this endpoint on first app launch of the day.\nButton state: `morningBrief` (mint green #00C781)",
+        "height": 560,
+        "width": 380
+      },
+      "id": "documentation",
+      "name": "📝 Documentation",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-40, 180]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "📱 Morning Brief Webhook": {
+      "main": [[{"node": "📊 Neo4j - Get Network Data", "type": "main", "index": 0}]]
+    },
+    "📊 Neo4j - Get Network Data": {
+      "main": [[{"node": "🔄 Parse Neo4j Data", "type": "main", "index": 0}]]
+    },
+    "🔄 Parse Neo4j Data": {
+      "main": [[{"node": "🔍 Graphiti - Search Opportunities", "type": "main", "index": 0}]]
+    },
+    "🔍 Graphiti - Search Opportunities": {
+      "main": [[{"node": "🔗 Merge All Data", "type": "main", "index": 0}]]
+    },
+    "🔗 Merge All Data": {
+      "main": [[{"node": "🧠 GPT - Generate Brief", "type": "main", "index": 0}]]
+    },
+    "🧠 GPT - Generate Brief": {
+      "main": [[{"node": "📤 Format iOS Response", "type": "main", "index": 0}]]
+    },
+    "📤 Format iOS Response": {
+      "main": [[{"node": "📱 Respond to iOS", "type": "main", "index": 0}]]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "morning-brief-v1.0",
+  "meta": {
+    "instanceId": "32831241200b534db91d34a916ee7fb845fffeb1fcb7fe2246f893ee8c6765a5"
+  },
+  "id": "morning-brief-workflow",
+  "tags": []
+}

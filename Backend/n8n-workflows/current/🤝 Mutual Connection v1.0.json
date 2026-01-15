@@ -1,0 +1,622 @@
+{
+  "name": "🤝 Mutual Connection v1.0",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mutual-connection",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "c1810fd7-daad-4b4a-9865-89295a316356",
+      "name": "📱 New Meeting Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        96,
+        112
+      ],
+      "webhookId": "cirkl-mutual-connection"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse incoming meeting data from iOS\nconst body = $input.first().json.body;\n\n// Expected payload:\n// {\n//   meetingId: string (shared QR/NFC code),\n//   userId: string,\n//   userName: string,\n//   thoughts: string (what user A thinks about user B),\n//   context: string (where they met),\n//   timestamp: ISO string\n// }\n\nconst meetingData = {\n  meetingId: body.meetingId || generateMeetingId(),\n  userId: body.userId,\n  userName: body.userName || 'Unknown',\n  thoughts: body.thoughts || '',\n  context: body.context || '',\n  timestamp: body.timestamp || new Date().toISOString(),\n  deviceInfo: body.deviceInfo || {}\n};\n\nfunction generateMeetingId() {\n  return 'mtg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);\n}\n\nreturn [{ json: meetingData }];"
+      },
+      "id": "0b945921-ed2a-4d2d-a5cf-77a9f0d310fd",
+      "name": "🔄 Parse Meeting Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://neo4j-production-1adf.up.railway.app/db/neo4j/tx/commit",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Basic bmVvNGo6OWdtYnoxd3JuOTVhZ2w2dTBiMHIyOHZmd2lidDdjZDk="
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"statements\": [\n    {\n      \"statement\": \"MATCH (m:Meeting {meetingId: $meetingId}) RETURN m, m.participants as participants, m.status as status\",\n      \"parameters\": {\n        \"meetingId\": $json.meetingId\n      }\n    }\n  ]\n}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 5000
+        }
+      },
+      "id": "8afd5028-0a15-4a58-980a-681c627ef2e8",
+      "name": "🔍 Check Existing Meeting",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        544,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Determine if this is first or second participant\nconst meetingData = $('🔄 Parse Meeting Data').first().json;\nconst neo4jResponse = $input.first().json;\n\nlet existingMeeting = null;\nlet isFirstParticipant = true;\nlet existingParticipants = [];\n\nif (neo4jResponse?.results?.[0]?.data?.[0]?.row) {\n  const [meeting, participants, status] = neo4jResponse.results[0].data[0].row;\n  if (meeting) {\n    existingMeeting = meeting;\n    existingParticipants = participants ? JSON.parse(participants) : [];\n    isFirstParticipant = false;\n  }\n}\n\nreturn [{\n  json: {\n    ...meetingData,\n    isFirstParticipant,\n    existingMeeting,\n    existingParticipants,\n    participantCount: existingParticipants.length + 1\n  }\n}];"
+      },
+      "id": "67da7a3f-2d84-4c06-8ee0-a8a67dca7d6d",
+      "name": "🧠 Analyze Meeting State",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "is-first",
+              "leftValue": "={{ $json.isFirstParticipant }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "817e870c-6267-4227-a32b-ade8d9a5cf37",
+      "name": "🎯 First Participant?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        976,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://neo4j-production-1adf.up.railway.app/db/neo4j/tx/commit",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Basic bmVvNGo6OWdtYnoxd3JuOTVhZ2w2dTBiMHIyOHZmd2lidDdjZDk="
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"statements\": [\n    {\n      \"statement\": `\n        CREATE (m:Meeting {\n          meetingId: $meetingId,\n          status: 'waiting',\n          context: $context,\n          createdAt: datetime(),\n          participants: $participants\n        })\n        RETURN m\n      `,\n      \"parameters\": {\n        \"meetingId\": $json.meetingId,\n        \"context\": $json.context,\n        \"participants\": JSON.stringify([{\n          userId: $json.userId,\n          userName: $json.userName,\n          thoughts: $json.thoughts,\n          timestamp: $json.timestamp\n        }])\n      }\n    }\n  ]\n}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 5000
+        }
+      },
+      "id": "06162e46-c2fe-479c-aaf7-b3f09a2d37ce",
+      "name": "💾 Create Meeting (First)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"success\": true,\n  \"status\": \"waiting\",\n  \"message\": \"En attente de l'autre participant...\",\n  \"meetingId\": $('🔄 Parse Meeting Data').first().json.meetingId,\n  \"participantNumber\": 1,\n  \"timestamp\": new Date().toISOString()\n} }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "c7e01d56-f374-477e-a9ba-1860d3010915",
+      "name": "📤 Respond: Waiting",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1424,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://neo4j-production-1adf.up.railway.app/db/neo4j/tx/commit",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Basic bmVvNGo6OWdtYnoxd3JuOTVhZ2w2dTBiMHIyOHZmd2lidDdjZDk="
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"statements\": [\n    {\n      \"statement\": `\n        MATCH (m:Meeting {meetingId: $meetingId})\n        SET m.status = 'complete',\n            m.completedAt = datetime(),\n            m.participants = $participants\n        RETURN m\n      `,\n      \"parameters\": {\n        \"meetingId\": $json.meetingId,\n        \"participants\": JSON.stringify([\n          ...$json.existingParticipants,\n          {\n            userId: $json.userId,\n            userName: $json.userName,\n            thoughts: $json.thoughts,\n            timestamp: $json.timestamp\n          }\n        ])\n      }\n    }\n  ]\n}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 5000
+        }
+      },
+      "id": "0efbcc97-b69e-40fb-8e64-237f143cc9a7",
+      "name": "💾 Complete Meeting (Second)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Create bidirectional connections from meeting\nconst meetingData = $('🧠 Analyze Meeting State').first().json;\n\n// Get both participants\nconst allParticipants = [\n  ...meetingData.existingParticipants,\n  {\n    userId: meetingData.userId,\n    userName: meetingData.userName,\n    thoughts: meetingData.thoughts,\n    timestamp: meetingData.timestamp\n  }\n];\n\nif (allParticipants.length < 2) {\n  return [{ json: { error: 'Not enough participants', count: allParticipants.length } }];\n}\n\nconst [userA, userB] = allParticipants;\n\n// Create connection data for both directions\nconst connections = [\n  {\n    from: userA,\n    to: userB,\n    thoughts: userA.thoughts, // What A thinks about B\n    context: meetingData.context,\n    meetingId: meetingData.meetingId\n  },\n  {\n    from: userB,\n    to: userA,\n    thoughts: userB.thoughts, // What B thinks about A\n    context: meetingData.context,\n    meetingId: meetingData.meetingId\n  }\n];\n\nreturn connections.map(conn => ({ json: conn }));"
+      },
+      "id": "e6d0660b-c705-42e7-b99e-75ccf183c255",
+      "name": "🔗 Prepare Bidirectional Connections",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1424,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://neo4j-production-1adf.up.railway.app/db/neo4j/tx/commit",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Basic bmVvNGo6OWdtYnoxd3JuOTVhZ2w2dTBiMHIyOHZmd2lidDdjZDk="
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"statements\": [\n    {\n      \"statement\": `\n        MERGE (a:Person {userId: $fromId})\n        ON CREATE SET a.name = $fromName, a.createdAt = datetime()\n        MERGE (b:Person {userId: $toId})\n        ON CREATE SET b.name = $toName, b.createdAt = datetime()\n        CREATE (a)-[c:CONNECTED_TO {\n          context: $context,\n          thoughts: $thoughts,\n          meetingId: $meetingId,\n          createdAt: datetime(),\n          source: 'mutual_connection'\n        }]->(b)\n        SET a.buttonState = 'new_connection',\n            a.lastConnectionAt = datetime()\n        RETURN a, b, c\n      `,\n      \"parameters\": {\n        \"fromId\": $json.from.userId,\n        \"fromName\": $json.from.userName,\n        \"toId\": $json.to.userId,\n        \"toName\": $json.to.userName,\n        \"context\": $json.context,\n        \"thoughts\": $json.thoughts,\n        \"meetingId\": $json.meetingId\n      }\n    }\n  ]\n}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 5000
+        }
+      },
+      "id": "b795c13e-000c-41c4-b3a5-e149f77a9d72",
+      "name": "💾 Create Neo4j Connections",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1648,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graphiti-production-648d.up.railway.app/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"group_id\": \"cirkl_\" + $json.from.userId,\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": `Nouvelle connexion: J'ai rencontré ${$json.to.userName}. ${$json.context ? 'Contexte: ' + $json.context + '.' : ''} ${$json.thoughts ? 'Mes impressions: ' + $json.thoughts : ''}`,\n      \"name\": $json.from.userName\n    },\n    {\n      \"role\": \"assistant\",\n      \"content\": `Connexion enregistrée avec ${$json.to.userName}. Cette rencontre a été capturée des deux côtés pour une mémoire complète.`\n    }\n  ]\n}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "id": "551fe038-964a-4c38-90a2-459c8eeb8585",
+      "name": "🧠 Store in Graphiti Memory",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1856,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare response for second participant (meeting complete)\nconst connections = $input.all();\nconst meetingData = $('🧠 Analyze Meeting State').first().json;\n\nconst response = {\n  success: true,\n  status: 'complete',\n  message: 'Connexion bidirectionnelle créée! 🎉',\n  meetingId: meetingData.meetingId,\n  participantNumber: 2,\n  connections: meetingData.existingParticipants.map(p => ({\n    name: p.userName,\n    thoughts: p.thoughts // What the other person thought about you\n  })),\n  mutualContext: meetingData.context,\n  timestamp: new Date().toISOString()\n};\n\nreturn [{ json: response }];"
+      },
+      "id": "bb66eff0-cbb9-4c7d-b98a-592032fba2fc",
+      "name": "📊 Prepare Complete Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "48bbf18e-63a1-4723-a82f-e022593e9921",
+      "name": "📤 Respond: Complete",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2304,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "path": "meeting-status",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "20320bf9-4d85-4784-ba2f-33c1bffee2ed",
+      "name": "📊 Meeting Status API",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        96,
+        416
+      ],
+      "webhookId": "cirkl-meeting-status"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://neo4j-production-1adf.up.railway.app/db/neo4j/tx/commit",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Basic bmVvNGo6OWdtYnoxd3JuOTVhZ2w2dTBiMHIyOHZmd2lidDdjZDk="
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"statements\": [\n    {\n      \"statement\": \"MATCH (m:Meeting {meetingId: $meetingId}) RETURN m.status as status, m.participants as participants, m.completedAt as completedAt\",\n      \"parameters\": {\n        \"meetingId\": $json.query.meetingId || 'unknown'\n      }\n    }\n  ]\n}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 5000
+        }
+      },
+      "id": "f726ccab-e9ca-496b-aa7a-e77f2ef6d959",
+      "name": "🔍 Get Meeting Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        320,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ (() => {\n  const neo4jResponse = $json;\n  let status = 'not_found';\n  let participants = [];\n  let completedAt = null;\n  \n  if (neo4jResponse?.results?.[0]?.data?.[0]?.row) {\n    const [st, parts, completed] = neo4jResponse.results[0].data[0].row;\n    status = st || 'unknown';\n    participants = parts ? JSON.parse(parts) : [];\n    completedAt = completed;\n  }\n  \n  return {\n    success: status !== 'not_found',\n    status: status,\n    participantCount: participants.length,\n    isComplete: status === 'complete',\n    completedAt: completedAt,\n    timestamp: new Date().toISOString()\n  };\n})() }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "50d28286-d0c5-4aea-b091-f4b75ed27530",
+      "name": "📤 Return Meeting Status",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        544,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🤝 Mutual Connection v1.0\n\n### Purpose\nBidirectional thought capture when two CirKL users meet IRL.\n\n### Flow\n1. User A scans QR/NFC → sends meetingId + thoughts\n2. System creates Meeting node (status: waiting)\n3. User B scans same QR → sends meetingId + thoughts\n4. System completes meeting, creates bidirectional connections\n5. Both users get each other's thoughts!\n\n### APIs\n\n**POST /webhook/mutual-connection**\n```json\n{\n  \"meetingId\": \"mtg_xxx\",\n  \"userId\": \"user123\",\n  \"userName\": \"Gil\",\n  \"thoughts\": \"Super rencontre, expert en AI\",\n  \"context\": \"Meetup Tech Paris\"\n}\n```\n\n**GET /webhook/meeting-status?meetingId=xxx**\n```json\n{\n  \"status\": \"waiting|complete\",\n  \"participantCount\": 1|2,\n  \"isComplete\": false|true\n}\n```\n\n### Button States Set\n- `new_connection`: Set on both users after mutual connection",
+        "height": 520,
+        "width": 380
+      },
+      "id": "09fe95fb-7741-478f-84a6-9263f216d674",
+      "name": "📝 Documentation",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -432,
+        -16
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "📱 New Meeting Webhook": {
+      "main": [
+        [
+          {
+            "node": "🔄 Parse Meeting Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔄 Parse Meeting Data": {
+      "main": [
+        [
+          {
+            "node": "🔍 Check Existing Meeting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Check Existing Meeting": {
+      "main": [
+        [
+          {
+            "node": "🧠 Analyze Meeting State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧠 Analyze Meeting State": {
+      "main": [
+        [
+          {
+            "node": "🎯 First Participant?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎯 First Participant?": {
+      "main": [
+        [
+          {
+            "node": "💾 Create Meeting (First)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "💾 Complete Meeting (Second)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Create Meeting (First)": {
+      "main": [
+        [
+          {
+            "node": "📤 Respond: Waiting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Complete Meeting (Second)": {
+      "main": [
+        [
+          {
+            "node": "🔗 Prepare Bidirectional Connections",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔗 Prepare Bidirectional Connections": {
+      "main": [
+        [
+          {
+            "node": "💾 Create Neo4j Connections",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Create Neo4j Connections": {
+      "main": [
+        [
+          {
+            "node": "🧠 Store in Graphiti Memory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧠 Store in Graphiti Memory": {
+      "main": [
+        [
+          {
+            "node": "📊 Prepare Complete Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Prepare Complete Response": {
+      "main": [
+        [
+          {
+            "node": "📤 Respond: Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Meeting Status API": {
+      "main": [
+        [
+          {
+            "node": "🔍 Get Meeting Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Get Meeting Status": {
+      "main": [
+        [
+          {
+            "node": "📤 Return Meeting Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "e4a41f26-e0ae-4aa7-933e-6c50c8326435",
+  "meta": {
+    "instanceId": "32831241200b534db91d34a916ee7fb845fffeb1fcb7fe2246f893ee8c6765a5"
+  },
+  "id": "kwP79rz6krv0yGYx",
+  "tags": []
+}

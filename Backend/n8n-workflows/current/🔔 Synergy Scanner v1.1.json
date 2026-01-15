@@ -1,0 +1,437 @@
+{
+  "name": "🔔 Synergy Scanner v1.1",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "ac44701a-95e8-4f62-9a17-d0e645a18854",
+      "name": "⏰ Every 6 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [400, 32]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://neo4j-production-1adf.up.railway.app/db/neo4j/tx/commit",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Content-Type", "value": "application/json"},
+            {"name": "Accept", "value": "application/json"},
+            {"name": "Authorization", "value": "Basic bmVvNGo6OWdtYnoxd3JuOTVhZ2w2dTBiMHIyOHZmd2lidDdjZDk="}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"statements\": [\n    {\n      \"statement\": \"MATCH (p:Person) WHERE p.deviceToken IS NOT NULL OR p.userId IS NOT NULL RETURN p.userId as userId, p.name as name, p.deviceToken as deviceToken, p.lastSynergyCheck as lastCheck\",\n      \"resultDataContents\": [\"row\"]\n    }\n  ]\n}",
+        "options": {
+          "response": {"response": {"neverError": true}},
+          "timeout": 10000
+        }
+      },
+      "id": "406ae0de-ebda-4060-89b5-fd289be009e0",
+      "name": "📊 Neo4j Get Active Users",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [624, 128]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Neo4j response and extract users\nconst neo4jResponse = $input.first().json;\nconst users = [];\n\nif (neo4jResponse?.results?.[0]?.data) {\n  for (const row of neo4jResponse.results[0].data) {\n    const [userId, name, deviceToken, lastCheck] = row.row;\n    users.push({\n      userId: userId || name,\n      name: name,\n      deviceToken: deviceToken,\n      lastCheck: lastCheck\n    });\n  }\n}\n\n// Return each user as separate item for loop processing\nreturn users.map(user => ({ json: user }));"
+      },
+      "id": "40c74680-ebb6-4656-ac95-a4da74a66d62",
+      "name": "🔄 Parse Users",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [848, 128]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://neo4j-production-1adf.up.railway.app/db/neo4j/tx/commit",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Content-Type", "value": "application/json"},
+            {"name": "Accept", "value": "application/json"},
+            {"name": "Authorization", "value": "Basic bmVvNGo6OWdtYnoxd3JuOTVhZ2w2dTBiMHIyOHZmd2lidDdjZDk="}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"statements\": [\n    {\n      \"statement\": \"MATCH (p:Person {userId: $userId})-[:CONNECTED_TO]->(c:Person) RETURN c.userId as connectionId, c.name as name, c.role as role, c.company as company, c.industry as industry, c.tags as tags LIMIT 50\",\n      \"parameters\": {\n        \"userId\": $json.userId\n      }\n    }\n  ]\n}) }}",
+        "options": {
+          "response": {"response": {"neverError": true}},
+          "timeout": 10000
+        }
+      },
+      "id": "neo4j-get-connections",
+      "name": "📊 Neo4j Get User Connections",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1072, 128]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graphiti-production-648d.up.railway.app/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"query\": \"opportunities synergies collaboration potential introductions\",\n  \"group_ids\": [\"cirkl_\" + $('🔄 Parse Users').first().json.userId],\n  \"max_facts\": 20\n}) }}",
+        "options": {
+          "response": {"response": {"neverError": true}},
+          "timeout": 15000
+        }
+      },
+      "id": "17c8e46b-8ea4-43f9-8c5d-b555b3d9445d",
+      "name": "🔍 Graphiti Search Synergies",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1296, 128]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse connections and graphiti data for heuristic analysis\nconst user = $('🔄 Parse Users').first().json;\nconst connectionsResponse = $('📊 Neo4j Get User Connections').first().json;\nconst graphitiResponse = $input.first().json;\nconst now = new Date().toISOString();\n\n// Parse connections\nconst connections = [];\nif (connectionsResponse?.results?.[0]?.data) {\n  for (const row of connectionsResponse.results[0].data) {\n    const [connectionId, name, role, company, industry, tags] = row.row;\n    connections.push({\n      connectionId,\n      name: name || 'Unknown',\n      role: role || '',\n      company: company || '',\n      industry: industry || '',\n      tags: tags || []\n    });\n  }\n}\n\n// Heuristic synergy detection\nconst potentialSynergies = [];\n\n// Compare all pairs of connections\nfor (let i = 0; i < connections.length; i++) {\n  for (let j = i + 1; j < connections.length; j++) {\n    const a = connections[i];\n    const b = connections[j];\n    \n    const score = calculateHeuristicScore(a, b);\n    \n    if (score >= 30) {\n      potentialSynergies.push({\n        connectionA: a,\n        connectionB: b,\n        heuristicScore: score,\n        detectedType: detectSynergyType(a, b),\n        heuristicReason: generateHeuristicReason(a, b, score)\n      });\n    }\n  }\n}\n\n// Also check Graphiti facts\nconst graphitiFacts = [];\nif (graphitiResponse?.facts && Array.isArray(graphitiResponse.facts)) {\n  for (const fact of graphitiResponse.facts.slice(0, 5)) {\n    graphitiFacts.push({\n      content: fact.fact || fact.content || '',\n      source: fact.source_node_name,\n      target: fact.target_node_name\n    });\n  }\n}\n\nfunction calculateHeuristicScore(a, b) {\n  let score = 0;\n  \n  // Same industry\n  if (a.industry && b.industry && a.industry.toLowerCase() === b.industry.toLowerCase()) {\n    score += 20;\n  }\n  \n  // Complementary roles (VC + Startup, Mentor + Junior, etc.)\n  if (isVCStartupMatch(a, b)) score += 30;\n  if (isMentorMenteeMatch(a, b)) score += 25;\n  if (isBusinessPartnerMatch(a, b)) score += 20;\n  \n  // Shared tags\n  const sharedTags = getSharedTags(a.tags, b.tags);\n  score += Math.min(sharedTags.length * 10, 30);\n  \n  return Math.min(score, 100);\n}\n\nfunction isVCStartupMatch(a, b) {\n  const vcKeywords = ['vc', 'venture', 'investor', 'partner', 'capital'];\n  const startupKeywords = ['founder', 'ceo', 'startup', 'entrepreneur', 'cto'];\n  \n  const aIsVC = vcKeywords.some(k => (a.role + a.company).toLowerCase().includes(k));\n  const bIsVC = vcKeywords.some(k => (b.role + b.company).toLowerCase().includes(k));\n  const aIsStartup = startupKeywords.some(k => (a.role + a.company).toLowerCase().includes(k));\n  const bIsStartup = startupKeywords.some(k => (b.role + b.company).toLowerCase().includes(k));\n  \n  return (aIsVC && bIsStartup) || (bIsVC && aIsStartup);\n}\n\nfunction isMentorMenteeMatch(a, b) {\n  const seniorKeywords = ['senior', 'director', 'vp', 'head', 'chief', 'expert'];\n  const juniorKeywords = ['junior', 'associate', 'analyst', 'intern', 'student'];\n  \n  const aIsSenior = seniorKeywords.some(k => a.role.toLowerCase().includes(k));\n  const bIsSenior = seniorKeywords.some(k => b.role.toLowerCase().includes(k));\n  const aIsJunior = juniorKeywords.some(k => a.role.toLowerCase().includes(k));\n  const bIsJunior = juniorKeywords.some(k => b.role.toLowerCase().includes(k));\n  \n  return (aIsSenior && bIsJunior) || (bIsSenior && aIsJunior);\n}\n\nfunction isBusinessPartnerMatch(a, b) {\n  // Check if roles could be business partners\n  const partnerPairs = [\n    ['sales', 'marketing'],\n    ['tech', 'business'],\n    ['product', 'engineering'],\n    ['design', 'development']\n  ];\n  \n  for (const [r1, r2] of partnerPairs) {\n    const aHas = (a.role + a.industry).toLowerCase().includes(r1);\n    const bHas = (b.role + b.industry).toLowerCase().includes(r2);\n    if ((aHas && bHas) || (a.role.toLowerCase().includes(r2) && b.role.toLowerCase().includes(r1))) {\n      return true;\n    }\n  }\n  return false;\n}\n\nfunction getSharedTags(tagsA, tagsB) {\n  if (!Array.isArray(tagsA) || !Array.isArray(tagsB)) return [];\n  const setB = new Set(tagsB.map(t => t.toLowerCase()));\n  return tagsA.filter(t => setB.has(t.toLowerCase()));\n}\n\nfunction detectSynergyType(a, b) {\n  if (isVCStartupMatch(a, b)) return 'vc_startup';\n  if (isMentorMenteeMatch(a, b)) return 'mentor_mentee';\n  if (isBusinessPartnerMatch(a, b)) return 'business_partners';\n  if (a.industry === b.industry) return 'same_industry';\n  return 'shared_interests';\n}\n\nfunction generateHeuristicReason(a, b, score) {\n  if (isVCStartupMatch(a, b)) {\n    return `Potentiel VC-Startup: ${a.name} et ${b.name} pourraient collaborer sur du financement.`;\n  }\n  if (isMentorMenteeMatch(a, b)) {\n    return `Potentiel mentorat: ${a.name} pourrait guider ${b.name}.`;\n  }\n  if (a.industry === b.industry) {\n    return `Même industrie (${a.industry}): synergies business possibles.`;\n  }\n  return `Profils complémentaires avec score de ${score}%.`;\n}\n\nreturn [{\n  json: {\n    userId: user.userId,\n    userName: user.name,\n    deviceToken: user.deviceToken,\n    potentialSynergies: potentialSynergies.slice(0, 10), // Top 10\n    graphitiFacts: graphitiFacts,\n    connectionsCount: connections.length,\n    hasHighPotential: potentialSynergies.some(s => s.heuristicScore >= 60),\n    scanTimestamp: now\n  }\n}];"
+      },
+      "id": "a6ee513c-e033-4dbd-9e63-51b85b618c1d",
+      "name": "🧠 Heuristic Analysis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1520, 128]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-potential",
+              "leftValue": "={{ $json.potentialSynergies.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-potential",
+      "name": "🎯 Has Potential Synergies?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1744, 128]
+    },
+    {
+      "parameters": {
+        "modelId": {"__rl": true, "value": "gpt-4o", "mode": "list", "cachedResultName": "GPT-4O"},
+        "messages": {
+          "values": [
+            {
+              "content": "={{ \"Tu es un expert en networking professionnel. Analyse les synergies potentielles détectées et affine le scoring.\\n\\nUSER: \" + $json.userName + \"\\n\\nSYNERGIES POTENTIELLES DÉTECTÉES:\\n\" + $json.potentialSynergies.map((s, i) => `\\n${i+1}. ${s.connectionA.name} (${s.connectionA.role || 'N/A'} @ ${s.connectionA.company || 'N/A'}) + ${s.connectionB.name} (${s.connectionB.role || 'N/A'} @ ${s.connectionB.company || 'N/A'})\\n   Score heuristique: ${s.heuristicScore}%\\n   Type détecté: ${s.detectedType}\\n   Tags A: ${JSON.stringify(s.connectionA.tags || [])}\\n   Tags B: ${JSON.stringify(s.connectionB.tags || [])}`).join('\\n') + \"\\n\\nFAITS GRAPHITI (contexte mémoire):\\n\" + ($json.graphitiFacts.length > 0 ? $json.graphitiFacts.map(f => `- ${f.content}`).join('\\n') : 'Aucun fait disponible') + \"\\n\\nPour chaque synergie, réponds en JSON avec ce format exact:\\n{\\n  \\\"synergies\\\": [\\n    {\\n      \\\"index\\\": 1,\\n      \\\"finalScore\\\": 75,\\n      \\\"type\\\": \\\"vc_startup\\\" | \\\"mentor_mentee\\\" | \\\"business_partners\\\" | \\\"same_industry\\\" | \\\"shared_interests\\\" | \\\"collaboration\\\",\\n      \\\"reason\\\": \\\"Explication concise en français (max 100 caractères)\\\",\\n      \\\"actionSuggested\\\": \\\"Action suggérée pour l'utilisateur\\\"\\n    }\\n  ]\\n}\\n\\nRÈGLES:\\n- Ne garde que les synergies avec un score final >= 50\\n- Affine le score en fonction de la complémentarité réelle des profils\\n- La raison doit être actionnable et spécifique\\n- Maximum 5 synergies dans la réponse\" }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3,
+          "maxTokens": 1000
+        }
+      },
+      "id": "gpt-synergy-analysis",
+      "name": "🤖 GPT Synergy Analysis",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [1968, 32],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge heuristic analysis with GPT refinement\nconst heuristicData = $('🧠 Heuristic Analysis').first().json;\nconst gptResponse = $input.first().json;\nconst now = new Date().toISOString();\n\nlet gptSynergies = [];\n\n// Parse GPT response\ntry {\n  const content = gptResponse.message?.content || gptResponse.text || '';\n  // Extract JSON from response\n  const jsonMatch = content.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    const parsed = JSON.parse(jsonMatch[0]);\n    gptSynergies = parsed.synergies || [];\n  }\n} catch (e) {\n  console.log('GPT parse error:', e.message);\n}\n\n// Merge GPT refinement with heuristic data\nconst finalSynergies = [];\n\nfor (const gptSyn of gptSynergies) {\n  if (gptSyn.finalScore >= 50) {\n    const heuristicMatch = heuristicData.potentialSynergies[gptSyn.index - 1];\n    if (heuristicMatch) {\n      finalSynergies.push({\n        id: 'syn_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),\n        type: gptSyn.type,\n        connectionAId: heuristicMatch.connectionA.connectionId,\n        connectionAName: heuristicMatch.connectionA.name,\n        connectionBId: heuristicMatch.connectionB.connectionId,\n        connectionBName: heuristicMatch.connectionB.name,\n        score: gptSyn.finalScore,\n        reason: gptSyn.reason,\n        actionSuggested: gptSyn.actionSuggested,\n        detectedAt: now\n      });\n    }\n  }\n}\n\n// Determine button state\nlet buttonState = 'idle';\nif (finalSynergies.length > 0) {\n  const maxScore = Math.max(...finalSynergies.map(s => s.score));\n  buttonState = maxScore >= 70 ? 'synergyHigh' : 'synergyLow';\n}\n\nreturn [{\n  json: {\n    userId: heuristicData.userId,\n    userName: heuristicData.userName,\n    deviceToken: heuristicData.deviceToken,\n    synergies: finalSynergies,\n    synergiesFound: finalSynergies.length,\n    buttonState: buttonState,\n    hasHighValueSynergy: buttonState === 'synergyHigh',\n    scanTimestamp: now,\n    analysisMethod: 'gpt_refined'\n  }\n}];"
+      },
+      "id": "merge-gpt-results",
+      "name": "🔗 Merge GPT Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2192, 32]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-synergies",
+              "leftValue": "={{ $json.synergiesFound }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ebc06ec9-4bd8-4b89-873f-ef788251a055",
+      "name": "🎯 Has Synergies?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2416, 32]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://neo4j-production-1adf.up.railway.app/db/neo4j/tx/commit",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Content-Type", "value": "application/json"},
+            {"name": "Accept", "value": "application/json"},
+            {"name": "Authorization", "value": "Basic bmVvNGo6OWdtYnoxd3JuOTVhZ2w2dTBiMHIyOHZmd2lidDdjZDk="}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"statements\": [\n    {\n      \"statement\": \"MATCH (p:Person {userId: $userId}) SET p.lastSynergyCheck = datetime(), p.pendingSynergies = $synergies, p.buttonState = $buttonState RETURN p.userId as userId, p.buttonState as buttonState\",\n      \"parameters\": {\n        \"userId\": $json.userId,\n        \"synergies\": JSON.stringify($json.synergies),\n        \"buttonState\": $json.buttonState\n      }\n    }\n  ]\n}) }}",
+        "options": {
+          "response": {"response": {"neverError": true}},
+          "timeout": 5000
+        }
+      },
+      "id": "6ead3043-90a0-4966-b9d2-51db57f1360e",
+      "name": "💾 Store Synergies in Neo4j",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2640, -64]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://neo4j-production-1adf.up.railway.app/db/neo4j/tx/commit",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Content-Type", "value": "application/json"},
+            {"name": "Accept", "value": "application/json"},
+            {"name": "Authorization", "value": "Basic bmVvNGo6OWdtYnoxd3JuOTVhZ2w2dTBiMHIyOHZmd2lidDdjZDk="}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"statements\": [\n    {\n      \"statement\": \"MATCH (p:Person {userId: $userId}) SET p.lastSynergyCheck = datetime(), p.buttonState = 'idle' RETURN p.userId as userId\",\n      \"parameters\": {\n        \"userId\": $json.userId || $('🧠 Heuristic Analysis').first().json.userId\n      }\n    }\n  ]\n}) }}",
+        "options": {
+          "response": {"response": {"neverError": true}},
+          "timeout": 5000
+        }
+      },
+      "id": "a836a9d7-d8ce-4f12-bd56-07f5ece2039a",
+      "name": "💾 Update No Synergies",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2640, 128]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare notification payload for push notification\nconst data = $('🔗 Merge GPT Results').first().json;\n\nconst notification = {\n  userId: data.userId,\n  deviceToken: data.deviceToken,\n  title: data.hasHighValueSynergy ? '🔴 Opportunité forte détectée !' : '🟡 Synergie dans ton réseau',\n  body: generateNotificationBody(data.synergies),\n  data: {\n    type: 'synergy',\n    buttonState: data.buttonState,\n    count: data.synergiesFound,\n    topSynergy: data.synergies[0] || null\n  },\n  // For future OneSignal integration\n  onesignal: {\n    include_player_ids: data.deviceToken ? [data.deviceToken] : [],\n    contents: { \n      en: generateNotificationBody(data.synergies), \n      fr: generateNotificationBody(data.synergies) \n    },\n    headings: { \n      en: data.hasHighValueSynergy ? '🔴 Strong opportunity detected!' : '🟡 Network synergy', \n      fr: data.hasHighValueSynergy ? '🔴 Opportunité forte détectée !' : '🟡 Synergie dans ton réseau' \n    }\n  }\n};\n\nfunction generateNotificationBody(synergies) {\n  if (!synergies || synergies.length === 0) return 'Des opportunités vous attendent!';\n  \n  const top = synergies[0];\n  return top.reason || `${synergies.length} synergies détectées dans votre réseau`;\n}\n\nreturn [{ json: notification }];"
+      },
+      "id": "7204fbff-71c0-411d-9c34-351c618f31bb",
+      "name": "📱 Prepare Notification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2864, -64]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Summary of scan results\nconst items = $input.all();\nconst summary = {\n  scanCompleted: new Date().toISOString(),\n  version: '1.1 (GPT-enhanced)',\n  usersScanned: items.length,\n  usersWithSynergies: items.filter(i => i.json.data?.count > 0).length,\n  totalSynergiesFound: items.reduce((sum, i) => sum + (i.json.data?.count || 0), 0),\n  notificationsPrepared: items.filter(i => i.json.deviceToken).length,\n  analysisMethod: 'heuristic + GPT refinement'\n};\n\nconsole.log('🔔 Synergy Scanner v1.1 Complete:', summary);\n\nreturn [{ json: summary }];"
+      },
+      "id": "9b1db014-be43-4640-a73d-610dbb543a5a",
+      "name": "📊 Scan Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3088, 32]
+    },
+    {
+      "parameters": {
+        "path": "synergy-scanner-manual",
+        "options": {}
+      },
+      "id": "cec64ad2-8951-494e-9d68-50322fbc4a91",
+      "name": "🔗 Manual Trigger / API",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [400, 224],
+      "webhookId": "synergy-scanner-manual"
+    },
+    {
+      "parameters": {
+        "path": "button-state",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "ce66dda6-ca06-4543-a6a3-80afa60daafa",
+      "name": "📱 Button State API",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [400, 448],
+      "webhookId": "cirkl-button-state"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://neo4j-production-1adf.up.railway.app/db/neo4j/tx/commit",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Content-Type", "value": "application/json"},
+            {"name": "Accept", "value": "application/json"},
+            {"name": "Authorization", "value": "Basic bmVvNGo6OWdtYnoxd3JuOTVhZ2w2dTBiMHIyOHZmd2lidDdjZDk="}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"statements\": [\n    {\n      \"statement\": \"MATCH (p:Person {userId: $userId}) RETURN p.buttonState as buttonState, p.pendingSynergies as synergies, p.lastSynergyCheck as lastCheck\",\n      \"parameters\": {\n        \"userId\": $json.query.userId || $json.body.userId || 'default'\n      }\n    }\n  ]\n}) }}",
+        "options": {
+          "response": {"response": {"neverError": true}},
+          "timeout": 5000
+        }
+      },
+      "id": "108311b4-eae3-4eff-be1d-7b33816ec71c",
+      "name": "🔍 Get User Button State",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [624, 448]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ (() => {\n  const neo4jResponse = $json;\n  let buttonState = 'idle';\n  let synergies = [];\n  let lastCheck = null;\n  \n  if (neo4jResponse?.results?.[0]?.data?.[0]?.row) {\n    const [state, synergiesJson, check] = neo4jResponse.results[0].data[0].row;\n    buttonState = state || 'idle';\n    synergies = synergiesJson ? JSON.parse(synergiesJson) : [];\n    lastCheck = check;\n  }\n  \n  return {\n    success: true,\n    buttonState: buttonState,\n    synergiesCount: synergies.length,\n    synergies: synergies.slice(0, 5),\n    lastCheck: lastCheck,\n    timestamp: new Date().toISOString(),\n    version: '1.1'\n  };\n})() }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {"name": "Content-Type", "value": "application/json"}
+            ]
+          }
+        }
+      },
+      "id": "a34d35f8-1703-4558-81e5-1cdf834c7b51",
+      "name": "📤 Return Button State",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [848, 448]
+    },
+    {
+      "parameters": {
+        "content": "## 🔔 Synergy Scanner v1.1 (GPT-Enhanced)\n\n### Nouveautés v1.1\n- **Analyse GPT** après scoring heuristique (score >= 30%)\n- **Raisons explicatives** générées par IA\n- **Actions suggérées** personnalisées\n- **Button states iOS** : `idle`, `synergyLow`, `synergyHigh`\n\n### Flow\n1. Get users actifs depuis Neo4j\n2. Pour chaque user:\n   - Récupérer ses connexions\n   - Rechercher synergies dans Graphiti\n   - Scoring heuristique (tags, rôles, industries)\n   - Si score >= 30% → **Analyse GPT**\n   - GPT affine le score et génère raison\n3. Stocker synergies finales (score >= 50%)\n4. Mettre à jour buttonState\n\n### Button States\n- `idle`: Aucune synergie\n- `synergyLow`: Score 50-69% (jaune)\n- `synergyHigh`: Score >= 70% (rouge)\n\n### Endpoints\n```\nGET /webhook/button-state?userId=xxx\nGET /webhook/synergy-scanner-manual (test)\n```\n\n### Synergy Types\n- `vc_startup` : VC + Startup\n- `mentor_mentee` : Senior + Junior\n- `business_partners` : Rôles complémentaires\n- `same_industry` : Même industrie\n- `shared_interests` : Intérêts communs\n- `collaboration` : Projet potentiel",
+        "height": 680,
+        "width": 400
+      },
+      "id": "f8bbf397-4794-42e0-8e3a-6818b007932f",
+      "name": "📝 Documentation",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-200, -100]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "⏰ Every 6 Hours": {
+      "main": [[{"node": "📊 Neo4j Get Active Users", "type": "main", "index": 0}]]
+    },
+    "📊 Neo4j Get Active Users": {
+      "main": [[{"node": "🔄 Parse Users", "type": "main", "index": 0}]]
+    },
+    "🔄 Parse Users": {
+      "main": [[{"node": "📊 Neo4j Get User Connections", "type": "main", "index": 0}]]
+    },
+    "📊 Neo4j Get User Connections": {
+      "main": [[{"node": "🔍 Graphiti Search Synergies", "type": "main", "index": 0}]]
+    },
+    "🔍 Graphiti Search Synergies": {
+      "main": [[{"node": "🧠 Heuristic Analysis", "type": "main", "index": 0}]]
+    },
+    "🧠 Heuristic Analysis": {
+      "main": [[{"node": "🎯 Has Potential Synergies?", "type": "main", "index": 0}]]
+    },
+    "🎯 Has Potential Synergies?": {
+      "main": [
+        [{"node": "🤖 GPT Synergy Analysis", "type": "main", "index": 0}],
+        [{"node": "💾 Update No Synergies", "type": "main", "index": 0}]
+      ]
+    },
+    "🤖 GPT Synergy Analysis": {
+      "main": [[{"node": "🔗 Merge GPT Results", "type": "main", "index": 0}]]
+    },
+    "🔗 Merge GPT Results": {
+      "main": [[{"node": "🎯 Has Synergies?", "type": "main", "index": 0}]]
+    },
+    "🎯 Has Synergies?": {
+      "main": [
+        [{"node": "💾 Store Synergies in Neo4j", "type": "main", "index": 0}],
+        [{"node": "💾 Update No Synergies", "type": "main", "index": 0}]
+      ]
+    },
+    "💾 Store Synergies in Neo4j": {
+      "main": [[{"node": "📱 Prepare Notification", "type": "main", "index": 0}]]
+    },
+    "💾 Update No Synergies": {
+      "main": [[{"node": "📊 Scan Summary", "type": "main", "index": 0}]]
+    },
+    "📱 Prepare Notification": {
+      "main": [[{"node": "📊 Scan Summary", "type": "main", "index": 0}]]
+    },
+    "🔗 Manual Trigger / API": {
+      "main": [[{"node": "📊 Neo4j Get Active Users", "type": "main", "index": 0}]]
+    },
+    "📱 Button State API": {
+      "main": [[{"node": "🔍 Get User Button State", "type": "main", "index": 0}]]
+    },
+    "🔍 Get User Button State": {
+      "main": [[{"node": "📤 Return Button State", "type": "main", "index": 0}]]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "synergy-scanner-v1.1",
+  "meta": {
+    "instanceId": "32831241200b534db91d34a916ee7fb845fffeb1fcb7fe2246f893ee8c6765a5"
+  },
+  "id": "synergy-scanner-v1.1",
+  "tags": []
+}
