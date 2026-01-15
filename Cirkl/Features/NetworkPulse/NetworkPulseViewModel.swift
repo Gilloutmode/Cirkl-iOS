@@ -189,6 +189,14 @@ final class NetworkPulseViewModel {
                     lastInteraction = formatter.date(from: dateString)
                 }
 
+                // Fallback for Neo4j short format without seconds (2026-01-14T10:00Z)
+                if lastInteraction == nil {
+                    let customFormatter = DateFormatter()
+                    customFormatter.dateFormat = "yyyy-MM-dd'T'HH:mmX"
+                    customFormatter.locale = Locale(identifier: "en_US_POSIX")
+                    lastInteraction = customFormatter.date(from: dateString)
+                }
+
                 #if DEBUG
                 if lastInteraction == nil {
                     print("⚠️ Failed to parse date: \(dateString)")
