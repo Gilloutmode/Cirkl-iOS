@@ -37,12 +37,22 @@ struct PulseConnectionRow: View {
         }
         .padding(DesignTokens.Spacing.md)
         .background {
-            RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
-                .fill(connection.status.color.opacity(0.05))
-                .overlay(
-                    RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
-                        .strokeBorder(connection.status.color.opacity(0.2), lineWidth: 1)
-                )
+            if #available(iOS 26.0, *) {
+                RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
+                    .fill(.clear)
+                    .glassEffect(.regular, in: .rect(cornerRadius: DesignTokens.Radius.medium))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
+                            .strokeBorder(connection.status.color.opacity(0.3), lineWidth: 1)
+                    )
+            } else {
+                RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
+                            .strokeBorder(connection.status.color.opacity(0.3), lineWidth: 1)
+                    )
+            }
         }
     }
 
