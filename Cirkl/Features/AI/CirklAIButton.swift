@@ -461,14 +461,8 @@ struct CirklAIButton: View {
                 }
             }
         } else if pressDuration < longPressThreshold {
-            // Tap court
-            if assistantState == .idle {
-                // État idle → ActionSheet avec options
-                showActionSheet = true
-            } else {
-                // État actif (synergy, opportunity, newConnection) → ouvrir le chat directement
-                showChat = true
-            }
+            // Tap court → Toujours afficher le menu d'options
+            showActionSheet = true
         }
 
         isLongPressing = false
