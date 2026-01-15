@@ -442,6 +442,14 @@ final class Neo4jService: ObservableObject {
         isLoading = false
     }
 
+    // MARK: - Public Query Execution
+
+    /// Execute une query Cypher et retourne les résultats (API publique)
+    /// Utilisé par NetworkPulseViewModel pour les queries personnalisées
+    func executeQuery(_ query: String) async throws -> [[String: Any]] {
+        try await executeCypher(query)
+    }
+
     // MARK: - Cypher Execution
 
     private func executeCypher(_ query: String) async throws -> [[String: Any]] {

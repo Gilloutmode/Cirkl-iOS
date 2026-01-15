@@ -462,7 +462,7 @@ struct CirklAIButton: View {
             }
         } else if pressDuration < longPressThreshold {
             // Tap court
-            if buttonState == .idle {
+            if assistantState == .idle {
                 // État idle → ActionSheet avec options
                 showActionSheet = true
             } else {
