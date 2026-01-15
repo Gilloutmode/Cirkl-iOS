@@ -17,6 +17,8 @@ struct CirklAIButton: View {
     @State private var isPressed = false
     @State private var pulsePhase: Double = 0
     @State private var showChat = false
+    @State private var showActionSheet = false
+    @State private var showNetworkPulse = false
 
     // Living Button state - NEW: Uses AIAssistantState + DebriefingManager
     @State private var assistantState: AIAssistantState = .idle
@@ -195,6 +197,30 @@ struct CirklAIButton: View {
             .onDisappear {
                 audioData = nil
             }
+        }
+// Network Pulse Sheet
+        .sheet(isPresented: $showNetworkPulse) {
+            NetworkPulseView()
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
+        // Action Sheet pour bouton idle
+        .confirmationDialog("Que veux-tu faire ?", isPresented: $showActionSheet, titleVisibility: .visible) {
+            Button {
+                showChat = true
+            } label: {
+                Label("Parler à l'IA", systemImage: "bubble.left.fill")
+            }
+
+            Button {
+                showNetworkPulse = true
+            } label: {
+                Label("Santé de mon réseau", systemImage: "heart.text.square.fill")
+            }
+
+            Button("Annuler", role: .cancel) { }
+        } message: {
+            Text("Choisis une option pour interagir avec ton assistant")
         }
         // Listen for debriefing state changes
         .onReceive(NotificationCenter.default.publisher(for: .debriefingStateChanged)) { _ in
@@ -435,8 +461,14 @@ struct CirklAIButton: View {
                 }
             }
         } else if pressDuration < longPressThreshold {
-            // Tap court → ouvrir le chat
-            showChat = true
+            // Tap court
+            if buttonState == .idle {
+                // État idle → ActionSheet avec options
+                showActionSheet = true
+            } else {
+                // État actif (synergy, opportunity, newConnection) → ouvrir le chat directement
+                showChat = true
+            }
         }
 
         isLongPressing = false

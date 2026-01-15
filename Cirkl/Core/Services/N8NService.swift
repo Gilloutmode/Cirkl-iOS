@@ -471,6 +471,88 @@ struct ButtonStateResponse: Decodable, Sendable {
 
 extension N8NService {
 
+    // MARK: - Suggestion Request (Network Pulse)
+
+    /// Request for AI suggestions to reconnect with a connection
+    struct SuggestionRequest: Encodable {
+        let userId: String
+        let messageType: String  // "suggestion"
+        let connectionName: String
+        let context: String
+        let sessionId: String
+    }
+
+    /// Fetch an AI suggestion to reconnect with a connection
+    /// - Parameters:
+    ///   - userId: The user's identifier
+    ///   - connectionName: Name of the connection to reconnect with
+    ///   - context: Context about the connection (last interaction, status)
+    /// - Returns: A suggestion message from the AI
+    func fetchSuggestion(userId: String, connectionName: String, context: String) async throws -> String {
+        let request = SuggestionRequest(
+            userId: userId,
+            messageType: "suggestion",
+            connectionName: connectionName,
+            context: context,
+            sessionId: UUID().uuidString
+        )
+
+        guard let url = URL(string: baseURL) else {
+            throw N8NError.invalidURL
+        }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.setValue("Cirkl-iOS/\(DeviceInfo.current.appVersion)", forHTTPHeaderField: "User-Agent")
+        urlRequest.timeoutInterval = 30
+
+        do {
+            urlRequest.httpBody = try encoder.encode(request)
+        } catch {
+            throw N8NError.encodingFailed(error)
+        }
+
+        #if DEBUG
+        if let body = urlRequest.httpBody, let jsonString = String(data: body, encoding: .utf8) {
+            print("📤 N8N Suggestion Request: \(jsonString)")
+        }
+        #endif
+
+        let (data, response): (Data, URLResponse)
+        do {
+            (data, response) = try await URLSession.shared.data(for: urlRequest)
+        } catch {
+            throw N8NError.networkError(error)
+        }
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw N8NError.invalidResponse
+        }
+
+        #if DEBUG
+        if let jsonString = String(data: data, encoding: .utf8) {
+            print("📥 N8N Suggestion Response (\(httpResponse.statusCode)): \(jsonString)")
+        }
+        #endif
+
+        guard 200...299 ~= httpResponse.statusCode else {
+            throw N8NError.httpError(statusCode: httpResponse.statusCode, data: data)
+        }
+
+        // Parse response - expecting { "success": true, "response": "..." }
+        do {
+            let assistantResponse = try decoder.decode(AssistantResponse.self, from: data)
+            return assistantResponse.response
+        } catch {
+            // Fallback: try to extract plain text
+            if let text = String(data: data, encoding: .utf8), !text.isEmpty {
+                return text
+            }
+            throw N8NError.decodingFailed(error)
+        }
+    }
+
     // MARK: - Button State Polling
 
     private static let buttonStateBaseURL = "https://gilloutmode.app.n8n.cloud/webhook/button-state"
