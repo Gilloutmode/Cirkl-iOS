@@ -172,7 +172,28 @@ final class NetworkPulseViewModel {
             var lastInteraction: Date?
             if let dateString = row["lastInteraction"] as? String {
                 let formatter = ISO8601DateFormatter()
+
+                // Try with fractional seconds first
+                formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
                 lastInteraction = formatter.date(from: dateString)
+
+                // Fallback without fractional seconds
+                if lastInteraction == nil {
+                    formatter.formatOptions = [.withInternetDateTime]
+                    lastInteraction = formatter.date(from: dateString)
+                }
+
+                // Fallback for Neo4j datetime format (2026-01-14T10:00Z)
+                if lastInteraction == nil {
+                    formatter.formatOptions = [.withFullDate, .withTime, .withTimeZone]
+                    lastInteraction = formatter.date(from: dateString)
+                }
+
+                #if DEBUG
+                if lastInteraction == nil {
+                    print("⚠️ Failed to parse date: \(dateString)")
+                }
+                #endif
             }
 
             return ConnectionWithInteraction(
