@@ -414,6 +414,41 @@ struct ButtonStateResponse: Decodable, Sendable {
         let id: String?
         let type: String?
         let description: String?
+
+        /// Convertit en DetectedSynergy pour le nouveau système
+        func toDetectedSynergy() -> DetectedSynergy? {
+            guard let id = id,
+                  let type = type,
+                  let description = description else { return nil }
+
+            // Parser le type en SynergyType
+            let synergyType: SynergyType
+            switch type.lowercased() {
+            case "vc_startup", "vcstartup", "investor": synergyType = .vcStartup
+            case "mentor_mentee", "mentormentee", "mentor": synergyType = .mentorMentee
+            case "recruiter_candidate", "recruitercandidate", "job": synergyType = .recruiterCandidate
+            case "business_partners", "businesspartners", "partner": synergyType = .businessPartners
+            case "same_industry", "sameindustry", "industry": synergyType = .sameIndustry
+            case "shared_interests", "sharedinterests", "interests": synergyType = .sharedInterests
+            case "same_location", "samelocation", "location": synergyType = .sameLocation
+            case "mutual_connections", "mutualconnections", "mutual": synergyType = .mutualConnections
+            case "same_event", "sameevent", "event": synergyType = .sameEvent
+            case "same_school", "sameschool", "school": synergyType = .sameSchool
+            case "same_club", "sameclub", "club": synergyType = .sameClub
+            default: synergyType = .sharedInterests
+            }
+
+            return DetectedSynergy(
+                id: UUID(uuidString: id) ?? UUID(),
+                connectionAId: "n8n-\(id)-a",
+                connectionAName: "Connexion A",
+                connectionBId: "n8n-\(id)-b",
+                connectionBName: "Connexion B",
+                synergyType: synergyType,
+                score: 0.5,  // Score par défaut, sera affiné par N8N
+                reason: description
+            )
+        }
     }
 }
 

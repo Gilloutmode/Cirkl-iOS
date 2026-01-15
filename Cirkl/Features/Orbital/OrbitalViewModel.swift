@@ -13,8 +13,11 @@ class OrbitalViewModel: ObservableObject {
             filterConnections()
         }
     }
-    @Published var assistantState: AIAssistantState = .idle
-    
+    // Assistant state is now managed by DebriefingManager
+    var assistantState: AIAssistantState {
+        DebriefingManager.shared.currentState
+    }
+
     // MARK: - Computed Properties
     var totalConnections: Int {
         connections.count
@@ -41,24 +44,14 @@ class OrbitalViewModel: ObservableObject {
     }
     
     // MARK: - Public Methods
+
+    /// Assistant state is managed by DebriefingManager - this method is for legacy compatibility
     func activateAssistant() {
-        // Cycle through assistant states for demo
-        let states: [AIAssistantState] = [
-            .contextual,
-            .questioning,
-            .opportunity,
-            .celebration,
-            .romantic,
-            .business,
-            .idle
-        ]
-        
-        if let currentIndex = states.firstIndex(of: assistantState) {
-            let nextIndex = (currentIndex + 1) % states.count
-            withAnimation(.spring()) {
-                assistantState = states[nextIndex]
-            }
-        }
+        // State is now managed by DebriefingManager based on pending debriefings and synergies
+        // This method can be used to manually refresh state if needed
+        #if DEBUG
+        print("Assistant state: \(assistantState)")
+        #endif
     }
     
     func refreshConnections() {
@@ -117,16 +110,5 @@ class OrbitalViewModel: ObservableObject {
             )
         }
     }
-}
-
-// MARK: - AI Assistant State
-enum AIAssistantState: Equatable {
-    case idle
-    case contextual
-    case questioning
-    case opportunity
-    case celebration
-    case romantic
-    case business
 }
 

@@ -111,6 +111,119 @@ struct OrbitalBubblesLayer: View {
     }
 }
 
+// MARK: - Connection Bubbles Layer With Synergy Effects
+struct OrbitalBubblesLayerWithSynergy: View {
+    let contacts: [OrbitalContact]
+    let centerX: CGFloat
+    let centerY: CGFloat
+    let width: CGFloat
+    let height: CGFloat
+    @Binding var bubbleOffsets: [Int: CGSize]
+    let searchQuery: String
+    let synergies: [DetectedSynergy]
+    var onContactTap: ((OrbitalContact) -> Void)?
+    var onPositionsUpdated: (([String: CGPoint]) -> Void)?
+
+    private let verifiedBubbleSize: CGFloat = 70
+    private let pendingBubbleSize: CGFloat = 60
+
+    // IDs des connexions impliquées dans des synergies
+    private var synergyConnectionIds: Set<String> {
+        var ids = Set<String>()
+        for synergy in synergies where !synergy.isActedUpon {
+            ids.insert(synergy.connectionAId)
+            ids.insert(synergy.connectionBId)
+        }
+        return ids
+    }
+
+    // Score de synergie maximum pour une connexion
+    private func maxSynergyScore(for connectionId: String) -> Double {
+        synergies
+            .filter { !$0.isActedUpon && ($0.connectionAId == connectionId || $0.connectionBId == connectionId) }
+            .map { $0.score }
+            .max() ?? 0
+    }
+
+    // Type de synergie pour une connexion
+    private func synergyType(for connectionId: String) -> SynergyType? {
+        synergies
+            .first { !$0.isActedUpon && ($0.connectionAId == connectionId || $0.connectionBId == connectionId) }?
+            .synergyType
+    }
+
+    var body: some View {
+        ForEach(Array(contacts.enumerated()), id: \.element.id) { index, contact in
+            let posX = width * contact.xPercent
+            let posY = height * contact.yPercent
+            let isVisible = contact.matches(query: searchQuery)
+            let bubbleSize = contact.trustLevel.isConfirmed ? verifiedBubbleSize : pendingBubbleSize
+            let hasSynergy = synergyConnectionIds.contains(contact.id)
+            let synergyScore = maxSynergyScore(for: contact.id)
+            let synType = synergyType(for: contact.id)
+
+            ZStack {
+                // Particle effects for synergy bubbles
+                if hasSynergy, let synType = synType {
+                    SynergyBubbleEffect(
+                        bubbleSize: bubbleSize,
+                        synergyType: synType,
+                        score: synergyScore
+                    )
+                    .position(x: posX + (bubbleOffsets[index]?.width ?? 0),
+                              y: posY + (bubbleOffsets[index]?.height ?? 0))
+                }
+
+                // Active connection glow
+                if hasSynergy {
+                    ActiveConnectionGlow(
+                        size: bubbleSize,
+                        color: synType?.category.color ?? .mint
+                    )
+                    .position(x: posX + (bubbleOffsets[index]?.width ?? 0),
+                              y: posY + (bubbleOffsets[index]?.height ?? 0))
+                }
+
+                // The bubble itself
+                AnimatedBubbleWrapper(
+                    contact: contact,
+                    index: index,
+                    posX: posX,
+                    posY: posY,
+                    centerX: centerX,
+                    centerY: centerY,
+                    bubbleSize: bubbleSize,
+                    isVisible: isVisible,
+                    isPending: !contact.trustLevel.isConfirmed,
+                    dragOffset: Binding(
+                        get: { bubbleOffsets[index] ?? .zero },
+                        set: { bubbleOffsets[index] = $0 }
+                    ),
+                    onTap: { onContactTap?(contact) }
+                )
+            }
+            .onAppear {
+                // Report position for synergy lines
+                updatePosition(for: contact, at: CGPoint(x: posX, y: posY))
+            }
+            .onChange(of: bubbleOffsets[index]) { _, newOffset in
+                let offset = newOffset ?? .zero
+                updatePosition(for: contact, at: CGPoint(x: posX + offset.width, y: posY + offset.height))
+            }
+        }
+    }
+
+    private func updatePosition(for contact: OrbitalContact, at position: CGPoint) {
+        var positions: [String: CGPoint] = [:]
+        for (index, c) in contacts.enumerated() {
+            let posX = width * c.xPercent + (bubbleOffsets[index]?.width ?? 0)
+            let posY = height * c.yPercent + (bubbleOffsets[index]?.height ?? 0)
+            positions[c.id] = CGPoint(x: posX, y: posY)
+        }
+        onPositionsUpdated?(positions)
+    }
+}
+
 // MARK: - Animated Bubble Wrapper (Explosion Effect)
 struct AnimatedBubbleWrapper: View {
     let contact: OrbitalContact

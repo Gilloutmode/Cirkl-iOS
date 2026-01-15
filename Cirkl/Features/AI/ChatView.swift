@@ -35,10 +35,10 @@ struct ChatView: View {
     /// Optional initial audio data from voice recording
     var initialAudioData: Data?
 
-    /// Optional synergy context from Living Button state
-    var initialSynergyContext: SynergyContext?
+    /// Optional assistant context from Living Button state (debriefings, synergies)
+    var initialSynergyContext: AIAssistantContext?
 
-    init(initialAudioData: Data? = nil, initialSynergyContext: SynergyContext? = nil) {
+    init(initialAudioData: Data? = nil, initialSynergyContext: AIAssistantContext? = nil) {
         self.initialAudioData = initialAudioData
         self.initialSynergyContext = initialSynergyContext
     }
@@ -215,7 +215,10 @@ class ChatViewModel: ObservableObject {
     }
 
     /// Stored synergy context to include with first user message
-    private var pendingSynergyContext: SynergyContext?
+    private var pendingSynergyContext: AIAssistantContext?
+
+    /// Track active debriefing for completion
+    private var activeDebriefingId: UUID?
 
     init() {
         // PERFORMANCE FIX: Don't load history synchronously in init
@@ -249,9 +252,17 @@ class ChatViewModel: ObservableObject {
         saveMessage(welcome)
     }
 
-    func addSynergyContextMessage(_ context: SynergyContext) {
+    func addSynergyContextMessage(_ context: AIAssistantContext) {
         // Store context to prepend to first user message
         pendingSynergyContext = context
+
+        // Track active debriefing for completion
+        if context.state == .debriefing, let firstDebriefing = context.pendingDebriefings.first {
+            activeDebriefingId = firstDebriefing.id
+            #if DEBUG
+            print("💬 Tracking debriefing for: \(firstDebriefing.connectionName) (id: \(firstDebriefing.id))")
+            #endif
+        }
 
         // Display locally and persist
         let synergyMessage = ChatMessage(
@@ -267,14 +278,30 @@ class ChatViewModel: ObservableObject {
     }
 
     /// Build context prefix for N8N
-    private func buildContextPrefix(from context: SynergyContext) -> String {
-        let synergiesText = context.synergies.enumerated().map { index, syn in
-            "\(index + 1). \(syn.description ?? "Opportunité \(index + 1)")"
-        }.joined(separator: "\n")
+    private func buildContextPrefix(from context: AIAssistantContext) -> String {
+        var contextParts: [String] = []
+
+        // Add debriefings context
+        if !context.pendingDebriefings.isEmpty {
+            let debriefingText = context.pendingDebriefings.map { debriefing in
+                "- \(debriefing.connectionName): \(debriefing.publicProfile.summary)"
+            }.joined(separator: "\n")
+            contextParts.append("Debriefings en attente:\n\(debriefingText)")
+        }
+
+        // Add synergies context
+        if !context.detectedSynergies.isEmpty {
+            let synergiesText = context.detectedSynergies.enumerated().map { index, synergy in
+                "\(index + 1). \(synergy.synergyType.displayName): \(synergy.connectionAName) <-> \(synergy.connectionBName) - \(synergy.reason)"
+            }.joined(separator: "\n")
+            contextParts.append("Synergies détectées:\n\(synergiesText)")
+        }
+
+        guard !contextParts.isEmpty else { return "" }
 
         return """
-        [CONTEXTE: J'ai vu ces opportunités dans mon réseau:
-        \(synergiesText)
+        [CONTEXTE:
+        \(contextParts.joined(separator: "\n\n"))
         ]
 
         Ma réponse:
@@ -321,6 +348,18 @@ class ChatViewModel: ObservableObject {
                 )
                 messages.append(assistantMessage)
                 saveMessage(assistantMessage)
+
+                // DEBRIEFING COMPLETION: Mark debriefing as complete after user responds
+                if let debriefingId = activeDebriefingId {
+                    DebriefingManager.shared.completeDebriefing(id: debriefingId)
+                    activeDebriefingId = nil
+                    #if DEBUG
+                    print("✅ Debriefing completed: \(debriefingId)")
+                    #endif
+
+                    // Notify button to update state
+                    NotificationCenter.default.post(name: .debriefingStateChanged, object: nil)
+                }
 
                 // Propagate button state update to CirklAIButton
                 if let newButtonState = response.buttonState ?? response.metadata?.buttonState {
@@ -402,6 +441,18 @@ class ChatViewModel: ObservableObject {
                 )
                 messages.append(assistantMessage)
                 saveMessage(assistantMessage)
+
+                // DEBRIEFING COMPLETION: Mark debriefing as complete after user responds (audio)
+                if let debriefingId = activeDebriefingId {
+                    DebriefingManager.shared.completeDebriefing(id: debriefingId)
+                    activeDebriefingId = nil
+                    #if DEBUG
+                    print("✅ Debriefing completed (audio): \(debriefingId)")
+                    #endif
+
+                    // Notify button to update state
+                    NotificationCenter.default.post(name: .debriefingStateChanged, object: nil)
+                }
 
                 // Propagate button state update to CirklAIButton
                 if let newButtonState = response.buttonState ?? response.metadata?.buttonState {
