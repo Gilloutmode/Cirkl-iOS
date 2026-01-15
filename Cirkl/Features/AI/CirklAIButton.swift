@@ -573,8 +573,8 @@ struct SynergyContext: Equatable {
     var stateDescription: String {
         switch state {
         case .idle: return ""
-        case .synergy: return "Synergie détectée"
-        case .opportunity: return "Opportunité"
+        case .synergy, .synergyLow: return "Synergie détectée"
+        case .opportunity, .synergyHigh: return "Opportunité importante"
         case .newConnection: return "Nouvelle connexion"
         }
     }
@@ -582,8 +582,8 @@ struct SynergyContext: Equatable {
     var emoji: String {
         switch state {
         case .idle: return ""
-        case .synergy: return "🤝"
-        case .opportunity: return "💡"
+        case .synergy, .synergyLow: return "🤝"
+        case .opportunity, .synergyHigh: return "🔥"
         case .newConnection: return "✨"
         }
     }

@@ -255,12 +255,19 @@ final class MorningBriefManager {
         }
         #endif
 
-        return try JSONDecoder().decode(MorningBrief.self, from: data)
+        // Configure decoder with ISO8601 date strategy for N8N responses
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        return try decoder.decode(MorningBrief.self, from: data)
     }
 
     private func loadStoredBrief() {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
         guard let data = UserDefaults.standard.data(forKey: briefStorageKey),
-              let brief = try? JSONDecoder().decode(MorningBrief.self, from: data) else {
+              let brief = try? decoder.decode(MorningBrief.self, from: data) else {
             return
         }
 

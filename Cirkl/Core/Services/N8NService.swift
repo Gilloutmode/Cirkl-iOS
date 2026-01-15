@@ -394,12 +394,29 @@ enum CirklIntent: String, Sendable {
 
 // MARK: - Button State API (Living Button)
 
-/// Button state types from API
+/// Button state types from API (v1.1 compatible)
+/// Maps N8N button states to iOS AIAssistantState
 enum AIButtonState: String, Codable, Sendable {
     case idle
-    case synergy
-    case opportunity
+    case synergy           // Legacy v1.0
+    case opportunity       // Legacy v1.0
     case newConnection = "new_connection"
+    case synergyLow = "synergyLow"      // v1.1 - Score 50-69%
+    case synergyHigh = "synergyHigh"    // v1.1 - Score >= 70%
+
+    /// Convertit en AIAssistantState pour le nouveau système
+    var toAssistantState: AIAssistantState {
+        switch self {
+        case .idle:
+            return .idle
+        case .synergy, .synergyLow:
+            return .synergyLow
+        case .opportunity, .synergyHigh:
+            return .synergyHigh
+        case .newConnection:
+            return .debriefing
+        }
+    }
 }
 
 /// Response from button-state endpoint
