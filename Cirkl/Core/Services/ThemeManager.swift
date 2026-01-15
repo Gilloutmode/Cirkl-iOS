@@ -79,13 +79,25 @@ final class ThemeManager {
 
 // MARK: - Environment Key
 
+// DATA RACE FIX: EnvironmentKey protocol requires synchronous access,
+// but ThemeManager.shared is @MainActor isolated. Solution:
+// 1. Use optional defaultValue (nil) to avoid accessing shared at static init time
+// 2. In getter, use MainActor.assumeIsolated since SwiftUI environment access is always on main thread
 private struct ThemeManagerKey: EnvironmentKey {
-    @MainActor static let defaultValue = ThemeManager.shared
+    static let defaultValue: ThemeManager? = nil
 }
 
 extension EnvironmentValues {
     var themeManager: ThemeManager {
-        get { self[ThemeManagerKey.self] }
+        get {
+            // SwiftUI environment is always accessed from main thread
+            // Use assumeIsolated to safely access @MainActor property
+            if let stored = self[ThemeManagerKey.self] {
+                return stored
+            }
+            // Fallback to shared instance - safe because SwiftUI runs on main thread
+            return MainActor.assumeIsolated { ThemeManager.shared }
+        }
         set { self[ThemeManagerKey.self] = newValue }
     }
 }

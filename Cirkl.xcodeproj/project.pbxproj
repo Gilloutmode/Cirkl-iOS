@@ -10,6 +10,16 @@
 		2BE5DA662F13C02300742EE5 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 2BE5DA652F13C02300742EE5 /* Auth */; };
 		2BE5DA682F13C02300742EE5 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 2BE5DA672F13C02300742EE5 /* PostgREST */; };
 		2BE5DA6B2F13C1A800742EE5 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 2BE5DA6A2F13C1A800742EE5 /* Supabase */; };
+		2BE5DA8F2F15286700742EE5 /* PopupView in Frameworks */ = {isa = PBXBuildFile; productRef = 2BE5DA8E2F15286700742EE5 /* PopupView */; };
+		2BE5DA922F1528C900742EE5 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 2BE5DA912F1528C900742EE5 /* Lottie */; };
+		2BE5DA952F1528E900742EE5 /* LiquidGlass in Frameworks */ = {isa = PBXBuildFile; productRef = 2BE5DA942F1528E900742EE5 /* LiquidGlass */; };
+		2BE5DA982F15290800742EE5 /* AnimateText in Frameworks */ = {isa = PBXBuildFile; productRef = 2BE5DA972F15290800742EE5 /* AnimateText */; };
+		2BE5DA9B2F1529BA00742EE5 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 2BE5DA9A2F1529BA00742EE5 /* Kingfisher */; };
+		2BE5DA9E2F1529DD00742EE5 /* SwiftUIX in Frameworks */ = {isa = PBXBuildFile; productRef = 2BE5DA9D2F1529DD00742EE5 /* SwiftUIX */; };
+		2BE5DAA12F1529FE00742EE5 /* ConfettiSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 2BE5DAA02F1529FE00742EE5 /* ConfettiSwiftUI */; };
+		2BE5DAA42F152A2100742EE5 /* Shimmer in Frameworks */ = {isa = PBXBuildFile; productRef = 2BE5DAA32F152A2100742EE5 /* Shimmer */; };
+		2BE5DAAC2F152A9D00742EE5 /* ConcentricOnboarding in Frameworks */ = {isa = PBXBuildFile; productRef = 2BE5DAAB2F152A9D00742EE5 /* ConcentricOnboarding */; };
+		2BE5DAAF2F15423800742EE5 /* SwifterSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 2BE5DAAE2F15423800742EE5 /* SwifterSwift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -71,9 +81,19 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2BE5DAA12F1529FE00742EE5 /* ConfettiSwiftUI in Frameworks */,
+				2BE5DA9E2F1529DD00742EE5 /* SwiftUIX in Frameworks */,
+				2BE5DA922F1528C900742EE5 /* Lottie in Frameworks */,
+				2BE5DAAF2F15423800742EE5 /* SwifterSwift in Frameworks */,
+				2BE5DA952F1528E900742EE5 /* LiquidGlass in Frameworks */,
+				2BE5DA8F2F15286700742EE5 /* PopupView in Frameworks */,
+				2BE5DA982F15290800742EE5 /* AnimateText in Frameworks */,
+				2BE5DA9B2F1529BA00742EE5 /* Kingfisher in Frameworks */,
 				2BE5DA682F13C02300742EE5 /* PostgREST in Frameworks */,
 				2BE5DA662F13C02300742EE5 /* Auth in Frameworks */,
 				2BE5DA6B2F13C1A800742EE5 /* Supabase in Frameworks */,
+				2BE5DAA42F152A2100742EE5 /* Shimmer in Frameworks */,
+				2BE5DAAC2F152A9D00742EE5 /* ConcentricOnboarding in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -145,6 +165,16 @@
 				2BE5DA652F13C02300742EE5 /* Auth */,
 				2BE5DA672F13C02300742EE5 /* PostgREST */,
 				2BE5DA6A2F13C1A800742EE5 /* Supabase */,
+				2BE5DA8E2F15286700742EE5 /* PopupView */,
+				2BE5DA912F1528C900742EE5 /* Lottie */,
+				2BE5DA942F1528E900742EE5 /* LiquidGlass */,
+				2BE5DA972F15290800742EE5 /* AnimateText */,
+				2BE5DA9A2F1529BA00742EE5 /* Kingfisher */,
+				2BE5DA9D2F1529DD00742EE5 /* SwiftUIX */,
+				2BE5DAA02F1529FE00742EE5 /* ConfettiSwiftUI */,
+				2BE5DAA32F152A2100742EE5 /* Shimmer */,
+				2BE5DAAB2F152A9D00742EE5 /* ConcentricOnboarding */,
+				2BE5DAAE2F15423800742EE5 /* SwifterSwift */,
 			);
 			productName = Cirkl;
 			productReference = 2B0715D02E7066AD003FE51A /* Cirkl.app */;
@@ -230,6 +260,16 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				2BE5DA642F13C02300742EE5 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+				2BE5DA8D2F15286700742EE5 /* XCRemoteSwiftPackageReference "PopupView" */,
+				2BE5DA902F1528C900742EE5 /* XCRemoteSwiftPackageReference "lottie-ios" */,
+				2BE5DA932F1528E900742EE5 /* XCRemoteSwiftPackageReference "LiquidGlass" */,
+				2BE5DA962F15290800742EE5 /* XCRemoteSwiftPackageReference "AnimateText" */,
+				2BE5DA992F1529BA00742EE5 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+				2BE5DA9C2F1529DD00742EE5 /* XCRemoteSwiftPackageReference "SwiftUIX" */,
+				2BE5DA9F2F1529FE00742EE5 /* XCRemoteSwiftPackageReference "ConfettiSwiftUI" */,
+				2BE5DAA22F152A2100742EE5 /* XCRemoteSwiftPackageReference "SwiftUI-Shimmer" */,
+				2BE5DAAA2F152A9D00742EE5 /* XCRemoteSwiftPackageReference "ConcentricOnboarding" */,
+				2BE5DAAD2F15423800742EE5 /* XCRemoteSwiftPackageReference "SwifterSwift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2B0715D12E7066AD003FE51A /* Products */;
@@ -323,7 +363,7 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -356,7 +396,7 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -610,6 +650,86 @@
 				minimumVersion = 2.5.1;
 			};
 		};
+		2BE5DA8D2F15286700742EE5 /* XCRemoteSwiftPackageReference "PopupView" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/exyte/PopupView";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.1.18;
+			};
+		};
+		2BE5DA902F1528C900742EE5 /* XCRemoteSwiftPackageReference "lottie-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/airbnb/lottie-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.6.0;
+			};
+		};
+		2BE5DA932F1528E900742EE5 /* XCRemoteSwiftPackageReference "LiquidGlass" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/BarredEwe/LiquidGlass";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.8.0;
+			};
+		};
+		2BE5DA962F15290800742EE5 /* XCRemoteSwiftPackageReference "AnimateText" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/jasudev/AnimateText";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.5.0;
+			};
+		};
+		2BE5DA992F1529BA00742EE5 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.6.2;
+			};
+		};
+		2BE5DA9C2F1529DD00742EE5 /* XCRemoteSwiftPackageReference "SwiftUIX" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SwiftUIX/SwiftUIX";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.2.4;
+			};
+		};
+		2BE5DA9F2F1529FE00742EE5 /* XCRemoteSwiftPackageReference "ConfettiSwiftUI" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/simibac/ConfettiSwiftUI";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.0.0;
+			};
+		};
+		2BE5DAA22F152A2100742EE5 /* XCRemoteSwiftPackageReference "SwiftUI-Shimmer" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/markiv/SwiftUI-Shimmer";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.1;
+			};
+		};
+		2BE5DAAA2F152A9D00742EE5 /* XCRemoteSwiftPackageReference "ConcentricOnboarding" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/exyte/ConcentricOnboarding";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.1.1;
+			};
+		};
+		2BE5DAAD2F15423800742EE5 /* XCRemoteSwiftPackageReference "SwifterSwift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SwifterSwift/SwifterSwift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -627,6 +747,56 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2BE5DA642F13C02300742EE5 /* XCRemoteSwiftPackageReference "supabase-swift" */;
 			productName = Supabase;
+		};
+		2BE5DA8E2F15286700742EE5 /* PopupView */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2BE5DA8D2F15286700742EE5 /* XCRemoteSwiftPackageReference "PopupView" */;
+			productName = PopupView;
+		};
+		2BE5DA912F1528C900742EE5 /* Lottie */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2BE5DA902F1528C900742EE5 /* XCRemoteSwiftPackageReference "lottie-ios" */;
+			productName = Lottie;
+		};
+		2BE5DA942F1528E900742EE5 /* LiquidGlass */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2BE5DA932F1528E900742EE5 /* XCRemoteSwiftPackageReference "LiquidGlass" */;
+			productName = LiquidGlass;
+		};
+		2BE5DA972F15290800742EE5 /* AnimateText */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2BE5DA962F15290800742EE5 /* XCRemoteSwiftPackageReference "AnimateText" */;
+			productName = AnimateText;
+		};
+		2BE5DA9A2F1529BA00742EE5 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2BE5DA992F1529BA00742EE5 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
+		2BE5DA9D2F1529DD00742EE5 /* SwiftUIX */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2BE5DA9C2F1529DD00742EE5 /* XCRemoteSwiftPackageReference "SwiftUIX" */;
+			productName = SwiftUIX;
+		};
+		2BE5DAA02F1529FE00742EE5 /* ConfettiSwiftUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2BE5DA9F2F1529FE00742EE5 /* XCRemoteSwiftPackageReference "ConfettiSwiftUI" */;
+			productName = ConfettiSwiftUI;
+		};
+		2BE5DAA32F152A2100742EE5 /* Shimmer */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2BE5DAA22F152A2100742EE5 /* XCRemoteSwiftPackageReference "SwiftUI-Shimmer" */;
+			productName = Shimmer;
+		};
+		2BE5DAAB2F152A9D00742EE5 /* ConcentricOnboarding */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2BE5DAAA2F152A9D00742EE5 /* XCRemoteSwiftPackageReference "ConcentricOnboarding" */;
+			productName = ConcentricOnboarding;
+		};
+		2BE5DAAE2F15423800742EE5 /* SwifterSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2BE5DAAD2F15423800742EE5 /* XCRemoteSwiftPackageReference "SwifterSwift" */;
+			productName = SwifterSwift;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

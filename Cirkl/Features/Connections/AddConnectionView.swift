@@ -180,9 +180,10 @@ struct AddConnectionView: View {
         .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(DesignTokens.Colors.surface)
-                .shadow(color: .black.opacity(0.05), radius: 10, y: 5)
+                .fill(Color.primary.opacity(0.04))
         )
+        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+        .shadow(color: .black.opacity(0.05), radius: 10, y: 5)
     }
 
     // MARK: - Basic Info Section
@@ -196,9 +197,10 @@ struct AddConnectionView: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(DesignTokens.Colors.surface)
-                    .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
+                    .fill(Color.primary.opacity(0.04))
             )
+            .glassEffect(.regular, in: .rect(cornerRadius: 16))
+            .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
         }
     }
 
@@ -249,9 +251,10 @@ struct AddConnectionView: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(DesignTokens.Colors.surface)
-                    .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
+                    .fill(Color.primary.opacity(0.04))
             )
+            .glassEffect(.regular, in: .rect(cornerRadius: 16))
+            .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
         }
     }
 
@@ -297,9 +300,10 @@ struct AddConnectionView: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(DesignTokens.Colors.surface)
-                    .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
+                    .fill(Color.primary.opacity(0.04))
             )
+            .glassEffect(.regular, in: .rect(cornerRadius: 16))
+            .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
         }
     }
 
@@ -375,9 +379,10 @@ struct AddConnectionView: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(DesignTokens.Colors.surface)
-                    .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
+                    .fill(Color.primary.opacity(0.04))
             )
+            .glassEffect(.regular, in: .rect(cornerRadius: 16))
+            .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
         }
     }
 
@@ -404,9 +409,13 @@ struct AddConnectionView: View {
             TextEditor(text: $notes)
                 .font(.system(size: 15))
                 .frame(minHeight: 80)
+                .scrollContentBackground(.hidden)
                 .padding(12)
-                .background(DesignTokens.Colors.surface)
-                .cornerRadius(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.primary.opacity(0.04))
+                )
+                .glassEffect(.regular, in: .rect(cornerRadius: 16))
                 .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
         }
     }

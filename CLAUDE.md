@@ -296,6 +296,112 @@ refactor(services): extract N8N response parsing
 
 > **Note**: Create `CLAUDE.local.md` (gitignored) for personal environment overrides.
 
+## Recommended Swift Packages
+
+### Animation Libraries (À ajouter via Xcode)
+
+| Package | URL | Usage |
+|---------|-----|-------|
+| **open-swiftui-animations** | `https://github.com/amosgyamfi/open-swiftui-animations` | Loading, spring, fade, spin animations - Updated Jan 2026 |
+| **PopupView** | `https://github.com/exyte/PopupView` | Toasts & popups professionnels (4k⭐) |
+| **Lottie-iOS** | `https://github.com/airbnb/lottie-ios` | Animations After Effects |
+| **AnimateText** | `https://github.com/jasudev/AnimateText` | Animations de texte élégantes |
+| **ShuffleIt** | `https://github.com/dscyrescotti/ShuffleIt` | Stack views avec shuffling/swiping |
+
+### Liquid Glass Libraries (iOS 26+)
+
+| Package | URL | Stars | Usage |
+|---------|-----|-------|-------|
+| **LiquidGlass** | `https://github.com/BarredEwe/LiquidGlass` | 174⭐ | Real-time frosted glass & liquid refraction |
+| **LiquidGlasKit** | `https://github.com/rryam/LiquidGlasKit` | 98⭐ | Customizable glass modifiers |
+| **LiquidGlassReference** | `https://github.com/conorluddy/LiquidGlassReference` | 76⭐ | Ultimate Liquid Glass reference |
+
+### Design System & Components
+
+| Package | URL | Usage |
+|---------|-----|-------|
+| **SwiftUI-Design-System-Pro** | `https://github.com/muhittincamdali/SwiftUI-Design-System-Pro` | 200+ reusable components |
+| **swiftcn-ui** | `https://github.com/Mobilecn-UI/swiftcn-ui` | shadcn/ui style for SwiftUI (137⭐) |
+| **dskit-swiftui** | `https://github.com/imodeveloperlab/dskit-swiftui` | Design system with collection of components |
+| **swift-theme-kit** | `https://github.com/Charlyk/swift-theme-kit` | Themeable UI framework |
+
+### Official Resources
+
+| Resource | URL |
+|----------|-----|
+| **WWDC25: Build a SwiftUI app with new design** | `https://developer.apple.com/videos/play/wwdc2025/323/` |
+| **Adopting Liquid Glass** | `https://developer.apple.com/documentation/TechnologyOverviews/adopting-liquid-glass` |
+| **Liquid Glass Tutorial** | `https://liquidglass.info/` |
+| **GlassUI Toolkit** | `https://glassui.dev/` |
+
+### Liquid Glass Quick Reference
+
+```swift
+// Core APIs (iOS 26+)
+import SwiftUI
+
+// 1. Basic glass effect
+.glassEffect()
+
+// 2. Glass container for coordinated elements
+GlassEffectContainer {
+    CardView().glassEffect()
+    ButtonView().glassEffect()
+}
+
+// 3. Morphing transitions between states
+@Namespace private var animation
+.glassEffectID("card", in: animation)
+
+// 4. Native materials (fallback for older iOS)
+.background(.ultraThinMaterial)
+.background(.regularMaterial)
+.background(.thickMaterial)
+
+// 5. Interactive glass buttons
+Button("Action") { }
+    .buttonStyle(.glassProminent)
+    .glassEffect(.regular.interactive())
+```
+
+### Usage in Cirkl
+
+```swift
+// Connection bubble with glass effect
+struct ConnectionBubble: View {
+    var body: some View {
+        Circle()
+            .fill(.clear)
+            .frame(width: 60, height: 60)
+            .overlay {
+                AsyncImage(url: avatarURL)
+            }
+            .glassEffect(.regular, in: .circle)
+    }
+}
+
+// Orbital action button
+struct OrbitalActionButton: View {
+    var body: some View {
+        Button(action: handleTap) {
+            Image(systemName: "sparkles")
+                .font(.title)
+        }
+        .buttonStyle(.glassProminent)
+        .glassEffect(.regular.interactive())
+    }
+}
+
+// Toast notification
+import PopupView
+
+.popup(isPresented: $showToast, type: .toast, position: .top) {
+    Text("Connection ajoutée!")
+        .padding()
+        .glassEffect()
+}
+```
+
 ## AI Assistant Guidelines
 
 ### Before Modifying Code - Ask Yourself:

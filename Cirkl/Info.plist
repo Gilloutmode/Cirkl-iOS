@@ -17,6 +17,8 @@
 	</array>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Cirkl utilise le microphone pour envoyer des messages vocaux à l'assistant AI.</string>
+	<key>NSMotionUsageDescription</key>
+	<string>Cirkl utilise les capteurs de mouvement pour des effets visuels immersifs qui réagissent à l'orientation de votre appareil.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Cirkl utilise le réseau local pour détecter les utilisateurs proches et vérifier les rencontres physiques.</string>
 	<key>NSBonjourServices</key>
@@ -33,6 +35,15 @@
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>whatsapp</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
 </dict>
 </plist>

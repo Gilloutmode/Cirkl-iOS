@@ -45,22 +45,24 @@ struct ModeBadge: View {
             // Background actif: gradient avec glow
             mode.activeGradient
         } else {
-            // === DARK MODE: Glass effect pour badges inactifs ===
+            // === LIQUID GLASS: Native glassEffect pour badges inactifs ===
             if mode == .pending {
                 // Style pointillé glass pour pending
-                ZStack {
-                    Capsule()
-                        .fill(.ultraThinMaterial.opacity(0.6))
-                    Capsule()
-                        .stroke(
-                            mode.color.opacity(0.4),
-                            style: StrokeStyle(lineWidth: 1.5, dash: [4, 3])
-                        )
-                }
+                Capsule()
+                    .fill(Color.primary.opacity(0.04))
+                    .glassEffect(.regular, in: .capsule)
+                    .overlay(
+                        Capsule()
+                            .stroke(
+                                mode.color.opacity(0.4),
+                                style: StrokeStyle(lineWidth: 1.5, dash: [4, 3])
+                            )
+                    )
             } else {
                 // Style glass pour verified
                 Capsule()
-                    .fill(.ultraThinMaterial.opacity(0.6))
+                    .fill(Color.primary.opacity(0.04))
+                    .glassEffect(.regular, in: .capsule)
                     .overlay(
                         Capsule()
                             .stroke(DesignTokens.Colors.textPrimary.opacity(0.15), lineWidth: 0.5)

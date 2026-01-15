@@ -1,0 +1,225 @@
+# CIRKL iOS - Expert Claude Code Configuration
+# Version: 2.0 - Optimized for Claude Code + Cursor
+
+## 🎯 PROJECT IDENTITY
+project_name: "Cirkl - Authentic Social Network"
+company: "Cirkl Ltd."
+mission: "Connecting Authentically, Growing Intelligently"
+founders:
+  - Gil Benittah (CEO/AI)
+  - Denis Gihan (CFO/VC)
+  - Gilles Mamane (CTO)
+
+## 🏗 TECHNICAL CONTEXT
+platform: iOS
+language: Swift 6.0
+ui_framework: SwiftUI 5
+min_ios_version: 17.0
+architecture: MVVM-C + Clean Architecture
+design_system: Glassmorphic (VisionOS inspired)
+
+## 🌟 CORE FEATURES
+features:
+  authentication:
+    - Physical verification (QR/NFC/BLE)
+    - Zero fake profiles guarantee
+    - Biometric authentication
+  
+  interface:
+    - Orbital connections visualization
+    - Glassmorphic design (The Circle inspired)
+    - ProMotion 120fps animations
+    - Gesture-driven navigation
+  
+  ai_assistant:
+    - Context-aware conversations
+    - Opportunity detection
+    - Memory augmentation (Zep AI)
+    - Dynamic color states
+
+## 📱 DESIGN SPECIFICATIONS
+
+### Color System
+```swift
+// Founder Colors
+"Gil": Color(red: 220/255, green: 38/255, blue: 127/255)  // Rouge
+"Denis": Color(red: 0/255, green: 122/255, blue: 255/255) // Bleu
+"Gilles": Color(red: 52/255, green: 199/255, blue: 89/255) // Vert
+
+// Brand Colors
+primary: #0A0E27  // Cirkl Deep Blue
+accent: #007AFF   // Electric Blue
+success: #00C781  // Mint
+glass: rgba(255,255,255,0.05)
+```
+
+### Glassmorphic Components
+- Background blur: 20-30 radius
+- Glass tint: rgba(255,255,255,0.05)
+- Border: 0.5pt white @ 20% opacity
+- Shadow: Soft ambient lighting
+
+### Animation Specifications
+- Pulse duration: 2s (repeat forever)
+- Breathing scale: 1.0 → 1.05 (3s)
+- Orbital rotation: 360° in 60s
+- Spring response: 0.3s
+- ProMotion target: 120fps
+
+## 🤖 AI ASSISTANT STATES
+```swift
+enum AIAssistantState {
+    case idle          // White translucent
+    case contextual    // Blue - Post-meeting questions
+    case questioning   // Orange - Deepening questions
+    case opportunity   // Purple - Opportunity detected
+    case celebration   // Green - Successful connection
+    case romantic      // Red - Romantic potential
+    case business      // Yellow - Business opportunity
+}
+```
+
+## 💻 CODING STANDARDS
+
+### Swift Best Practices
+- ALWAYS use async/await for async operations
+- Use @MainActor for ALL UI updates
+- Use @Observable for ViewModels (iOS 17+)
+- Use SwiftData for persistence
+- Implement proper error handling with Result type
+- Use SwiftUI over UIKit (UIKit only when critical)
+
+### Code Organization
+- Max 300 lines per file
+- Group with // MARK: - comments
+- Use extensions for protocol conformance
+- Separate: Views, ViewModels, Models, Services
+- Place reusable components in Core/Components
+
+### Naming Conventions
+- Views: *View.swift (e.g., OrbitalView.swift)
+- ViewModels: *ViewModel.swift
+- Models: *Model.swift or entity name
+- Services: *Service.swift
+- Extensions: *+Extension.swift
+
+## 🚀 CLAUDE CODE INSTRUCTIONS
+
+### When Creating New Features
+1. **Analyze existing code structure** before creating new files
+2. **Follow the orbital/circular UI pattern** for all interfaces
+3. **Implement glassmorphic effects** on all components
+4. **Add smooth animations** (60-120fps target)
+5. **Include accessibility labels** on interactive elements
+6. **Write unit tests** for ViewModels
+7. **Handle offline scenarios** gracefully
+
+### When Fixing Issues
+1. **Read error messages carefully** and provide context
+2. **Check for duplicate files** before creating new ones
+3. **Clean derived data** if build issues persist
+4. **Test on both simulator and device** when possible
+
+### When Reviewing Code
+1. **Check for force unwrapping** (!) and suggest safe alternatives
+2. **Verify @MainActor usage** for UI updates
+3. **Ensure proper error handling** is implemented
+4. **Validate animation performance** (Instruments)
+5. **Review memory management** for leaks
+
+## 📊 BUSINESS METRICS TO CONSIDER
+
+key_metrics:
+  - organic_connection_rate: 67%
+  - fake_profiles: 0%
+  - lifetime_value: €12,400
+  - viral_coefficient: 1.7
+  - conversion_rate: 67%
+
+target_markets:
+  1. Israel (POC)
+  2. USA (Expansion)
+  3. Global (Scale)
+
+## 🔧 DEVELOPMENT WORKFLOW
+
+### Claude Code Commands
+```bash
+# Start new feature
+claude-code "Create authentication flow with QR scanning"
+
+# Fix issues
+claude-code "Debug orbital view performance issues"
+
+# Refactor
+claude-code "Refactor ConnectionBubble to improve reusability"
+
+# Generate tests
+claude-code "Write unit tests for OrbitalViewModel"
+```
+
+### Integration with Cursor
+1. Open Cursor with project: `cursor .`
+2. Claude Code provides code → Cursor for editing
+3. Use MCP for documentation lookups
+4. Build and test in Xcode
+
+## 🎯 PRIORITY TASKS
+
+current_sprint:
+  - [ ] Implement NFC reading with CoreNFC
+  - [ ] Add QR code generation/scanning
+  - [ ] Integrate Zep AI for memory
+  - [ ] Optimize orbital animations for ProMotion
+  - [ ] Implement CloudKit sync
+
+next_milestone:
+  - [ ] TestFlight deployment
+  - [ ] 100 beta testers in Israel
+  - [ ] Performance optimization
+  - [ ] Security audit
+
+## 🚨 CRITICAL RULES
+
+ALWAYS:
+- Prioritize authentic human connections
+- Maintain 0% fake profiles policy
+- Design for emotional engagement
+- Optimize for 120fps on ProMotion
+- Follow Apple HIG guidelines
+- Implement privacy by design
+
+NEVER:
+- Use force unwrapping without certainty
+- Create massive view files (>300 lines)
+- Skip error handling
+- Ignore memory management
+- Use hardcoded strings (use LocalizedStringKey)
+- Compromise on security
+
+## 📝 CONTEXT FOR EVERY RESPONSE
+
+Remember:
+- This is a revolutionary social network based on physical presence
+- Every line of code should reinforce authenticity
+- The interface should feel alive and breathing
+- Connections are real humans, not followers
+- The goal is to create meaningful opportunities
+- Privacy and trust are fundamental
+
+## 🔗 REFERENCES
+
+documentation:
+  - Apple Developer: https://developer.apple.com
+  - SwiftUI Documentation: https://developer.apple.com/xcode/swiftui/
+  - Human Interface Guidelines: https://developer.apple.com/design/human-interface-guidelines/
+  
+inspiration:
+  - Film: "The Circle" (2017) with Emma Watson
+  - Design: Apple VisionOS glassmorphism
+  - Philosophy: Jony Ive minimalism
+  - UX: Tesla simplicity
+
+---
+
+# Your role: Expert iOS developer crafting the future of authentic social connections

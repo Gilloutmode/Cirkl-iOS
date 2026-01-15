@@ -61,7 +61,20 @@ struct ChatView: View {
                     // Messages list
                     ScrollViewReader { proxy in
                         ScrollView {
-                            if viewModel.messages.isEmpty && !viewModel.isLoading {
+                            if viewModel.messages.isEmpty && viewModel.isLoading {
+                                // Loading state
+                                VStack {
+                                    Spacer(minLength: 150)
+                                    ProgressView()
+                                        .scaleEffect(1.2)
+                                    Text("Chargement...")
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
+                                        .padding(.top, 12)
+                                    Spacer()
+                                }
+                                .frame(minHeight: 400)
+                            } else if viewModel.messages.isEmpty && !viewModel.isLoading {
                                 // Empty state - aucune conversation
                                 VStack {
                                     Spacer(minLength: 80)
@@ -104,17 +117,22 @@ struct ChatView: View {
                         }
                     }
 
-                    // Input bar with glass effect
+                    // Input bar with glass effect (iMessage style: mic | text | send)
                     InputBar(
                         text: $viewModel.inputText,
                         isLoading: viewModel.isLoading,
+                        textFieldFocused: $isInputFocused,
                         onSend: {
                             Task {
                                 await viewModel.sendMessage()
                             }
+                        },
+                        onSendAudio: { audioData in
+                            Task {
+                                await viewModel.sendAudioMessage(audioData)
+                            }
                         }
                     )
-                    .focused($isInputFocused)
                 }
             }
             .navigationTitle("Cirkl AI")
@@ -136,10 +154,23 @@ struct ChatView: View {
                 }
             }
         }
-        .onAppear {
+        .task {
+            // PERFORMANCE FIX: Load history asynchronously to not block main thread
+            // This prevents the "Reporter disconnected" spam and slow chat opening
+            await viewModel.loadHistoryAsync()
+
             #if DEBUG
-            print("💬 ChatView onAppear: messagesCount = \(viewModel.messages.count), hasSynergyContext = \(initialSynergyContext != nil)")
+            print("💬 ChatView onAppear: messagesCount = \(viewModel.messages.count), hasSynergyContext = \(initialSynergyContext != nil), hasAudio = \(initialAudioData != nil)")
             #endif
+
+            // CRITICAL FIX: Handle audio FIRST, before any early returns
+            // Audio from voice recording should ALWAYS be sent, regardless of history
+            if let audioData = initialAudioData {
+                #if DEBUG
+                print("🎤 ChatView: Sending voice note (\(audioData.count) bytes)")
+                #endif
+                await viewModel.sendAudioMessage(audioData)
+            }
 
             // SIMPLE LOGIC: History is source of truth
             // If there's ANY history, show it and don't add anything
@@ -162,13 +193,6 @@ struct ChatView: View {
                 print("💬 Fresh chat with welcome message")
                 #endif
                 viewModel.addWelcomeMessage()
-            }
-
-            // Handle initial audio data from voice recording
-            if let audioData = initialAudioData {
-                Task {
-                    await viewModel.sendAudioMessage(audioData)
-                }
             }
         }
     }
@@ -194,14 +218,20 @@ class ChatViewModel: ObservableObject {
     private var pendingSynergyContext: SynergyContext?
 
     init() {
-        loadHistory()
+        // PERFORMANCE FIX: Don't load history synchronously in init
+        // This was blocking the main thread and causing slow ChatView opening
+        // History is now loaded asynchronously in loadHistoryAsync()
     }
 
-    /// Load chat history from persistence
-    private func loadHistory() {
-        messages = historyService.loadMessages()
+    /// Load chat history asynchronously (PERFORMANCE FIX)
+    /// Call this from onAppear to avoid blocking main thread
+    func loadHistoryAsync() async {
+        isLoading = true
+        let loaded = await historyService.loadMessages()
+        messages = loaded
+        isLoading = false
         #if DEBUG
-        print("📚 ChatViewModel loaded \(messages.count) messages from history")
+        print("📚 ChatViewModel loaded \(messages.count) messages from history (async)")
         #endif
     }
 
@@ -481,22 +511,19 @@ struct MessageBubble: View {
     @ViewBuilder
     private var bubbleBackground: some View {
         if message.isUser {
-            // User bubble: Liquid Glass with primary tint
+            // User bubble: Native Liquid Glass iOS 26 with primary tint
             RoundedRectangle(cornerRadius: 18)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    DesignTokens.Colors.electricBlue.opacity(0.3),
-                                    DesignTokens.Colors.purple.opacity(0.2)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            DesignTokens.Colors.electricBlue.opacity(0.25),
+                            DesignTokens.Colors.purple.opacity(0.15)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
                 )
+                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 18))
                 .overlay(
                     RoundedRectangle(cornerRadius: 18)
                         .stroke(
@@ -513,22 +540,19 @@ struct MessageBubble: View {
                 )
                 .shadow(color: DesignTokens.Colors.electricBlue.opacity(0.2), radius: 8, x: 0, y: 4)
         } else {
-            // AI bubble: Clear Liquid Glass with accent
+            // AI bubble: Native Liquid Glass iOS 26 with accent
             RoundedRectangle(cornerRadius: 18)
-                .fill(.ultraThinMaterial.opacity(0.7))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    DesignTokens.Colors.electricBlue.opacity(0.1),
-                                    DesignTokens.Colors.mint.opacity(0.05)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            DesignTokens.Colors.electricBlue.opacity(0.08),
+                            DesignTokens.Colors.mint.opacity(0.04)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
                 )
+                .glassEffect(.regular, in: .rect(cornerRadius: 18))
                 .overlay(
                     RoundedRectangle(cornerRadius: 18)
                         .stroke(
@@ -571,7 +595,7 @@ struct MessageBubble: View {
     }
 }
 
-// MARK: - LoadingBubble with Liquid Glass
+// MARK: - LoadingBubble with Native Liquid Glass
 struct LoadingBubble: View {
     @State private var animationPhase = 0.0
 
@@ -590,24 +614,21 @@ struct LoadingBubble: View {
             .padding(.vertical, 12)
             .background(
                 RoundedRectangle(cornerRadius: 18)
-                    .fill(.ultraThinMaterial.opacity(0.7))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18)
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        DesignTokens.Colors.electricBlue.opacity(0.1),
-                                        DesignTokens.Colors.mint.opacity(0.05)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                DesignTokens.Colors.electricBlue.opacity(0.08),
+                                DesignTokens.Colors.mint.opacity(0.04)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
                     )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18)
-                            .stroke(DesignTokens.Colors.glassBorder, lineWidth: 0.5)
-                    )
+            )
+            .glassEffect(.regular, in: .rect(cornerRadius: 18))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(DesignTokens.Colors.glassBorder, lineWidth: 0.5)
             )
 
             Spacer()
@@ -620,42 +641,128 @@ struct LoadingBubble: View {
     }
 }
 
-// MARK: - InputBar with Liquid Glass
+// MARK: - InputBar with Native Liquid Glass (Style iMessage)
 struct InputBar: View {
     @Binding var text: String
     let isLoading: Bool
     let onSend: () -> Void
+    let onSendAudio: ((Data) -> Void)?
+
+    // PERFORMANCE FIX: Use local state for text input to avoid triggering ViewModel updates on every keystroke
+    // This prevents RTIInputSystemClient lag and unnecessary view rebuilds
+    @State private var localText: String = ""
+
+    // Audio recording state
+    @StateObject private var audioService = AudioRecorderService.shared
+    @State private var isRecording = false
+    @State private var recordingPulse: CGFloat = 1.0
+
+    // Focus state passed from parent (ChatView) - NOT isolated
+    var textFieldFocused: FocusState<Bool>.Binding
+
+    init(text: Binding<String>, isLoading: Bool, textFieldFocused: FocusState<Bool>.Binding, onSend: @escaping () -> Void, onSendAudio: ((Data) -> Void)? = nil) {
+        self._text = text
+        self.isLoading = isLoading
+        self.textFieldFocused = textFieldFocused
+        self.onSend = onSend
+        self.onSendAudio = onSendAudio
+        // Initialize local text from binding
+        self._localText = State(initialValue: text.wrappedValue)
+    }
 
     var body: some View {
         HStack(spacing: 12) {
-            // Text field with glass effect
-            TextField("Message...", text: $text, axis: .vertical)
+            // MARK: Mic Button (Left - iMessage style)
+            // CRITICAL FIX: Removed glassEffect - it blocks touch events on iOS 26 real devices
+            // Using ultraThinMaterial background instead
+            Button {
+                toggleRecording()
+            } label: {
+                ZStack {
+                    // Background circle with material instead of glassEffect
+                    Circle()
+                        .fill(isRecording ? Color.red.opacity(0.15) : Color.primary.opacity(0.06))
+                        .background(
+                            Circle()
+                                .fill(.ultraThinMaterial)
+                        )
+                        .frame(width: 36, height: 36)
+
+                    // Pulsing ring when recording
+                    if isRecording {
+                        Circle()
+                            .stroke(Color.red.opacity(0.4), lineWidth: 2)
+                            .frame(width: 36, height: 36)
+                            .scaleEffect(recordingPulse)
+                            .opacity(2 - recordingPulse)
+                    }
+
+                    // Icon
+                    Image(systemName: isRecording ? "stop.fill" : "mic.fill")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(
+                            isRecording
+                                ? Color.red
+                                : DesignTokens.Colors.electricBlue
+                        )
+                }
+                .overlay(
+                    Circle()
+                        .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
+                )
+            }
+            .buttonStyle(.plain)
+            .contentShape(Circle())
+            .disabled(isLoading)
+            .animation(.spring(response: 0.3), value: isRecording)
+
+            // MARK: Text Field (Center)
+            // CRITICAL FIX: Removed ALL glassEffect from TextField - it blocks touch events on iOS 26 real devices
+            // Using .ultraThinMaterial instead which doesn't intercept touches
+            // PERFORMANCE FIX: Using localText to avoid ViewModel updates on every keystroke
+            TextField("Message...", text: $localText, axis: .vertical)
                 .textFieldStyle(.plain)
+                .focused(textFieldFocused)
                 .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+                .padding(.vertical, 12)
                 .background(
-                    Capsule()
-                        .fill(.ultraThinMaterial)
-                        .overlay(
-                            Capsule()
-                                .stroke(
-                                    LinearGradient(
-                                        colors: [
-                                            DesignTokens.Colors.glassBorder,
-                                            DesignTokens.Colors.glassBorder.opacity(0.25)
-                                        ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: 0.5
-                                )
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color.primary.opacity(0.06))
+                        .background(
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(.ultraThinMaterial)
+                        )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    DesignTokens.Colors.glassBorder,
+                                    DesignTokens.Colors.glassBorder.opacity(0.25)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 0.5
                         )
                 )
                 .lineLimit(1...5)
-                .disabled(isLoading)
+                // PERFORMANCE FIX: Disable animations during text input to prevent RTIInputSystemClient issues
+                .transaction { $0.animation = nil }
 
-            // Send button with glass effect
-            Button(action: onSend) {
+            // MARK: Send Button (Right)
+            // CRITICAL FIX: Removed glassEffect - it blocks touch events on iOS 26 real devices
+            Button {
+                // Haptic feedback
+                let impact = UIImpactFeedbackGenerator(style: .medium)
+                impact.impactOccurred()
+                // PERFORMANCE FIX: Sync localText to binding before sending
+                text = localText
+                onSend()
+                // Clear local text after sending
+                localText = ""
+            } label: {
                 Image(systemName: "arrow.up.circle.fill")
                     .font(.system(size: 32))
                     .foregroundStyle(
@@ -673,10 +780,15 @@ struct InputBar: View {
                     )
                     .background(
                         Circle()
-                            .fill(.ultraThinMaterial.opacity(canSend ? 0.3 : 0))
+                            .fill(Color.primary.opacity(canSend ? 0.08 : 0))
+                            .background(
+                                canSend ? AnyView(Circle().fill(.ultraThinMaterial)) : AnyView(EmptyView())
+                            )
                             .frame(width: 36, height: 36)
                     )
             }
+            .buttonStyle(.plain)
+            .contentShape(Circle())
             .disabled(!canSend)
             .scaleEffect(canSend ? 1.0 : 0.9)
             .animation(.spring(response: 0.3), value: canSend)
@@ -685,7 +797,8 @@ struct InputBar: View {
         .padding(.vertical, 12)
         .background(
             Rectangle()
-                .fill(.ultraThinMaterial)
+                .fill(Color.primary.opacity(0.02))
+                .background(.ultraThinMaterial) // Use material instead of glassEffect to not block touches
                 .overlay(
                     Rectangle()
                         .fill(
@@ -701,10 +814,66 @@ struct InputBar: View {
                 )
                 .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: -5)
         )
+        // CRITICAL FIX: Removed .glassEffect(.regular) from container - it was blocking all touch events on real device
+        // The individual TextField already has its own glassEffect which doesn't block touches
+        .onChange(of: isRecording) { _, newValue in
+            if newValue {
+                startPulseAnimation()
+            }
+        }
+        // PERFORMANCE FIX: Sync from binding when it changes externally (e.g., viewModel clears inputText)
+        .onChange(of: text) { _, newValue in
+            if newValue != localText {
+                localText = newValue
+            }
+        }
     }
 
+    // PERFORMANCE FIX: Use localText for canSend to match the TextField binding
     private var canSend: Bool {
-        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isLoading
+        !localText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isLoading && !isRecording
+    }
+
+    private func toggleRecording() {
+        Task {
+            if isRecording {
+                // Stop recording and send
+                isRecording = false
+                do {
+                    let data = try await audioService.stopRecording()
+                    // Haptic feedback
+                    let impact = UIImpactFeedbackGenerator(style: .medium)
+                    impact.impactOccurred()
+                    onSendAudio?(data)
+                } catch {
+                    #if DEBUG
+                    print("❌ Stop recording error: \(error)")
+                    #endif
+                }
+            } else {
+                // Start recording
+                do {
+                    try await audioService.startRecording()
+                    // Haptic feedback on success
+                    let impact = UIImpactFeedbackGenerator(style: .medium)
+                    impact.impactOccurred()
+                    isRecording = true
+                } catch {
+                    #if DEBUG
+                    print("❌ Start recording error: \(error)")
+                    #endif
+                    // Haptic feedback for error
+                    let notification = UINotificationFeedbackGenerator()
+                    notification.notificationOccurred(.error)
+                }
+            }
+        }
+    }
+
+    private func startPulseAnimation() {
+        withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
+            recordingPulse = 1.5
+        }
     }
 }
 

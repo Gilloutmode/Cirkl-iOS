@@ -1,4 +1,5 @@
 import SwiftUI
+import Shimmer
 
 // MARK: - ContactsImportView
 /// Vue principale pour importer des contacts et les inviter sur Cirkl
@@ -251,8 +252,7 @@ struct ContactsImportView: View {
 
             // Contacts list
             if isLoading {
-                ProgressView("Chargement des contacts...")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                ContactsLoadingView()
             } else if filteredContacts.isEmpty {
                 EmptyContactsView(searchQuery: searchQuery)
             } else {
@@ -417,12 +417,17 @@ struct ContactsImportView: View {
                    let nextContact = filteredContacts.first(where: { $0.id == nextId }) {
                     contactToInvite = nextContact
                 } else {
-                    // Tous les contacts invités
+                    // Tous les contacts invités - afficher toast de succès
+                    ToastManager.shared.success("Invitation envoyée à \(contact.fullName)")
                     contactToInvite = nil
                 }
             }
 
-        case .cancelled, .failed:
+        case .cancelled:
+            contactToInvite = nil
+
+        case .failed:
+            ToastManager.shared.error("Échec de l'invitation")
             contactToInvite = nil
         }
     }
@@ -487,6 +492,119 @@ struct ContactsImportView: View {
     }
 }
 
+// MARK: - Contacts Loading View
+/// Animated loading state with skeleton contacts and progress
+struct ContactsLoadingView: View {
+    @State private var progress: Double = 0
+    @State private var loadingText = "Analyse des contacts..."
+
+    private let loadingSteps = [
+        "Analyse des contacts...",
+        "Lecture des informations...",
+        "Préparation de la liste...",
+        "Presque terminé..."
+    ]
+
+    var body: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            // Animated icon
+            ZStack {
+                Circle()
+                    .fill(Color.mint.opacity(0.1))
+                    .frame(width: 100, height: 100)
+
+                Image(systemName: "person.crop.circle.badge.clock")
+                    .font(.system(size: 44))
+                    .foregroundStyle(.mint)
+                    .symbolEffect(.pulse)
+            }
+
+            // Progress bar
+            VStack(spacing: 12) {
+                ProgressView(value: progress)
+                    .progressViewStyle(.linear)
+                    .tint(.mint)
+                    .frame(width: 200)
+
+                Text(loadingText)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            // Skeleton contacts preview
+            VStack(spacing: 8) {
+                ForEach(0..<3, id: \.self) { _ in
+                    ContactSkeletonRow()
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear {
+            startProgressAnimation()
+        }
+    }
+
+    private func startProgressAnimation() {
+        // Simulate progress with steps
+        let stepDuration = 0.8
+        for (index, step) in loadingSteps.enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + stepDuration * Double(index)) {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    loadingText = step
+                    progress = min(0.25 * Double(index + 1), 0.9)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Contact Skeleton Row
+struct ContactSkeletonRow: View {
+    var body: some View {
+        HStack(spacing: 12) {
+            // Avatar skeleton
+            Circle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(width: 44, height: 44)
+                .shimmering()
+
+            VStack(alignment: .leading, spacing: 6) {
+                // Name skeleton
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(width: 140, height: 14)
+                    .shimmering()
+
+                // Phone skeleton
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color.gray.opacity(0.15))
+                    .frame(width: 100, height: 12)
+                    .shimmering()
+            }
+
+            Spacer()
+
+            // Checkbox skeleton
+            Circle()
+                .stroke(Color.gray.opacity(0.2), lineWidth: 2)
+                .frame(width: 24, height: 24)
+                .shimmering()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(UIColor.secondarySystemBackground))
+        )
+    }
+}
+
 // MARK: - Preview
 #Preview {
     ContactsImportView(
@@ -496,4 +614,9 @@ struct ContactsImportView: View {
             sphere: .professional
         )
     )
+}
+
+#Preview("Loading State") {
+    ContactsLoadingView()
+        .preferredColorScheme(.dark)
 }

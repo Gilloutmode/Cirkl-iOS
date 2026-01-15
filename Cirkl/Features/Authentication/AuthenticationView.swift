@@ -106,18 +106,18 @@ struct AuthButton: View {
     let icon: String
     let color: Color
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             HStack(spacing: 16) {
                 Image(systemName: icon)
                     .font(.system(size: 24))
-                
+
                 Text(title)
                     .font(.headline)
-                
+
                 Spacer()
-                
+
                 Image(systemName: "chevron.right")
                     .font(.system(size: 14))
             }
@@ -125,36 +125,30 @@ struct AuthButton: View {
             .padding()
             .background(
                 ZStack {
+                    // Colored glow behind
                     RoundedRectangle(cornerRadius: 20)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    DesignTokens.Colors.surface.opacity(0.3),
-                                    DesignTokens.Colors.surface.opacity(0.15)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .background(
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(color.opacity(0.3))
-                                .blur(radius: 10)
-                        )
-                    
+                        .fill(color.opacity(0.25))
+                        .blur(radius: 8)
+
+                    // Glass fill
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke(
-                            LinearGradient(
-                                colors: [
-                                    DesignTokens.Colors.textPrimary.opacity(0.3),
-                                    DesignTokens.Colors.textPrimary.opacity(0.1)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
+                        .fill(color.opacity(0.1))
                 }
+            )
+            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 20))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                DesignTokens.Colors.textPrimary.opacity(0.3),
+                                DesignTokens.Colors.textPrimary.opacity(0.1)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
             )
         }
         .buttonStyle(PlainButtonStyle())

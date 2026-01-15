@@ -99,6 +99,22 @@ enum CirklHaptics {
         }
     }
 
+    /// Celebration - multi-burst haptic for milestones (first connection, achievements)
+    static func celebration() {
+        // Initial success burst
+        success()
+        // Follow-up rhythmic pattern for celebration feel
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            light()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            medium()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            success()
+        }
+    }
+
     /// Connection created - success with emphasis
     static func connectionCreated() {
         success()

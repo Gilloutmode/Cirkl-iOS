@@ -1,4 +1,6 @@
 import SwiftUI
+import Kingfisher
+import Shimmer
 
 /// Individual connection bubble with glassmorphic design
 struct ConnectionBubble: View {
@@ -66,57 +68,66 @@ struct ConnectionBubble: View {
                     )
             }
             
-            // Main bubble with glassmorphic effect
+            // Main bubble with LiquidGlass effect
             ZStack {
-                // Glass background - adaptive for light/dark mode
+                // === LIQUID GLASS BACKGROUND (iOS 26) ===
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                DesignTokens.Colors.bubbleBackground.opacity(bubbleOpacity),
-                                DesignTokens.Colors.bubbleBackground.opacity(bubbleOpacity * 0.5)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .background(
-                        Circle()
-                            .fill(connection.color.opacity(bubbleOpacity * 0.5))
-                            .blur(radius: 5)
-                    )
-                
-                // Border
+                    .fill(connection.color.opacity(bubbleOpacity * 0.3))
+                    .frame(width: bubbleSize, height: bubbleSize)
+                    .glassEffect(.regular.interactive(), in: .circle)
+
+                // === SUBTLE BORDER ===
                 Circle()
                     .stroke(
-                        LinearGradient(
+                        AngularGradient(
                             colors: [
-                                Color.white.opacity(isHovered ? 0.5 : 0.2),
-                                Color.white.opacity(isHovered ? 0.2 : 0.1)
+                                connection.color.opacity(0.5),
+                                Color.white.opacity(isHovered ? 0.4 : 0.2),
+                                connection.color.opacity(0.3),
+                                Color.white.opacity(isHovered ? 0.3 : 0.15),
+                                connection.color.opacity(0.5)
                             ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
+                            center: .center
                         ),
-                        lineWidth: isSelected ? 2 : 1
+                        lineWidth: isSelected ? 2.5 : 1.5
                     )
-                
+                    .frame(width: bubbleSize - 2, height: bubbleSize - 2)
+
                 // Content
                 VStack(spacing: 4) {
-                    // Avatar
+                    // Avatar with Kingfisher
                     if let avatarURL = connection.avatarURL {
-                        AsyncImage(url: avatarURL) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                        } placeholder: {
-                            Image(systemName: "person.fill")
-                                .font(.system(size: 20))
-                                .foregroundColor(DesignTokens.Colors.textSecondary)
-                        }
-                        .frame(width: bubbleSize * 0.6, height: bubbleSize * 0.6)
-                        .clipShape(Circle())
+                        KFImage(avatarURL)
+                            .placeholder {
+                                // Shimmer placeholder
+                                Circle()
+                                    .fill(connection.color.opacity(0.2))
+                                    .frame(width: bubbleSize * 0.6, height: bubbleSize * 0.6)
+                                    .shimmering()
+                                    .overlay(
+                                        Image(systemName: "person.fill")
+                                            .font(.system(size: bubbleSize * 0.25))
+                                            .foregroundColor(connection.color.opacity(0.5))
+                                    )
+                            }
+                            .retry(maxCount: 2, interval: .seconds(2))
+                            .fade(duration: 0.3)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: bubbleSize * 0.6, height: bubbleSize * 0.6)
+                            .clipShape(Circle())
+                    } else {
+                        // Fallback: initials or icon
+                        Circle()
+                            .fill(connection.color.opacity(0.3))
+                            .frame(width: bubbleSize * 0.6, height: bubbleSize * 0.6)
+                            .overlay(
+                                Text(connection.name.prefix(1).uppercased())
+                                    .font(.system(size: bubbleSize * 0.25, weight: .bold, design: .rounded))
+                                    .foregroundColor(connection.color)
+                            )
                     }
-                    
+
                     // Name (only if hovered or selected)
                     if isHovered || isSelected {
                         Text(connection.name)
@@ -128,8 +139,9 @@ struct ConnectionBubble: View {
             }
             .frame(width: bubbleSize, height: bubbleSize)
             .scaleEffect(isSelected ? 1.2 : (isHovered ? 1.1 : 1.0))
-            .animation(.spring(response: 0.3), value: isSelected)
-            .animation(.spring(response: 0.3), value: isHovered)
+            .shadow(color: connection.color.opacity(isSelected ? 0.4 : 0.2), radius: isSelected ? 12 : 6, y: isSelected ? 6 : 3)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovered)
 
             // Trust level badge (positioned at bottom-right)
             if showTrustBadge && connection.trustLevel != .pending {

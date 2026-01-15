@@ -119,6 +119,12 @@ struct CirklAIButton: View {
             // === OVERLAY GLASS BUBBLE (effet transparent) ===
             GlassBubbleOverlay(size: buttonSize, tintColor: currentColor)
 
+            // === REFLET DYNAMIQUE QUI BOUGE AVEC LE DEVICE ===
+            Circle()
+                .fill(Color.clear)
+                .frame(width: buttonSize, height: buttonSize)
+                .dynamicGlassReflection(intensity: 0.8)
+
             // === RING D'ENREGISTREMENT (rouge pulsant) ===
             if audioService.state.isRecording {
                 Circle()
@@ -152,6 +158,12 @@ struct CirklAIButton: View {
         .scaleEffect(isPressed ? 0.95 : 1.0)
         .scaleEffect(1.0 + pulsePhase * 0.02)
         .shadow(color: currentColor.opacity(0.3), radius: 12, x: 0, y: 6)
+        // TAP SENSITIVITY FIX: Expanded hit area (88pt) for better touch detection
+        // Visual size stays at 70pt but touch area is larger
+        .frame(width: 88, height: 88)
+        .contentShape(Circle())
+        // Use minimumDistance: 0 for immediate tap response
+        // minimumDistance: 5 was causing taps to not register
         .gesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in
@@ -357,37 +369,38 @@ struct CirklAIButton: View {
     // MARK: - Gesture Handling
 
     private func handlePressStart() {
+        // Debounce: Only handle once per press cycle
         guard !isLongPressing else { return }
 
         isLongPressing = true
         longPressStartTime = Date()
 
-        let impact = UIImpactFeedbackGenerator(style: .medium)
-        impact.impactOccurred()
+        // Haptic feedback on press
+        CirklHaptics.medium()
 
         withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
             isPressed = true
         }
 
-        // Démarrer l'enregistrement après le seuil de long press
-        Task {
+        // Start recording after long press threshold
+        Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(Int(longPressThreshold * 1000)))
 
-            // Vérifier qu'on est toujours en train d'appuyer
-            if isLongPressing {
-                let impact = UIImpactFeedbackGenerator(style: .heavy)
-                impact.impactOccurred()
+            // Check we're still pressing
+            guard isLongPressing else { return }
 
-                do {
-                    try await audioService.startRecording()
-                    #if DEBUG
-                    print("🎤 Recording started via long press")
-                    #endif
-                } catch {
-                    #if DEBUG
-                    print("❌ Failed to start recording: \(error)")
-                    #endif
-                }
+            // Heavy haptic for recording start
+            CirklHaptics.heavy()
+
+            do {
+                try await audioService.startRecording()
+                #if DEBUG
+                print("🎤 Recording started via long press")
+                #endif
+            } catch {
+                #if DEBUG
+                print("❌ Failed to start recording: \(error)")
+                #endif
             }
         }
     }
