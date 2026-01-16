@@ -94,6 +94,7 @@ struct CirklTabView: View {
                 .tag(CirklTab.orbital)
                 .tabItem {
                     Label(CirklTab.orbital.title, systemImage: CirklTab.orbital.icon)
+                        .accessibilityLabel(CirklTab.orbital.title)
                 }
 
             // Feed tab
@@ -101,6 +102,7 @@ struct CirklTabView: View {
                 .tag(CirklTab.feed)
                 .tabItem {
                     Label(CirklTab.feed.title, systemImage: CirklTab.feed.icon)
+                        .accessibilityLabel(CirklTab.feed.title)
                 }
         }
         .tint(DesignTokens.Colors.electricBlue)
