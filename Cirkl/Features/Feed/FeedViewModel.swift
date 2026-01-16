@@ -117,7 +117,7 @@ final class FeedViewModel: ObservableObject {
     }
 
     /// Crée une connexion entre les deux personnes d'une synergie
-    /// Note: Async pour supporter l'appel backend futur
+    /// Appelle le backend N8N et supprime l'item uniquement après confirmation
     func createSynergyConnection(_ itemId: String) async {
         guard let index = items.firstIndex(where: { $0.id == itemId }) else {
             print("[Feed] createSynergyConnection: item \(itemId) not found")
@@ -127,28 +127,52 @@ final class FeedViewModel: ObservableObject {
 
         // Set loading state
         loadingItemId = itemId
+        error = nil
+
+        let person1 = item.synergyPerson1Name ?? "Unknown"
+        let person2 = item.synergyPerson2Name ?? "Unknown"
 
         #if DEBUG
         print("[Feed] Creating synergy connection for item: \(itemId)")
-        if let person1 = item.synergyPerson1Name,
-           let person2 = item.synergyPerson2Name {
-            print("[Feed] Connecting: \(person1) ↔ \(person2)")
+        print("[Feed] Connecting: \(person1) ↔ \(person2)")
+        #endif
+
+        do {
+            // Call N8NService to create the synergy connection
+            let response = try await N8NService.shared.createSynergyConnection(
+                userId: "demo-user", // TODO: Use actual userId from auth
+                synergyId: itemId,
+                person1Name: person1,
+                person2Name: person2,
+                matchContext: item.synergyMatch
+            )
+
+            // Clear loading state
+            loadingItemId = nil
+
+            if response.success {
+                // Remove the synergy item ONLY after backend confirmation
+                items.remove(at: index)
+
+                #if DEBUG
+                print("[Feed] Synergy connection created successfully: \(response.message ?? "OK")")
+                #endif
+            } else {
+                // Backend returned failure
+                error = response.message ?? "Échec de la création de connexion"
+                #if DEBUG
+                print("[Feed] Synergy creation failed: \(response.message ?? "Unknown error")")
+                #endif
+            }
+        } catch {
+            // Network or other error - don't remove the item
+            loadingItemId = nil
+            self.error = error.localizedDescription
+
+            #if DEBUG
+            print("[Feed] Synergy connection error: \(error.localizedDescription)")
+            #endif
         }
-        #endif
-
-        // TODO: Task 4 - Appeler N8NService.createSynergyConnection()
-        // Pour l'instant, on simule un délai réseau
-        try? await Task.sleep(for: .milliseconds(500))
-
-        // Clear loading state
-        loadingItemId = nil
-
-        // Remove the synergy item - animation gérée côté View
-        items.remove(at: index)
-
-        #if DEBUG
-        print("[Feed] Synergy connection created successfully")
-        #endif
     }
 
     /// Dismiss une synergie (pas intéressé pour le moment)

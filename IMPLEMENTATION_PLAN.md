@@ -14,7 +14,7 @@ Correction de tous les bugs du Feed CirKL : state management incorrect, boutons 
 
 - [x] Task 3: Créer la méthode N8NService.createSynergyConnection() - Added `CreateSynergyRequest` and `CreateSynergyResponse` structs. Implemented `createSynergyConnection(userId:synergyId:person1Name:person2Name:matchContext:)` method that POSTs to `/webhook/acknowledge-synergies` with full synergy data. Includes debug logging and proper error handling.
 
-- [ ] Task 4: Connecter createSynergyConnection() au backend - Dans FeedViewModel.createSynergyConnection(), appeler N8NService.createSynergyConnection() avec try/await. Supprimer l'item du Feed UNIQUEMENT après confirmation backend. Ajouter error handling.
+- [x] Task 4: Connecter createSynergyConnection() au backend - Updated FeedViewModel.createSynergyConnection() to call N8NService.shared.createSynergyConnection() with try/await. Item is removed from feed ONLY after backend confirmation. Added proper error handling that sets ViewModel.error on failure without removing the item.
 
 - [ ] Task 5: Implémenter le bouton "Reprendre contact" - Dans FeedView.swift, remplacer le TODO du bouton Network Pulse par une vraie action. Options: ouvrir une conversation, créer un rappel, ou proposer un message suggéré par l'IA.
 
