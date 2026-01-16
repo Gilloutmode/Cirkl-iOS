@@ -65,6 +65,7 @@ final class FeedViewModel {
 
         #if DEBUG
         print("📰 Feed loaded: \(items.count) items, \(unreadCount) unread")
+        print("   └─ Updates: \(updateCount), Synergies: \(synergyCount), Pulse: \(reminderCount)")
         #endif
     }
 
@@ -96,11 +97,12 @@ final class FeedViewModel {
     // MARK: - Filter Selection
 
     func selectFilter(_ filter: FeedFilter) {
-        // Pas de withAnimation ici - géré côté View
+        let oldFilter = selectedFilter
         selectedFilter = filter
 
         #if DEBUG
-        print("📰 Filter changed to: \(filter.rawValue)")
+        print("📰 Filter: \(oldFilter.rawValue) → \(filter.rawValue)")
+        print("   └─ filteredItems.count: \(filteredItems.count)")
         #endif
     }
 
