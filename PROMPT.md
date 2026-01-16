@@ -12,7 +12,7 @@ Implement ONE task from the plan, validate, commit, exit.
 Read:
 - @CLAUDE.md (project rules)
 - @IMPLEMENTATION_PLAN.md (current state)
-- @specs/feed-fixes.md (requirements)
+- @specs/feed-flat-design.md (requirements)
 
 ### Check for completion
 
@@ -29,24 +29,28 @@ grep -c "^\- \[ \]" IMPLEMENTATION_PLAN.md || echo 0
 1. **Search first** — Use parallel subagents to verify the behavior doesn't already exist
 2. **Implement** — ONE task only (use Opus subagents for complex reasoning)
 3. **Validate** — Run build command, must pass:
-
 ```bash
-xcodebuild -scheme Cirkl -destination 'platform=iOS Simulator,name=iPhone 16 Pro' build 2>&1 | tail -50
+xcodebuild -scheme Cirkl -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build 2>&1 | grep -E "error:|BUILD"
 ```
 
 ## Phase 2: Update Plan
 
 In `IMPLEMENTATION_PLAN.md`:
-- Mark task `- [x] Completed`
+- Mark task `- [x] Completed` with brief description of what was done
 - Add discovered tasks if any
 
 ## Phase 3: Commit & Exit
 
 ```bash
-git add -A && git commit -m "fix(feed): [description]
+git add -A && git commit -m "feat(feed): [description of change]
 
 Co-Authored-By: Claude <claude@anthropic.com>"
 ```
+
+Use commit message format:
+- `feat(feed): add flat design tokens to DesignTokens`
+- `refactor(feed): convert FilterPill to flat design`
+- `refactor(feed): convert UpdateCard to flat design`
 
 Run completion check again:
 ```bash
@@ -60,25 +64,51 @@ grep -c "^\- \[ \]" IMPLEMENTATION_PLAN.md || echo 0
 
 - ONE task per iteration
 - Search before implementing
-- Validation MUST pass
+- Validation MUST pass (build succeeds)
 - Never output RALPH_COMPLETE if tasks remain
+- Keep existing functionality (buttons, actions, callbacks)
+- Only change visual styling, not logic
 
 ## Project Context
 
-### Key Files
-- `Cirkl/Features/Feed/FeedView.swift` - Main Feed view
-- `Cirkl/Features/Feed/FeedViewModel.swift` - Feed business logic
-- `Cirkl/Features/Feed/Models/FeedItem.swift` - Data model
-- `Cirkl/Features/Feed/Components/*.swift` - Card components
-- `Cirkl/Core/Services/N8NService.swift` - Backend service
+### Key Files to Modify
+- `Cirkl/Components/Library/Core/CirklDesignTokens.swift` - Design tokens
+- `Cirkl/Features/Feed/Components/FilterPill.swift` - Filter pills
+- `Cirkl/Features/Feed/Components/UpdateCard.swift` - Update cards
+- `Cirkl/Features/Feed/Components/SynergyCard.swift` - Synergy cards
+- `Cirkl/Features/Feed/Components/NetworkPulseCard.swift` - Pulse cards
+- `Cirkl/Features/Feed/Components/FeedItemDetailSheet.swift` - Detail sheet
 
-### Patterns to Follow
-- `@MainActor @Observable` for ViewModels
-- `async/await` for all network calls
-- `withAnimation` for UI state changes
-- Logs format: `print("[Feed] Action: description")`
+### Pattern Replacement
 
-### N8N Endpoints
-- Base: `https://gilloutmode.app.n8n.cloud`
-- Synergies: `/webhook/acknowledge-synergies`
-- Messages: `/webhook/cirkl-ios`
+BEFORE (Liquid Glass):
+```swift
+@ViewBuilder
+private var glassBackground: some View {
+    if #available(iOS 26.0, *) {
+        RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
+            .fill(.clear)
+            .glassEffect(.regular, in: .rect(cornerRadius: ...))
+    } else {
+        RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
+            .fill(.ultraThinMaterial)
+    }
+}
+```
+
+AFTER (Flat Design):
+```swift
+private var cardBackground: some View {
+    RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
+        .fill(DesignTokens.Colors.cardBackground)
+        .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
+}
+```
+
+### New Design Tokens to Add
+```swift
+// In DesignTokens.Colors
+static let cardBackground = Color(hex: "1C1C1E")
+static let cardBackgroundElevated = Color(hex: "2C2C2E")
+static let cardBorder = Color.white.opacity(0.08)
+```
