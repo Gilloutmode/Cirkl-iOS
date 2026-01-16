@@ -111,7 +111,10 @@ struct SynergyCard: View {
                 }
             }
             .padding(DesignTokens.Spacing.md)
-            .background(synergyBoxBackground)
+            .background(
+                RoundedRectangle(cornerRadius: DesignTokens.Radius.small)
+                    .fill(DesignTokens.Colors.cardBackgroundElevated)
+            )
 
             // Action buttons
             HStack(spacing: DesignTokens.Spacing.md) {
@@ -171,72 +174,33 @@ struct SynergyCard: View {
             }
         }
         .padding(DesignTokens.Spacing.md)
-        .background { glassBackground }
+        .background(
+            RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
+                .fill(DesignTokens.Colors.cardBackground)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
+                .strokeBorder(
+                    item.isRead
+                        ? DesignTokens.Colors.cardBorder
+                        : DesignTokens.Colors.purple.opacity(0.5),
+                    lineWidth: item.isRead ? 1 : 1.5
+                )
+        )
+        .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
     }
 
     // MARK: - Person Avatar
 
     private func personAvatar(name: String, color: Color) -> some View {
         Circle()
-            .fill(
-                LinearGradient(
-                    colors: [color.opacity(0.3), color.opacity(0.1)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
+            .fill(color.opacity(0.15))
             .frame(width: 36, height: 36)
             .overlay(
                 Text(name.prefix(1).uppercased())
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
                     .foregroundStyle(color)
             )
-    }
-
-    // MARK: - Synergy Box Background
-
-    @ViewBuilder
-    private var synergyBoxBackground: some View {
-        if #available(iOS 26.0, *) {
-            RoundedRectangle(cornerRadius: DesignTokens.Radius.small)
-                .fill(.clear)
-                .glassEffect(.regular, in: .rect(cornerRadius: DesignTokens.Radius.small))
-        } else {
-            RoundedRectangle(cornerRadius: DesignTokens.Radius.small)
-                .fill(DesignTokens.Colors.surface.opacity(0.5))
-        }
-    }
-
-    // MARK: - Glass Background
-
-    @ViewBuilder
-    private var glassBackground: some View {
-        if #available(iOS 26.0, *) {
-            RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
-                .fill(.clear)
-                .glassEffect(.regular, in: .rect(cornerRadius: DesignTokens.Radius.medium))
-                .overlay(
-                    RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
-                        .strokeBorder(
-                            item.isRead
-                                ? DesignTokens.Colors.glassBorder.opacity(0.3)
-                                : DesignTokens.Colors.purple.opacity(0.4),
-                            lineWidth: 1
-                        )
-                )
-        } else {
-            RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
-                        .strokeBorder(
-                            item.isRead
-                                ? DesignTokens.Colors.glassBorder.opacity(0.3)
-                                : DesignTokens.Colors.purple.opacity(0.4),
-                            lineWidth: 1
-                        )
-                )
-        }
     }
 }
 
