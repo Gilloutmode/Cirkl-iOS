@@ -210,13 +210,15 @@ enum FeedFilter: String, CaseIterable {
     case all = "Tous"
     case updates = "Updates"
     case synergies = "Synergies"
+    case introductions = "Mises en relation"
     case reminders = "Rappels"
 
     var matchingTypes: [FeedItemType] {
         switch self {
         case .all: return FeedItemType.allCases
         case .updates: return [.update]
-        case .synergies: return [.synergy, .incomingSynergy]
+        case .synergies: return [.synergy]
+        case .introductions: return [.incomingSynergy]
         case .reminders: return [.networkPulse]
         }
     }
