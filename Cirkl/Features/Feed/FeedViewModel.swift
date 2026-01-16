@@ -52,6 +52,10 @@ final class FeedViewModel: ObservableObject {
         items.filter { $0.type == .networkPulse }.count
     }
 
+    var introductionCount: Int {
+        items.filter { $0.type == .incomingSynergy }.count
+    }
+
     // MARK: - Loading
 
     func load() async {

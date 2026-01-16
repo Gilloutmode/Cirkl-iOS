@@ -239,6 +239,7 @@ struct FeedView: View {
         case .all: return nil
         case .updates: return viewModel.updateCount
         case .synergies: return viewModel.synergyCount
+        case .introductions: return viewModel.introductionCount
         case .reminders: return viewModel.reminderCount
         }
     }
