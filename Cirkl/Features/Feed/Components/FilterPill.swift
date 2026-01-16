@@ -32,10 +32,10 @@ struct FilterPill: View {
             )
             .padding(.horizontal, DesignTokens.Spacing.md)
             .padding(.vertical, DesignTokens.Spacing.sm)
-            .background { pillBackground }
-            .contentShape(Capsule()) // Zone de tap explicite
+            .contentShape(Capsule()) // Zone de tap AVANT background
+            .background(pillBackground) // Sans closure pour éviter hit testing issues
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.borderless) // borderless au lieu de plain pour meilleur hit testing
     }
 
     @ViewBuilder

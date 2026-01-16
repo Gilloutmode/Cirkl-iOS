@@ -114,10 +114,10 @@ struct NetworkPulseCard: View {
                 }
             }
             .padding(DesignTokens.Spacing.md)
-            .background { glassBackground }
+            .contentShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)) // contentShape AVANT background
+            .background(glassBackground) // Sans closure
         }
-        .buttonStyle(.plain)
-        .contentShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.medium))
+        .buttonStyle(.borderless) // borderless pour meilleur hit testing
     }
 
     // MARK: - Status Message

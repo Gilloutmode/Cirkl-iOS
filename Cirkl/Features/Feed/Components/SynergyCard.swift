@@ -171,7 +171,8 @@ struct SynergyCard: View {
             }
         }
         .padding(DesignTokens.Spacing.md)
-        .background { glassBackground }
+        .contentShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)) // Zone de tap pour toute la card
+        .background(glassBackground) // Sans closure pour éviter hit testing issues
     }
 
     // MARK: - Person Avatar

@@ -152,7 +152,8 @@ struct CirklToast: View {
     @ViewBuilder
     private var toastBackground: some View {
         if #available(iOS 26.0, *) {
-            Color.clear
+            // Fond semi-opaque pour meilleur contraste + glass effect
+            DesignTokens.Colors.surface.opacity(0.85)
                 .glassEffect(.regular, in: .rect(cornerRadius: DesignTokens.Radius.large))
         } else {
             DesignTokens.Colors.surface
