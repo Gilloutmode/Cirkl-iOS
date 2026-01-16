@@ -22,7 +22,7 @@ Correction de tous les bugs du Feed CirKL : state management incorrect, boutons 
 
 - [x] Task 7: Ajouter loading state au bouton NetworkPulseCard - Not required. The "Reprendre contact" button in FeedItemDetailSheet opens a share sheet (synchronous UIActivityViewController). No async network call, so no loading state needed. The share sheet itself provides immediate visual feedback.
 
-- [ ] Task 8: Fix réactivité isRead - S'assurer que FeedItem.isRead est correctement observé. Utiliser `items[index].isRead = true` avec animation pour forcer le re-render SwiftUI.
+- [x] Task 8: Fix réactivité isRead - Updated markAsRead() and markAllAsRead() in FeedViewModel to use copy-and-replace pattern for guaranteed SwiftUI reactivity. Added early return for already-read items. Added animation modifier to feed cards to animate isRead changes. Added debug logging with format "[Feed] markAsRead: itemId → isRead=true".
 
 - [ ] Task 9: Implémenter le callback ProfileDetailView - Dans FeedView.swift, remplacer le callback vide `{ _ in }` par une vraie implémentation qui synchronise les modifications.
 

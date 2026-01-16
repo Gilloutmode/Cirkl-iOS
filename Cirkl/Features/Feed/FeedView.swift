@@ -115,6 +115,8 @@ struct FeedView: View {
                             insertion: .opacity.combined(with: .move(edge: .top)),
                             removal: .opacity.combined(with: .scale(scale: 0.9))
                         ))
+                        // Animate isRead changes (unread indicator visibility)
+                        .animation(DesignTokens.Animations.fast, value: item.isRead)
                         .id(item.id) // Important pour les animations
                 }
 

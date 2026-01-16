@@ -75,21 +75,43 @@ final class FeedViewModel: ObservableObject {
     // MARK: - Actions
 
     func markAsRead(_ itemId: String) {
-        guard let index = items.firstIndex(where: { $0.id == itemId }) else { return }
-        items[index].isRead = true
+        guard let index = items.firstIndex(where: { $0.id == itemId }) else {
+            #if DEBUG
+            print("[Feed] markAsRead: item \(itemId) not found")
+            #endif
+            return
+        }
+
+        // Already read, skip
+        guard !items[index].isRead else {
+            #if DEBUG
+            print("[Feed] markAsRead: item \(itemId) already read, skipping")
+            #endif
+            return
+        }
+
+        // Create a copy, modify, and replace to ensure SwiftUI detects the change
+        var updatedItem = items[index]
+        updatedItem.isRead = true
+        items[index] = updatedItem
 
         #if DEBUG
-        print("📰 Marked as read: \(itemId)")
+        print("[Feed] markAsRead: \(itemId) → isRead=true (unreadCount now: \(unreadCount))")
         #endif
     }
 
     func markAllAsRead() {
-        for index in items.indices {
-            items[index].isRead = true
+        let unreadBefore = unreadCount
+
+        // Update all items using copy-and-replace pattern for SwiftUI reactivity
+        for index in items.indices where !items[index].isRead {
+            var updatedItem = items[index]
+            updatedItem.isRead = true
+            items[index] = updatedItem
         }
 
         #if DEBUG
-        print("📰 Marked all as read")
+        print("[Feed] markAllAsRead: \(unreadBefore) → 0 unread")
         #endif
     }
 
