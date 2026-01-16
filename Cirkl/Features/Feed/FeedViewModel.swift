@@ -241,6 +241,13 @@ final class FeedViewModel: ObservableObject {
         #endif
     }
 
+    // MARK: - Error Management
+
+    /// Efface l'erreur courante (appelé après affichage de l'alert)
+    func clearError() {
+        error = nil
+    }
+
     // MARK: - Profile Updates
 
     /// Met à jour les items du feed quand un profil de connexion est modifié depuis ProfileDetailView
