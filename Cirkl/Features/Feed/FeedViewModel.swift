@@ -4,18 +4,18 @@ import SwiftUI
 // MARK: - Feed ViewModel
 /// Gère les actualités du réseau avec filtrage et marquage lu/non-lu
 /// Note: Pas de withAnimation ici - animations gérées côté View
+/// Uses ObservableObject + @StateObject for proper state persistence across view updates
 
 @MainActor
-@Observable
-final class FeedViewModel {
+final class FeedViewModel: ObservableObject {
 
     // MARK: - Properties
 
-    private(set) var items: [FeedItem] = []
-    private(set) var isLoading = false
-    private(set) var error: String?
+    @Published private(set) var items: [FeedItem] = []
+    @Published private(set) var isLoading = false
+    @Published private(set) var error: String?
 
-    var selectedFilter: FeedFilter = .all
+    @Published var selectedFilter: FeedFilter = .all
 
     // MARK: - Computed Properties
 

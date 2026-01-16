@@ -6,7 +6,7 @@ import SwiftUI
 
 struct FeedView: View {
 
-    @State private var viewModel = FeedViewModel()
+    @StateObject private var viewModel = FeedViewModel()
     @State private var selectedFeedItem: FeedItem?
 
     var body: some View {
