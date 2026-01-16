@@ -32,27 +32,21 @@ struct FilterPill: View {
             )
             .padding(.horizontal, DesignTokens.Spacing.md)
             .padding(.vertical, DesignTokens.Spacing.sm)
-            .background { pillBackground }
-            .contentShape(Capsule()) // Zone de tap explicite
+            .background(
+                Capsule()
+                    .fill(isSelected ? DesignTokens.Colors.electricBlue : DesignTokens.Colors.cardBackground)
+            )
+            .overlay(
+                Capsule()
+                    .strokeBorder(
+                        isSelected ? Color.clear : DesignTokens.Colors.cardBorder,
+                        lineWidth: 1
+                    )
+            )
+            .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
+            .contentShape(Capsule())
         }
         .buttonStyle(.plain)
-    }
-
-    @ViewBuilder
-    private var pillBackground: some View {
-        if #available(iOS 26.0, *) {
-            Capsule()
-                .fill(isSelected ? DesignTokens.Colors.electricBlue : .clear)
-                .glassEffect(.regular, in: .capsule)
-        } else {
-            if isSelected {
-                Capsule()
-                    .fill(DesignTokens.Colors.electricBlue)
-            } else {
-                Capsule()
-                    .fill(.ultraThinMaterial)
-            }
-        }
     }
 }
 
