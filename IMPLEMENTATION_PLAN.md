@@ -28,7 +28,7 @@ Correction de tous les bugs du Feed CirKL : state management incorrect, boutons 
 
 - [x] Task 10: Ajouter logs de debug complets - Added debug logs with [Feed] format to: SynergyCard buttons ("Créer la connexion" and "Pas maintenant"), UpdateCard onTap, NetworkPulseCard onTap. FeedViewModel methods (markAsRead, createSynergyConnection, handleItemTap) already had comprehensive logging.
 
-- [ ] Task 11: Vérifier et corriger les compteurs de filtres - Dans FeedViewModel, s'assurer que updateCount, synergyCount et reminderCount retournent les bonnes valeurs basées sur les items filtrés.
+- [x] Task 11: Vérifier et corriger les compteurs de filtres - Verified: updateCount, synergyCount, reminderCount are computed properties that correctly filter by FeedItemType (.update, .synergy, .networkPulse). Counts auto-update when items array changes. Build passes successfully.
 
 - [ ] Task 12: Ajouter feedback visuel (toasts) - Ajouter des toasts de confirmation pour: création synergie réussie, erreur réseau, action "reprendre contact". Utiliser les composants existants ou créer un simple overlay.
 
