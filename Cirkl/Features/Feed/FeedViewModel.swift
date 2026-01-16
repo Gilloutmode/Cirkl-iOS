@@ -15,6 +15,9 @@ final class FeedViewModel: ObservableObject {
     @Published private(set) var isLoading = false
     @Published private(set) var error: String?
 
+    /// ID de l'item en cours de traitement (pour désactiver les boutons pendant l'opération)
+    @Published private(set) var loadingItemId: String?
+
     @Published var selectedFilter: FeedFilter = .all
 
     // MARK: - Computed Properties
@@ -108,23 +111,44 @@ final class FeedViewModel: ObservableObject {
 
     // MARK: - Synergy Actions
 
+    /// Vérifie si un item est en cours de traitement
+    func isItemLoading(_ itemId: String) -> Bool {
+        loadingItemId == itemId
+    }
+
     /// Crée une connexion entre les deux personnes d'une synergie
-    func createSynergyConnection(_ itemId: String) {
-        guard let index = items.firstIndex(where: { $0.id == itemId }) else { return }
+    /// Note: Async pour supporter l'appel backend futur
+    func createSynergyConnection(_ itemId: String) async {
+        guard let index = items.firstIndex(where: { $0.id == itemId }) else {
+            print("[Feed] createSynergyConnection: item \(itemId) not found")
+            return
+        }
         let item = items[index]
 
+        // Set loading state
+        loadingItemId = itemId
+
         #if DEBUG
+        print("[Feed] Creating synergy connection for item: \(itemId)")
         if let person1 = item.synergyPerson1Name,
            let person2 = item.synergyPerson2Name {
-            print("🔮 Creating connection: \(person1) ↔ \(person2)")
+            print("[Feed] Connecting: \(person1) ↔ \(person2)")
         }
         #endif
 
-        // TODO: Appeler N8NService pour créer la connexion
-        // En MVP, on simule juste le succès
+        // TODO: Task 4 - Appeler N8NService.createSynergyConnection()
+        // Pour l'instant, on simule un délai réseau
+        try? await Task.sleep(for: .milliseconds(500))
+
+        // Clear loading state
+        loadingItemId = nil
 
         // Remove the synergy item - animation gérée côté View
         items.remove(at: index)
+
+        #if DEBUG
+        print("[Feed] Synergy connection created successfully")
+        #endif
     }
 
     /// Dismiss une synergie (pas intéressé pour le moment)

@@ -7,8 +7,16 @@ import SwiftUI
 struct SynergyCard: View {
 
     let item: FeedItem
+    let isLoading: Bool
     let onCreateConnection: () -> Void
     let onDismiss: () -> Void
+
+    init(item: FeedItem, isLoading: Bool = false, onCreateConnection: @escaping () -> Void, onDismiss: @escaping () -> Void) {
+        self.item = item
+        self.isLoading = isLoading
+        self.onCreateConnection = onCreateConnection
+        self.onDismiss = onDismiss
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
@@ -109,14 +117,20 @@ struct SynergyCard: View {
             HStack(spacing: DesignTokens.Spacing.md) {
                 // Primary action: Create connection
                 Button(action: {
-                    CirklHaptics.medium()
                     onCreateConnection()
                 }) {
                     HStack(spacing: 6) {
-                        Image(systemName: "link")
-                            .font(.system(size: 14, weight: .medium))
+                        if isLoading {
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                                .scaleEffect(0.8)
+                                .tint(.white)
+                        } else {
+                            Image(systemName: "link")
+                                .font(.system(size: 14, weight: .medium))
+                        }
 
-                        Text("Créer la connexion")
+                        Text(isLoading ? "Création..." : "Créer la connexion")
                             .font(DesignTokens.Typography.buttonSmall)
                     }
                     .foregroundStyle(.white)
@@ -124,10 +138,11 @@ struct SynergyCard: View {
                     .padding(.vertical, DesignTokens.Spacing.sm)
                     .background(
                         Capsule()
-                            .fill(DesignTokens.Colors.purple)
+                            .fill(isLoading ? DesignTokens.Colors.purple.opacity(0.6) : DesignTokens.Colors.purple)
                     )
                 }
                 .buttonStyle(.plain)
+                .disabled(isLoading)
 
                 // Secondary action: Dismiss
                 Button(action: {
@@ -145,6 +160,8 @@ struct SynergyCard: View {
                         )
                 }
                 .buttonStyle(.plain)
+                .disabled(isLoading)
+                .opacity(isLoading ? 0.5 : 1.0)
             }
         }
         .padding(DesignTokens.Spacing.md)

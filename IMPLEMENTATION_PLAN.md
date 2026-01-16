@@ -10,7 +10,7 @@ Correction de tous les bugs du Feed CirKL : state management incorrect, boutons 
 
 - [x] Task 1: Fix ViewModel state management - Converted FeedViewModel from @Observable to ObservableObject with @Published properties. Changed FeedView to use @StateObject for proper state persistence across view updates.
 
-- [ ] Task 2: Implémenter loading state dans FeedViewModel - Ajouter une propriété `isLoading: Bool` et `loadingItemId: String?` pour tracker les opérations en cours. Ces états seront utilisés pour désactiver les boutons pendant le traitement.
+- [x] Task 2: Implémenter loading state dans FeedViewModel - Added `loadingItemId: String?` property and `isItemLoading()` helper method. Made `createSynergyConnection()` async with loading state tracking. Updated SynergyCard to accept `isLoading` parameter with ProgressView and disabled state during operations.
 
 - [ ] Task 3: Créer la méthode N8NService.createSynergyConnection() - Dans N8NService.swift, ajouter une méthode async pour créer une connexion synergie via le webhook. Utiliser l'endpoint `/webhook/acknowledge-synergies` ou créer un nouveau.
 
