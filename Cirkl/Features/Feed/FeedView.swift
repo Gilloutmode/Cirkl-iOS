@@ -8,6 +8,7 @@ struct FeedView: View {
 
     @StateObject private var viewModel = FeedViewModel()
     @State private var selectedFeedItem: FeedItem?
+    @State private var synergyToReveal: FeedItem?
 
     var body: some View {
         NavigationStack {
@@ -50,6 +51,21 @@ struct FeedView: View {
             FeedItemDetailSheet(item: item) { updatedContact in
                 viewModel.updateConnectionInFeed(updatedContact)
             }
+        }
+        // Full-screen synergy reveal animation
+        .fullScreenCover(item: $synergyToReveal) { item in
+            SynergyRevealView(
+                item: item,
+                onCreateConnection: {
+                    handleSynergyConnection(item)
+                },
+                onDismiss: {
+                    handleSynergyDismiss(item)
+                },
+                onSkip: {
+                    synergyToReveal = nil
+                }
+            )
         }
         // Alert pour afficher les erreurs
         .alert("Erreur", isPresented: Binding(
@@ -157,31 +173,9 @@ struct FeedView: View {
                 item: item,
                 isLoading: viewModel.isItemLoading(item.id),
                 onCreateConnection: {
-                    // Sauvegarder les noms AVANT suppression pour le toast
-                    let person1 = item.synergyPerson1Name ?? "Contact 1"
-                    let person2 = item.synergyPerson2Name ?? "Contact 2"
+                    // Trigger full-screen reveal animation
                     CirklHaptics.medium()
-
-                    Task {
-                        await viewModel.createSynergyConnection(item.id)
-
-                        await MainActor.run {
-                            withAnimation(DesignTokens.Animations.normal) {
-                                // L'item est déjà supprimé dans le ViewModel si succès
-                            }
-
-                            // Toast feedback based on result
-                            if let error = viewModel.error {
-                                // Erreur réseau ou backend
-                                ToastManager.shared.error("Échec : \(error)")
-                                CirklHaptics.error()
-                            } else {
-                                // Succès
-                                ToastManager.shared.success("Connexion \(person1) ↔ \(person2) créée !")
-                                CirklHaptics.success()
-                            }
-                        }
-                    }
+                    synergyToReveal = item
                 },
                 onDismiss: {
                     withAnimation(DesignTokens.Animations.normal) {
@@ -246,6 +240,48 @@ struct FeedView: View {
 
         // Open detail sheet for this item
         selectedFeedItem = item
+    }
+
+    // MARK: - Synergy Reveal Handlers
+
+    private func handleSynergyConnection(_ item: FeedItem) {
+        // Store names before dismissing for toast
+        let person1 = item.synergyPerson1Name ?? "Contact 1"
+        let person2 = item.synergyPerson2Name ?? "Contact 2"
+
+        // Dismiss the reveal first
+        synergyToReveal = nil
+
+        // Then create connection
+        Task {
+            await viewModel.createSynergyConnection(item.id)
+
+            await MainActor.run {
+                withAnimation(DesignTokens.Animations.normal) {
+                    // Item already removed in ViewModel if success
+                }
+
+                // Toast feedback based on result
+                if let error = viewModel.error {
+                    ToastManager.shared.error("Échec : \(error)")
+                    CirklHaptics.error()
+                } else {
+                    ToastManager.shared.success("Connexion \(person1) ↔ \(person2) créée !")
+                    CirklHaptics.success()
+                }
+            }
+        }
+    }
+
+    private func handleSynergyDismiss(_ item: FeedItem) {
+        // Dismiss reveal
+        synergyToReveal = nil
+
+        // Dismiss the synergy
+        withAnimation(DesignTokens.Animations.normal) {
+            viewModel.dismissSynergy(item.id)
+        }
+        ToastManager.shared.info("Synergie ignorée")
     }
 }
 
