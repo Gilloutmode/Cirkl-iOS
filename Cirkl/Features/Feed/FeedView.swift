@@ -148,20 +148,29 @@ struct FeedView: View {
                 item: item,
                 isLoading: viewModel.isItemLoading(item.id),
                 onCreateConnection: {
-                    // Sauvegarder l'item AVANT suppression pour le feedback
-                    let createdItem = item
+                    // Sauvegarder les noms AVANT suppression pour le toast
+                    let person1 = item.synergyPerson1Name ?? "Contact 1"
+                    let person2 = item.synergyPerson2Name ?? "Contact 2"
                     CirklHaptics.medium()
 
                     Task {
                         await viewModel.createSynergyConnection(item.id)
-                        // Animation gérée après la suppression
+
                         await MainActor.run {
                             withAnimation(DesignTokens.Animations.normal) {
-                                // L'item est déjà supprimé dans le ViewModel
+                                // L'item est déjà supprimé dans le ViewModel si succès
                             }
-                            CirklHaptics.success()
-                            // Montrer le détail de la synergie créée
-                            selectedFeedItem = createdItem
+
+                            // Toast feedback based on result
+                            if let error = viewModel.error {
+                                // Erreur réseau ou backend
+                                ToastManager.shared.error("Échec : \(error)")
+                                CirklHaptics.error()
+                            } else {
+                                // Succès
+                                ToastManager.shared.success("Connexion \(person1) ↔ \(person2) créée !")
+                                CirklHaptics.success()
+                            }
                         }
                     }
                 },
@@ -169,6 +178,7 @@ struct FeedView: View {
                     withAnimation(DesignTokens.Animations.normal) {
                         viewModel.dismissSynergy(item.id)
                     }
+                    ToastManager.shared.info("Synergie ignorée")
                 }
             )
 
@@ -575,6 +585,10 @@ private struct FeedItemDetailSheet: View {
                 // Générer le message suggéré et ouvrir le share sheet
                 suggestedMessage = generateResumeContactMessage()
                 showShareSheet = true
+
+                // Toast feedback for action
+                let contactName = item.connectionName ?? "cette personne"
+                ToastManager.shared.info("Message préparé pour \(contactName)")
 
                 #if DEBUG
                 print("[Feed] Reprendre contact tapped for: \(item.connectionName ?? "unknown")")

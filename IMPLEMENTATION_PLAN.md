@@ -30,6 +30,6 @@ Correction de tous les bugs du Feed CirKL : state management incorrect, boutons 
 
 - [x] Task 11: Vérifier et corriger les compteurs de filtres - Verified: updateCount, synergyCount, reminderCount are computed properties that correctly filter by FeedItemType (.update, .synergy, .networkPulse). Counts auto-update when items array changes. Build passes successfully.
 
-- [ ] Task 12: Ajouter feedback visuel (toasts) - Ajouter des toasts de confirmation pour: création synergie réussie, erreur réseau, action "reprendre contact". Utiliser les composants existants ou créer un simple overlay.
+- [x] Task 12: Ajouter feedback visuel (toasts) - Added toast feedback using existing ToastManager: success toast when synergy connection is created ("Connexion X ↔ Y créée !"), error toast on network/backend failure, info toast when synergy is dismissed, and info toast when "Reprendre contact" prepares a message for sharing.
 
 - [ ] Task 13: Build et test final - Compiler le projet avec xcodebuild, lancer sur simulateur, tester tous les boutons et vérifier les logs de debug. Corriger tout bug restant.
