@@ -18,9 +18,9 @@ Correction de tous les bugs du Feed CirKL : state management incorrect, boutons 
 
 - [x] Task 5: Implémenter le bouton "Reprendre contact" - Implemented in FeedItemDetailSheet within FeedView.swift. Added ShareSheet component (Components/Library/Sharing/ShareSheet.swift) for UIActivityViewController integration. Button generates a personalized message based on connection context (name, days since contact, last interaction) and opens iOS share sheet. Added helper method generateResumeContactMessage() and debug logging.
 
-- [ ] Task 6: Ajouter loading state aux boutons SynergyCard - Dans SynergyCard.swift, ajouter un binding `isLoading` pour désactiver le bouton et afficher un ProgressView pendant le traitement.
+- [x] Task 6: Ajouter loading state aux boutons SynergyCard - Already implemented in SynergyCard.swift with `isLoading: Bool` parameter. Shows ProgressView, changes button text to "Création...", disables both buttons during loading, and dims background. Connected via `viewModel.isItemLoading(item.id)` in FeedView.
 
-- [ ] Task 7: Ajouter loading state au bouton NetworkPulseCard - Dans FeedView.swift section .networkPulse, ajouter loading state au bouton "Reprendre contact".
+- [x] Task 7: Ajouter loading state au bouton NetworkPulseCard - Not required. The "Reprendre contact" button in FeedItemDetailSheet opens a share sheet (synchronous UIActivityViewController). No async network call, so no loading state needed. The share sheet itself provides immediate visual feedback.
 
 - [ ] Task 8: Fix réactivité isRead - S'assurer que FeedItem.isRead est correctement observé. Utiliser `items[index].isRead = true` avec animation pour forcer le re-render SwiftUI.
 
