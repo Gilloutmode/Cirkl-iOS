@@ -186,4 +186,36 @@ final class FeedViewModel: ObservableObject {
         // Remove the synergy item - animation gérée côté View
         items.remove(at: index)
     }
+
+    // MARK: - Network Pulse Actions
+
+    /// Génère un message suggéré pour reprendre contact avec une connexion dormante
+    func generateResumeContactMessage(for item: FeedItem) -> String {
+        let name = item.connectionName ?? "cette personne"
+        let context = item.lastInteractionContext ?? "notre dernière rencontre"
+
+        #if DEBUG
+        print("[Feed] Generating resume contact message for: \(name)")
+        #endif
+
+        // Message personnalisé basé sur le contexte
+        if let days = item.daysSinceContact {
+            if days > 30 {
+                return "Hey \(name) ! Ça fait un moment depuis \(context). Je pensais à toi, comment vas-tu ?"
+            } else {
+                return "Salut \(name) ! Je repensais à \(context). On se fait un café bientôt ?"
+            }
+        }
+
+        return "Hey \(name) ! Je pensais à toi. On se fait un café bientôt ?"
+    }
+
+    /// Marque l'action "Reprendre contact" comme effectuée et marque l'item comme lu
+    func markResumeContactDone(_ itemId: String) {
+        markAsRead(itemId)
+
+        #if DEBUG
+        print("[Feed] Resume contact action completed for: \(itemId)")
+        #endif
+    }
 }

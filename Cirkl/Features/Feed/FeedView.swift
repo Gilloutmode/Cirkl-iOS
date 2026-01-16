@@ -286,6 +286,8 @@ private struct FeedItemDetailSheet: View {
     let item: FeedItem
     @Environment(\.dismiss) private var dismiss
     @State private var showProfileDetail = false
+    @State private var showShareSheet = false
+    @State private var suggestedMessage: String = ""
 
     var body: some View {
         NavigationStack {
@@ -325,6 +327,9 @@ private struct FeedItemDetailSheet: View {
                     // Update handled by parent
                 }
             }
+        }
+        .sheet(isPresented: $showShareSheet) {
+            ShareSheet(items: [suggestedMessage])
         }
     }
 
@@ -557,7 +562,13 @@ private struct FeedItemDetailSheet: View {
         case .networkPulse:
             Button {
                 CirklHaptics.light()
-                // TODO: Ouvrir conversation / rappel
+                // Générer le message suggéré et ouvrir le share sheet
+                suggestedMessage = generateResumeContactMessage()
+                showShareSheet = true
+
+                #if DEBUG
+                print("[Feed] Reprendre contact tapped for: \(item.connectionName ?? "unknown")")
+                #endif
             } label: {
                 HStack {
                     Image(systemName: "message.fill")
@@ -574,6 +585,24 @@ private struct FeedItemDetailSheet: View {
             }
             .buttonStyle(.plain)
         }
+    }
+
+    // MARK: - Helper Methods
+
+    /// Génère un message suggéré pour reprendre contact
+    private func generateResumeContactMessage() -> String {
+        let name = item.connectionName ?? "toi"
+        let context = item.lastInteractionContext ?? "notre dernière rencontre"
+
+        if let days = item.daysSinceContact {
+            if days > 30 {
+                return "Hey \(name) ! Ça fait un moment depuis \(context). Je pensais à toi, comment vas-tu ?"
+            } else {
+                return "Salut \(name) ! Je repensais à \(context). On se fait un café bientôt ?"
+            }
+        }
+
+        return "Hey \(name) ! Je pensais à toi. On se fait un café bientôt ?"
     }
 
     // MARK: - Glass Background

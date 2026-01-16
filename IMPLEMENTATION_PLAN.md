@@ -16,7 +16,7 @@ Correction de tous les bugs du Feed CirKL : state management incorrect, boutons 
 
 - [x] Task 4: Connecter createSynergyConnection() au backend - Updated FeedViewModel.createSynergyConnection() to call N8NService.shared.createSynergyConnection() with try/await. Item is removed from feed ONLY after backend confirmation. Added proper error handling that sets ViewModel.error on failure without removing the item.
 
-- [ ] Task 5: Implémenter le bouton "Reprendre contact" - Dans FeedView.swift, remplacer le TODO du bouton Network Pulse par une vraie action. Options: ouvrir une conversation, créer un rappel, ou proposer un message suggéré par l'IA.
+- [x] Task 5: Implémenter le bouton "Reprendre contact" - Implemented in FeedItemDetailSheet within FeedView.swift. Added ShareSheet component (Components/Library/Sharing/ShareSheet.swift) for UIActivityViewController integration. Button generates a personalized message based on connection context (name, days since contact, last interaction) and opens iOS share sheet. Added helper method generateResumeContactMessage() and debug logging.
 
 - [ ] Task 6: Ajouter loading state aux boutons SynergyCard - Dans SynergyCard.swift, ajouter un binding `isLoading` pour désactiver le bouton et afficher un ProgressView pendant le traitement.
 
