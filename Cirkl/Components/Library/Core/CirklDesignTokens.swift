@@ -99,6 +99,17 @@ enum DesignTokens {
 
         /// Pink accent for connections
         static let pink = Color(hex: "EC4899")
+
+        // MARK: Flat Design Cards
+
+        /// Card background - solid dark color
+        static let cardBackground = Color(hex: "1C1C1E")
+
+        /// Elevated card background - slightly lighter
+        static let cardBackgroundElevated = Color(hex: "2C2C2E")
+
+        /// Card border - subtle separator
+        static let cardBorder = Color.white.opacity(0.08)
     }
 
     // MARK: - Typography
@@ -346,15 +357,38 @@ extension View {
         )
     }
 
-    /// Apply glass background effect with design tokens
-    @ViewBuilder
-    func tokenGlassBackground(cornerRadius: CGFloat = DesignTokens.Radius.medium) -> some View {
-        if #available(iOS 26.0, *) {
-            self.glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
-        } else {
-            self
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: cornerRadius))
-        }
+    /// Apply flat card background with shadow (Flat Design)
+    func tokenCardBackground(
+        cornerRadius: CGFloat = DesignTokens.Radius.large,
+        elevated: Bool = false
+    ) -> some View {
+        self
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(elevated ? DesignTokens.Colors.cardBackgroundElevated : DesignTokens.Colors.cardBackground)
+            )
+            .tokenShadow(DesignTokens.Shadows.medium)
+    }
+
+    /// Apply flat card background with custom border for unread state
+    func tokenCardBackgroundWithBorder(
+        cornerRadius: CGFloat = DesignTokens.Radius.large,
+        borderColor: Color,
+        showBorder: Bool
+    ) -> some View {
+        self
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(DesignTokens.Colors.cardBackground)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .strokeBorder(
+                        showBorder ? borderColor.opacity(0.5) : DesignTokens.Colors.cardBorder,
+                        lineWidth: showBorder ? 1.5 : 1
+                    )
+            )
+            .tokenShadow(DesignTokens.Shadows.medium)
     }
 }
 

@@ -96,11 +96,23 @@ struct FeedCard: View {
                 }
             }
             .padding(DesignTokens.Spacing.md)
-            .background {
-                glassBackground
-            }
+            .background(
+                RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
+                    .fill(DesignTokens.Colors.cardBackground)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
+                    .strokeBorder(
+                        item.isRead
+                            ? DesignTokens.Colors.cardBorder
+                            : item.accentColor.opacity(0.5),
+                        lineWidth: item.isRead ? 1 : 1.5
+                    )
+            )
+            .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
         }
         .buttonStyle(.plain)
+        .contentShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.large))
     }
 
     // MARK: - Avatar View
@@ -110,13 +122,7 @@ struct FeedCard: View {
         if let connectionName = item.connectionName {
             // Connection avatar
             Circle()
-                .fill(
-                    LinearGradient(
-                        colors: [item.accentColor.opacity(0.3), item.accentColor.opacity(0.1)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+                .fill(item.accentColor.opacity(0.15))
                 .frame(width: 44, height: 44)
                 .overlay(
                     Text(connectionName.prefix(1).uppercased())
@@ -126,50 +132,12 @@ struct FeedCard: View {
         } else {
             // Type icon for non-connection items
             Circle()
-                .fill(
-                    LinearGradient(
-                        colors: [item.accentColor.opacity(0.2), item.accentColor.opacity(0.05)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+                .fill(item.accentColor.opacity(0.15))
                 .frame(width: 44, height: 44)
                 .overlay(
                     Image(systemName: item.icon)
                         .font(.system(size: 18, weight: .medium))
                         .foregroundStyle(item.accentColor)
-                )
-        }
-    }
-
-    // MARK: - Glass Background
-
-    @ViewBuilder
-    private var glassBackground: some View {
-        if #available(iOS 26.0, *) {
-            RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
-                .fill(.clear)
-                .glassEffect(.regular, in: .rect(cornerRadius: DesignTokens.Radius.medium))
-                .overlay(
-                    RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
-                        .strokeBorder(
-                            item.isRead
-                                ? DesignTokens.Colors.glassBorder.opacity(0.3)
-                                : item.accentColor.opacity(0.3),
-                            lineWidth: 1
-                        )
-                )
-        } else {
-            RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
-                        .strokeBorder(
-                            item.isRead
-                                ? DesignTokens.Colors.glassBorder.opacity(0.3)
-                                : item.accentColor.opacity(0.3),
-                            lineWidth: 1
-                        )
                 )
         }
     }
