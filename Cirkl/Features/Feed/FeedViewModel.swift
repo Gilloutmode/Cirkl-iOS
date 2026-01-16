@@ -4,18 +4,21 @@ import SwiftUI
 // MARK: - Feed ViewModel
 /// Gère les actualités du réseau avec filtrage et marquage lu/non-lu
 /// Note: Pas de withAnimation ici - animations gérées côté View
+/// Uses ObservableObject + @StateObject for proper state persistence across view updates
 
 @MainActor
-@Observable
-final class FeedViewModel {
+final class FeedViewModel: ObservableObject {
 
     // MARK: - Properties
 
-    private(set) var items: [FeedItem] = []
-    private(set) var isLoading = false
-    private(set) var error: String?
+    @Published private(set) var items: [FeedItem] = []
+    @Published private(set) var isLoading = false
+    @Published private(set) var error: String?
 
-    var selectedFilter: FeedFilter = .all
+    /// ID de l'item en cours de traitement (pour désactiver les boutons pendant l'opération)
+    @Published private(set) var loadingItemId: String?
+
+    @Published var selectedFilter: FeedFilter = .all
 
     // MARK: - Computed Properties
 
@@ -72,21 +75,43 @@ final class FeedViewModel {
     // MARK: - Actions
 
     func markAsRead(_ itemId: String) {
-        guard let index = items.firstIndex(where: { $0.id == itemId }) else { return }
-        items[index].isRead = true
+        guard let index = items.firstIndex(where: { $0.id == itemId }) else {
+            #if DEBUG
+            print("[Feed] markAsRead: item \(itemId) not found")
+            #endif
+            return
+        }
+
+        // Already read, skip
+        guard !items[index].isRead else {
+            #if DEBUG
+            print("[Feed] markAsRead: item \(itemId) already read, skipping")
+            #endif
+            return
+        }
+
+        // Create a copy, modify, and replace to ensure SwiftUI detects the change
+        var updatedItem = items[index]
+        updatedItem.isRead = true
+        items[index] = updatedItem
 
         #if DEBUG
-        print("📰 Marked as read: \(itemId)")
+        print("[Feed] markAsRead: \(itemId) → isRead=true (unreadCount now: \(unreadCount))")
         #endif
     }
 
     func markAllAsRead() {
-        for index in items.indices {
-            items[index].isRead = true
+        let unreadBefore = unreadCount
+
+        // Update all items using copy-and-replace pattern for SwiftUI reactivity
+        for index in items.indices where !items[index].isRead {
+            var updatedItem = items[index]
+            updatedItem.isRead = true
+            items[index] = updatedItem
         }
 
         #if DEBUG
-        print("📰 Marked all as read")
+        print("[Feed] markAllAsRead: \(unreadBefore) → 0 unread")
         #endif
     }
 
@@ -108,23 +133,68 @@ final class FeedViewModel {
 
     // MARK: - Synergy Actions
 
+    /// Vérifie si un item est en cours de traitement
+    func isItemLoading(_ itemId: String) -> Bool {
+        loadingItemId == itemId
+    }
+
     /// Crée une connexion entre les deux personnes d'une synergie
-    func createSynergyConnection(_ itemId: String) {
-        guard let index = items.firstIndex(where: { $0.id == itemId }) else { return }
+    /// Appelle le backend N8N et supprime l'item uniquement après confirmation
+    func createSynergyConnection(_ itemId: String) async {
+        guard let index = items.firstIndex(where: { $0.id == itemId }) else {
+            print("[Feed] createSynergyConnection: item \(itemId) not found")
+            return
+        }
         let item = items[index]
 
+        // Set loading state
+        loadingItemId = itemId
+        error = nil
+
+        let person1 = item.synergyPerson1Name ?? "Unknown"
+        let person2 = item.synergyPerson2Name ?? "Unknown"
+
         #if DEBUG
-        if let person1 = item.synergyPerson1Name,
-           let person2 = item.synergyPerson2Name {
-            print("🔮 Creating connection: \(person1) ↔ \(person2)")
-        }
+        print("[Feed] Creating synergy connection for item: \(itemId)")
+        print("[Feed] Connecting: \(person1) ↔ \(person2)")
         #endif
 
-        // TODO: Appeler N8NService pour créer la connexion
-        // En MVP, on simule juste le succès
+        do {
+            // Call N8NService to create the synergy connection
+            let response = try await N8NService.shared.createSynergyConnection(
+                userId: "demo-user", // TODO: Use actual userId from auth
+                synergyId: itemId,
+                person1Name: person1,
+                person2Name: person2,
+                matchContext: item.synergyMatch
+            )
 
-        // Remove the synergy item - animation gérée côté View
-        items.remove(at: index)
+            // Clear loading state
+            loadingItemId = nil
+
+            if response.success {
+                // Remove the synergy item ONLY after backend confirmation
+                items.remove(at: index)
+
+                #if DEBUG
+                print("[Feed] Synergy connection created successfully: \(response.message ?? "OK")")
+                #endif
+            } else {
+                // Backend returned failure
+                error = response.message ?? "Échec de la création de connexion"
+                #if DEBUG
+                print("[Feed] Synergy creation failed: \(response.message ?? "Unknown error")")
+                #endif
+            }
+        } catch {
+            // Network or other error - don't remove the item
+            loadingItemId = nil
+            self.error = error.localizedDescription
+
+            #if DEBUG
+            print("[Feed] Synergy connection error: \(error.localizedDescription)")
+            #endif
+        }
     }
 
     /// Dismiss une synergie (pas intéressé pour le moment)
@@ -137,5 +207,76 @@ final class FeedViewModel {
 
         // Remove the synergy item - animation gérée côté View
         items.remove(at: index)
+    }
+
+    // MARK: - Network Pulse Actions
+
+    /// Génère un message suggéré pour reprendre contact avec une connexion dormante
+    func generateResumeContactMessage(for item: FeedItem) -> String {
+        let name = item.connectionName ?? "cette personne"
+        let context = item.lastInteractionContext ?? "notre dernière rencontre"
+
+        #if DEBUG
+        print("[Feed] Generating resume contact message for: \(name)")
+        #endif
+
+        // Message personnalisé basé sur le contexte
+        if let days = item.daysSinceContact {
+            if days > 30 {
+                return "Hey \(name) ! Ça fait un moment depuis \(context). Je pensais à toi, comment vas-tu ?"
+            } else {
+                return "Salut \(name) ! Je repensais à \(context). On se fait un café bientôt ?"
+            }
+        }
+
+        return "Hey \(name) ! Je pensais à toi. On se fait un café bientôt ?"
+    }
+
+    /// Marque l'action "Reprendre contact" comme effectuée et marque l'item comme lu
+    func markResumeContactDone(_ itemId: String) {
+        markAsRead(itemId)
+
+        #if DEBUG
+        print("[Feed] Resume contact action completed for: \(itemId)")
+        #endif
+    }
+
+    // MARK: - Error Management
+
+    /// Efface l'erreur courante (appelé après affichage de l'alert)
+    func clearError() {
+        error = nil
+    }
+
+    // MARK: - Profile Updates
+
+    /// Met à jour les items du feed quand un profil de connexion est modifié depuis ProfileDetailView
+    /// Cette méthode synchronise le nom et autres données modifiables
+    func updateConnectionInFeed(_ updatedContact: OrbitalContact) {
+        var updatedItems = false
+
+        for index in items.indices {
+            // Match by connectionId
+            if items[index].connectionId == updatedContact.id {
+                var item = items[index]
+
+                // Update the connection name if it changed
+                if item.connectionName != updatedContact.name {
+                    item.connectionName = updatedContact.name
+                    items[index] = item
+                    updatedItems = true
+
+                    #if DEBUG
+                    print("[Feed] updateConnectionInFeed: Updated item \(item.id) with new name: \(updatedContact.name)")
+                    #endif
+                }
+            }
+        }
+
+        #if DEBUG
+        if !updatedItems {
+            print("[Feed] updateConnectionInFeed: No items found for connectionId: \(updatedContact.id)")
+        }
+        #endif
     }
 }

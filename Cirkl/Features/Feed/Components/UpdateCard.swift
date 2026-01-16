@@ -10,7 +10,12 @@ struct UpdateCard: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
+        Button(action: {
+            #if DEBUG
+            print("[Feed] UpdateCard: tapped for \(item.connectionName ?? "unknown") (id: \(item.id))")
+            #endif
+            onTap()
+        }) {
             HStack(alignment: .top, spacing: DesignTokens.Spacing.md) {
                 // Avatar
                 avatarView

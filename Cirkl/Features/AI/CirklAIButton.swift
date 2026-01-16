@@ -20,15 +20,13 @@ struct CirklAIButton: View {
     @State private var showActionSheet = false
     @State private var showNetworkPulse = false
 
-    // Living Button state - NEW: Uses AIAssistantState + DebriefingManager
-    @State private var assistantState: AIAssistantState = .idle
-    @State private var badgeCount: Int = 0
+    // Living Button state
+    @State private var buttonState: AIButtonState = .idle
+    @State private var synergiesCount: Int = 0
+    @State private var synergies: [ButtonStateResponse.SynergyInfo] = []
     @State private var livingPulsePhase: Double = 0
     @State private var glowIntensity: Double = 0
     @State private var pollingTask: Task<Void, Never>?
-
-    // Debriefing manager reference
-    private var debriefingManager: DebriefingManager { DebriefingManager.shared }
 
     // Audio recording state
     @StateObject private var audioService = AudioRecorderService.shared
@@ -42,28 +40,29 @@ struct CirklAIButton: View {
     private let buttonSize: CGFloat = 70
     private let longPressThreshold: TimeInterval = 0.3
 
-    // MARK: - Colors by State (NEW: AIAssistantState colors)
-    // idle = Blanc translucide (Liquid Glass)
-    // morningBrief = Vert menthe (#00C781)
-    // debriefing = Bleu électrique
-    // synergyLow = Jaune
-    // synergyHigh = Rouge
+    // MARK: - Colors by State (using DesignTokens for brand consistency)
+    private let idleColor = DesignTokens.Colors.purple      // Violet original
+    private let synergyColor = DesignTokens.Colors.electricBlue // Cyan → Electric Blue
+    private let opportunityColor = DesignTokens.Colors.mint // #34C759 Green → Mint
+    private let newConnectionColor = DesignTokens.Colors.pink // Orange → Pink (brand color)
     private let recordingColor = DesignTokens.Colors.error
-
-    // Morning brief manager reference
-    private var morningBriefManager: MorningBriefManager { MorningBriefManager.shared }
 
     private var currentColor: Color {
         if audioService.state.isRecording {
             return recordingColor
         }
-        return assistantState.color
+        switch buttonState {
+        case .idle: return idleColor
+        case .synergy: return synergyColor
+        case .opportunity: return opportunityColor
+        case .newConnection: return newConnectionColor
+        }
     }
 
     var body: some View {
         ZStack {
-            // === GLOW EFFECT pour synergies (jaune/rouge) et morning brief (vert) ===
-            if assistantState == .synergyLow || assistantState == .synergyHigh || assistantState == .morningBrief {
+            // === GLOW EFFECT pour opportunity/new_connection ===
+            if buttonState == .opportunity || buttonState == .newConnection {
                 Circle()
                     .fill(
                         RadialGradient(
@@ -79,7 +78,7 @@ struct CirklAIButton: View {
             }
 
             // === LIVING PULSE RING (quand état actif) ===
-            if assistantState != .idle && !audioService.state.isRecording {
+            if buttonState != .idle && !audioService.state.isRecording {
                 Circle()
                     .stroke(currentColor.opacity(0.5), lineWidth: 2.5)
                     .frame(width: buttonSize + 10, height: buttonSize + 10)
@@ -137,9 +136,9 @@ struct CirklAIButton: View {
                     .animation(.easeOut(duration: 0.1), value: audioService.audioLevel)
             }
 
-            // === BADGE COUNT (debriefings ou synergies) ===
-            if badgeCount > 0 && !audioService.state.isRecording {
-                Text("\(badgeCount)")
+            // === BADGE SYNERGIES COUNT ===
+            if synergiesCount > 0 && !audioService.state.isRecording {
+                Text("\(synergiesCount)")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(DesignTokens.Colors.textPrimary)
                     .frame(width: 20, height: 20)
@@ -198,13 +197,11 @@ struct CirklAIButton: View {
                 audioData = nil
             }
         }
-// Network Pulse Sheet
         .sheet(isPresented: $showNetworkPulse) {
             NetworkPulseView()
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }
-        // Action Sheet pour bouton idle
         .confirmationDialog("Que veux-tu faire ?", isPresented: $showActionSheet, titleVisibility: .visible) {
             Button {
                 showChat = true
@@ -222,20 +219,20 @@ struct CirklAIButton: View {
         } message: {
             Text("Choisis une option pour interagir avec ton assistant")
         }
-        // Listen for debriefing state changes
-        .onReceive(NotificationCenter.default.publisher(for: .debriefingStateChanged)) { _ in
-            withAnimation(.easeInOut(duration: 0.3)) {
-                assistantState = debriefingManager.currentState
-                badgeCount = debriefingManager.badgeCount
-                restartLivingPulse()
-            }
-        }
-        // Listen for new synergy detections
-        .onReceive(NotificationCenter.default.publisher(for: .synergyDetected)) { _ in
-            withAnimation(.easeInOut(duration: 0.3)) {
-                assistantState = debriefingManager.currentState
-                badgeCount = debriefingManager.badgeCount
-                restartLivingPulse()
+        // Listen for button state updates from chat responses
+        .onReceive(NotificationCenter.default.publisher(for: .cirklButtonStateUpdate)) { notification in
+            if let newStateString = notification.userInfo?["buttonState"] as? String,
+               let newState = AIButtonState(rawValue: newStateString) {
+                #if DEBUG
+                print("🔔 Button received state update: \(newStateString)")
+                #endif
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    buttonState = newState
+                    if newState == .idle {
+                        synergiesCount = 0
+                        synergies = []
+                    }
+                }
             }
         }
     }
@@ -253,34 +250,42 @@ struct CirklAIButton: View {
         case .error:
             return "exclamationmark.circle.fill"
         case .idle:
-            // Use state-specific icon when not recording
-            return assistantState.icon
+            return "mic.fill"
         }
     }
 
     private var pulseScale: CGFloat {
-        assistantState.pulseScale
+        switch buttonState {
+        case .idle: return 0
+        case .synergy: return 0.15
+        case .opportunity: return 0.25
+        case .newConnection: return 0.35
+        }
     }
 
     private var pulseDuration: Double {
-        assistantState.pulseDuration
+        switch buttonState {
+        case .idle: return 0
+        case .synergy: return 2.0
+        case .opportunity: return 1.5
+        case .newConnection: return 0.8
+        }
     }
 
-    // MARK: - Context Building
+    // MARK: - Synergy Context
 
-    private func buildSynergyContext() -> AIAssistantContext? {
-        // Only provide context if there's something to show
-        guard assistantState != .idle else { return nil }
+    private func buildSynergyContext() -> SynergyContext? {
+        // Only require non-idle state, synergies array can be empty
+        guard buttonState != .idle else { return nil }
 
         #if DEBUG
-        print("🔘 buildSynergyContext: state=\(assistantState.rawValue), debriefings=\(debriefingManager.pendingCount), synergies=\(debriefingManager.highSynergyCount + debriefingManager.lowSynergyCount), hasMorningBrief=\(morningBriefManager.hasPendingBrief)")
+        print("🔘 buildSynergyContext: state=\(buttonState.rawValue), count=\(synergiesCount), synergies=\(synergies.count)")
         #endif
 
-        return AIAssistantContext(
-            state: assistantState,
-            pendingDebriefings: Array(debriefingManager.pendingDebriefings.prefix(3)),
-            detectedSynergies: Array(debriefingManager.detectedSynergies.filter { !$0.isActedUpon }.prefix(3)),
-            morningBrief: assistantState == .morningBrief ? morningBriefManager.currentBrief : nil
+        return SynergyContext(
+            state: buttonState,
+            count: synergiesCount,
+            synergies: synergies
         )
     }
 
@@ -315,65 +320,53 @@ struct CirklAIButton: View {
     @MainActor
     private func fetchButtonState() async {
         #if DEBUG
-        print("🟢 fetchButtonState() - checking DebriefingManager")
+        print("🟢 fetchButtonState() starting for userId: \(userId)")
         #endif
-
-        let previousState = assistantState
-
-        // Get state from DebriefingManager (local first)
-        let newState = debriefingManager.currentState
-        let newBadgeCount = debriefingManager.badgeCount
-
-        // Also fetch N8N synergies (background analysis)
         do {
             let response = try await N8NService.shared.fetchButtonState(userId: userId)
 
-            // If N8N has synergies, add them to DebriefingManager
-            for synergyInfo in response.synergies {
-                if let synergy = synergyInfo.toDetectedSynergy() {
-                    debriefingManager.addSynergy(synergy)
+            let previousState = buttonState
+            buttonState = response.buttonState
+            synergiesCount = response.synergiesCount
+            synergies = response.synergies
+
+            // Restart pulse animation if state changed
+            if previousState != buttonState {
+                restartLivingPulse()
+
+                // Haptic feedback on state change
+                if buttonState != .idle {
+                    let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                    impactFeedback.impactOccurred()
                 }
             }
-        } catch {
+
             #if DEBUG
-            print("⚠️ N8N fetch failed (using local state): \(error.localizedDescription)")
+            print("🔘 Button state updated: \(buttonState.rawValue), synergies: \(synergiesCount)")
+            #endif
+        } catch {
+            // Keep previous state on error
+            #if DEBUG
+            print("❌ Button state fetch failed: \(error.localizedDescription)")
             #endif
         }
-
-        // Update state from DebriefingManager (might have changed with N8N data)
-        assistantState = debriefingManager.currentState
-        badgeCount = debriefingManager.badgeCount
-
-        // Restart pulse animation if state changed
-        if previousState != assistantState {
-            restartLivingPulse()
-
-            // Haptic feedback on state change
-            if assistantState != .idle {
-                CirklHaptics.light()
-            }
-        }
-
-        #if DEBUG
-        print("🔘 Button state: \(assistantState.rawValue), badge: \(badgeCount)")
-        #endif
     }
 
     private func restartLivingPulse() {
         livingPulsePhase = 0
         glowIntensity = 0
 
-        guard assistantState != .idle else { return }
+        guard buttonState != .idle else { return }
 
         // Pulse animation
         withAnimation(.easeInOut(duration: pulseDuration).repeatForever(autoreverses: false)) {
             livingPulsePhase = 1.0
         }
 
-        // Glow animation for synergies (jaune/rouge) et morning brief (vert)
-        if assistantState == .synergyLow || assistantState == .synergyHigh || assistantState == .morningBrief {
+        // Glow animation for opportunity/new_connection
+        if buttonState == .opportunity || buttonState == .newConnection {
             withAnimation(.easeInOut(duration: pulseDuration).repeatForever(autoreverses: true)) {
-                glowIntensity = assistantState.glowOpacity
+                glowIntensity = 0.8
             }
         }
     }
@@ -488,109 +481,8 @@ struct CirklAIButton: View {
     }
 }
 
-// MARK: - AI Assistant Context Model
+// MARK: - Synergy Context Model
 
-/// Contexte passé au ChatView quand le bouton est cliqué
-struct AIAssistantContext: Equatable {
-    let state: AIAssistantState
-    let pendingDebriefings: [PendingDebriefing]
-    let detectedSynergies: [DetectedSynergy]
-    let morningBrief: MorningBrief?
-
-    init(
-        state: AIAssistantState,
-        pendingDebriefings: [PendingDebriefing] = [],
-        detectedSynergies: [DetectedSynergy] = [],
-        morningBrief: MorningBrief? = nil
-    ) {
-        self.state = state
-        self.pendingDebriefings = pendingDebriefings
-        self.detectedSynergies = detectedSynergies
-        self.morningBrief = morningBrief
-    }
-
-    static func == (lhs: AIAssistantContext, rhs: AIAssistantContext) -> Bool {
-        lhs.state == rhs.state &&
-        lhs.pendingDebriefings.map(\.id) == rhs.pendingDebriefings.map(\.id) &&
-        lhs.detectedSynergies.map(\.id) == rhs.detectedSynergies.map(\.id) &&
-        lhs.morningBrief?.generatedAt == rhs.morningBrief?.generatedAt
-    }
-
-    var stateDescription: String {
-        state.title
-    }
-
-    var emoji: String {
-        switch state {
-        case .idle: return ""
-        case .morningBrief: return "🌅"
-        case .debriefing: return "💬"
-        case .synergyLow: return "🤝"
-        case .synergyHigh: return "🔥"
-        }
-    }
-
-    /// Génère le message initial de l'IA selon l'état
-    var promptMessage: String {
-        switch state {
-        case .idle:
-            return "Salut ! Comment puis-je t'aider avec ton réseau ?"
-
-        case .morningBrief:
-            // Utilise le brief passé dans le contexte
-            if let brief = morningBrief {
-                return brief.briefText
-            }
-            return "🌅 **Brief du matin**\n\nTon réseau a respiré cette nuit. Laisse-moi te raconter ce qui s'est passé..."
-
-        case .debriefing:
-            guard let debriefing = pendingDebriefings.first else {
-                return "Tu as des debriefings en attente. Clique pour voir."
-            }
-            let profile = debriefing.publicProfile
-            var message = "💬 Super ! Tu t'es connecté à **\(profile.name)** !\n\n"
-
-            // Infos publiques
-            if let role = profile.role, let company = profile.company {
-                message += "📋 \(role) chez \(company)\n"
-            }
-            if profile.mutualConnectionsCount > 0 {
-                message += "👥 \(profile.mutualConnectionsCount) connexion(s) en commun"
-                if !profile.mutualConnectionNames.isEmpty {
-                    message += " : \(profile.mutualConnectionNames.prefix(3).joined(separator: ", "))"
-                }
-                message += "\n"
-            }
-            if !profile.tags.isEmpty {
-                message += "🏷️ Intérêts : \(profile.tags.prefix(3).joined(separator: ", "))\n"
-            }
-
-            message += "\n**Qu'as-tu pensé de cette rencontre ?**"
-            return message
-
-        case .synergyLow, .synergyHigh:
-            let count = detectedSynergies.count
-            if count == 0 {
-                return "\(emoji) J'ai détecté des opportunités dans ton réseau. Veux-tu en savoir plus ?"
-            }
-
-            var message = "\(emoji) **\(state == .synergyHigh ? "Opportunité importante" : "Opportunité détectée")** !\n\n"
-
-            for synergy in detectedSynergies.prefix(3) {
-                message += "• **\(synergy.connectionAName)** ↔ **\(synergy.connectionBName)**\n"
-                message += "  \(synergy.synergyType.displayName) (score: \(Int(synergy.score * 100))%)\n"
-                message += "  _\(synergy.reason)_\n\n"
-            }
-
-            message += "Veux-tu que je facilite une mise en relation ?"
-            return message
-        }
-    }
-}
-
-// MARK: - Legacy SynergyContext (backward compatibility)
-
-/// Ancien modèle pour compatibilité avec l'API N8N existante
 struct SynergyContext: Equatable {
     let state: AIButtonState
     let count: Int
@@ -599,8 +491,8 @@ struct SynergyContext: Equatable {
     var stateDescription: String {
         switch state {
         case .idle: return ""
-        case .synergy, .synergyLow: return "Synergie détectée"
-        case .opportunity, .synergyHigh: return "Opportunité importante"
+        case .synergy: return "Synergie détectée"
+        case .opportunity: return "Opportunité"
         case .newConnection: return "Nouvelle connexion"
         }
     }
@@ -608,18 +500,24 @@ struct SynergyContext: Equatable {
     var emoji: String {
         switch state {
         case .idle: return ""
-        case .synergy, .synergyLow: return "🤝"
-        case .opportunity, .synergyHigh: return "🔥"
+        case .synergy: return "🤝"
+        case .opportunity: return "💡"
         case .newConnection: return "✨"
         }
     }
 
+    /// Build a prompt message describing the synergies
     var promptMessage: String {
         guard !synergies.isEmpty else {
-            return "J'ai \(count) \(stateDescription.lowercased()) à te montrer."
+            return "J'ai \(count) \(stateDescription.lowercased()) à te montrer. Que veux-tu savoir ?"
         }
+
         let descriptions = synergies.compactMap { $0.description }.prefix(3)
+        if descriptions.isEmpty {
+            return "\(emoji) \(stateDescription): J'ai détecté \(count) élément(s). Veux-tu que je t'en dise plus ?"
+        }
+
         let descList = descriptions.joined(separator: "\n• ")
-        return "\(emoji) \(stateDescription):\n• \(descList)"
+        return "\(emoji) \(stateDescription):\n• \(descList)\n\nVeux-tu que je t'en dise plus ?"
     }
 }
