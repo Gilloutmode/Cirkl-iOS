@@ -65,26 +65,30 @@ struct UpdateCard: View {
                 }
             }
             .padding(DesignTokens.Spacing.md)
-            .background { glassBackground }
+            .background(
+                RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
+                    .fill(DesignTokens.Colors.cardBackground)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
+                    .strokeBorder(
+                        item.isRead
+                            ? DesignTokens.Colors.cardBorder
+                            : DesignTokens.Colors.electricBlue.opacity(0.5),
+                        lineWidth: item.isRead ? 1 : 1.5
+                    )
+            )
+            .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
         }
         .buttonStyle(.plain)
-        .contentShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.medium))
+        .contentShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.large))
     }
 
     // MARK: - Avatar View
 
     private var avatarView: some View {
         Circle()
-            .fill(
-                LinearGradient(
-                    colors: [
-                        DesignTokens.Colors.electricBlue.opacity(0.3),
-                        DesignTokens.Colors.electricBlue.opacity(0.1)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
+            .fill(DesignTokens.Colors.electricBlue.opacity(0.15))
             .frame(width: 48, height: 48)
             .overlay(
                 Group {
@@ -99,38 +103,6 @@ struct UpdateCard: View {
                     }
                 }
             )
-    }
-
-    // MARK: - Glass Background
-
-    @ViewBuilder
-    private var glassBackground: some View {
-        if #available(iOS 26.0, *) {
-            RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
-                .fill(.clear)
-                .glassEffect(.regular, in: .rect(cornerRadius: DesignTokens.Radius.medium))
-                .overlay(
-                    RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
-                        .strokeBorder(
-                            item.isRead
-                                ? DesignTokens.Colors.glassBorder.opacity(0.3)
-                                : DesignTokens.Colors.electricBlue.opacity(0.4),
-                            lineWidth: 1
-                        )
-                )
-        } else {
-            RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
-                        .strokeBorder(
-                            item.isRead
-                                ? DesignTokens.Colors.glassBorder.opacity(0.3)
-                                : DesignTokens.Colors.electricBlue.opacity(0.4),
-                            lineWidth: 1
-                        )
-                )
-        }
     }
 }
 
