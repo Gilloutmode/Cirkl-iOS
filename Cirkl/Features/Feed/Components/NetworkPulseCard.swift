@@ -112,6 +112,7 @@ struct NetworkPulseCard: View {
             .background { glassBackground }
         }
         .buttonStyle(.plain)
+        .contentShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.medium))
     }
 
     // MARK: - Status Message

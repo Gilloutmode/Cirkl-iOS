@@ -63,6 +63,7 @@ struct UpdateCard: View {
             .background { glassBackground }
         }
         .buttonStyle(.plain)
+        .contentShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.medium))
     }
 
     // MARK: - Avatar View

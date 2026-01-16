@@ -145,10 +145,14 @@ struct FeedView: View {
             SynergyCard(
                 item: item,
                 onCreateConnection: {
+                    // Sauvegarder l'item AVANT suppression pour le feedback
+                    let createdItem = item
                     withAnimation(DesignTokens.Animations.normal) {
                         viewModel.createSynergyConnection(item.id)
                     }
                     CirklHaptics.success()
+                    // Montrer le détail de la synergie créée
+                    selectedFeedItem = createdItem
                 },
                 onDismiss: {
                     withAnimation(DesignTokens.Animations.normal) {
