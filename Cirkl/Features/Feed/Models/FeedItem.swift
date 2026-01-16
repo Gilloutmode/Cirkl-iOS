@@ -216,7 +216,7 @@ enum FeedFilter: String, CaseIterable {
         switch self {
         case .all: return FeedItemType.allCases
         case .updates: return [.update]
-        case .synergies: return [.synergy]
+        case .synergies: return [.synergy, .incomingSynergy]
         case .reminders: return [.networkPulse]
         }
     }
