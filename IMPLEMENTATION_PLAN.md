@@ -1,35 +1,25 @@
-# Implementation Plan: Feed d'Actualité - Corrections Complètes
+# Implementation Plan: Post-Merge Build Fixes
 
-> **Scope**: Cross-cutting | **Risk**: Agressif | **Validation**: Build + Logs détaillés
+> **Scope**: Cross-cutting | **Risk**: Aggressif | **Validation**: Build + App Launch
 
 ## Summary
 
-Correction de tous les bugs du Feed CirKL : state management incorrect, boutons non fonctionnels (Updates, Synergies, Rappels), réactivité UI cassée, et intégration backend manquante. Refactoring agressif autorisé pour une solution propre.
+Le merge de feature/dev a causé des incompatibilités de types entre deux systèmes AI (AIButtonState vs AIAssistantState). Les switch statements sont incomplets et ChatView.swift référence des types inexistants. Correction prioritaire pour restaurer le build.
 
 ## Tasks
 
-- [x] Task 1: Fix ViewModel state management - Converted FeedViewModel from @Observable to ObservableObject with @Published properties. Changed FeedView to use @StateObject for proper state persistence across view updates.
+- [ ] Task 1: Fix CirklAIButton.swift switch statements - Ajouter les cas `synergyLow` et `synergyHigh` dans tous les switch sur `AIButtonState` (lignes ~54, 258, 267, 492, 501). Mapper vers les couleurs/comportements appropriés.
 
-- [x] Task 2: Implémenter loading state dans FeedViewModel - Added `loadingItemId: String?` property and `isItemLoading()` helper method. Made `createSynergyConnection()` async with loading state tracking. Updated SynergyCard to accept `isLoading` parameter with ProgressView and disabled state during operations.
+- [ ] Task 2: Restaurer ChatView.swift depuis feature/dev - Exécuter `git show feature/dev:Cirkl/Features/AI/ChatView.swift > Cirkl/Features/AI/ChatView.swift` pour récupérer la version cohérente.
 
-- [x] Task 3: Créer la méthode N8NService.createSynergyConnection() - Added `CreateSynergyRequest` and `CreateSynergyResponse` structs. Implemented `createSynergyConnection(userId:synergyId:person1Name:person2Name:matchContext:)` method that POSTs to `/webhook/acknowledge-synergies` with full synergy data. Includes debug logging and proper error handling.
+- [ ] Task 3: Créer CirklIntent.swift si manquant - Vérifier si le type `CirklIntent` existe. Si non, créer dans `Cirkl/Core/Models/CirklIntent.swift` avec les cas nécessaires pour ChatView.
 
-- [x] Task 4: Connecter createSynergyConnection() au backend - Updated FeedViewModel.createSynergyConnection() to call N8NService.shared.createSynergyConnection() with try/await. Item is removed from feed ONLY after backend confirmation. Added proper error handling that sets ViewModel.error on failure without removing the item.
+- [ ] Task 4: Exporter SynergyContext - Si SynergyContext est défini dans CirklAIButton.swift mais utilisé ailleurs, le déplacer vers un fichier séparé `Cirkl/Core/Models/SynergyContext.swift` ou s'assurer qu'il est accessible.
 
-- [x] Task 5: Implémenter le bouton "Reprendre contact" - Implemented in FeedItemDetailSheet within FeedView.swift. Added ShareSheet component (Components/Library/Sharing/ShareSheet.swift) for UIActivityViewController integration. Button generates a personalized message based on connection context (name, days since contact, last interaction) and opens iOS share sheet. Added helper method generateResumeContactMessage() and debug logging.
+- [ ] Task 5: Vérifier imports ChatView - S'assurer que tous les imports de ChatView.swift sont corrects: CirklEmptyState, CirklHaptics, ChatHistoryService doivent être accessibles.
 
-- [x] Task 6: Ajouter loading state aux boutons SynergyCard - Already implemented in SynergyCard.swift with `isLoading: Bool` parameter. Shows ProgressView, changes button text to "Création...", disables both buttons during loading, and dims background. Connected via `viewModel.isItemLoading(item.id)` in FeedView.
+- [ ] Task 6: Build validation - Exécuter `xcodebuild -scheme Cirkl -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build` et corriger toute erreur restante.
 
-- [x] Task 7: Ajouter loading state au bouton NetworkPulseCard - Not required. The "Reprendre contact" button in FeedItemDetailSheet opens a share sheet (synchronous UIActivityViewController). No async network call, so no loading state needed. The share sheet itself provides immediate visual feedback.
+- [ ] Task 7: Test launch - Lancer l'app sur simulateur et vérifier que l'écran principal s'affiche sans crash.
 
-- [x] Task 8: Fix réactivité isRead - Updated markAsRead() and markAllAsRead() in FeedViewModel to use copy-and-replace pattern for guaranteed SwiftUI reactivity. Added early return for already-read items. Added animation modifier to feed cards to animate isRead changes. Added debug logging with format "[Feed] markAsRead: itemId → isRead=true".
-
-- [x] Task 9: Implémenter le callback ProfileDetailView - Added `updateConnectionInFeed(OrbitalContact)` method to FeedViewModel that updates connection names in feed items when profile is modified. Updated FeedItemDetailSheet to accept `onConnectionUpdated` callback and pass it to ProfileDetailView. Changed `connectionName` in FeedItem model from `let` to `var` to allow modification. Full data flow: ProfileDetailView → FeedItemDetailSheet → FeedView → FeedViewModel.updateConnectionInFeed().
-
-- [x] Task 10: Ajouter logs de debug complets - Added debug logs with [Feed] format to: SynergyCard buttons ("Créer la connexion" and "Pas maintenant"), UpdateCard onTap, NetworkPulseCard onTap. FeedViewModel methods (markAsRead, createSynergyConnection, handleItemTap) already had comprehensive logging.
-
-- [x] Task 11: Vérifier et corriger les compteurs de filtres - Verified: updateCount, synergyCount, reminderCount are computed properties that correctly filter by FeedItemType (.update, .synergy, .networkPulse). Counts auto-update when items array changes. Build passes successfully.
-
-- [x] Task 12: Ajouter feedback visuel (toasts) - Added toast feedback using existing ToastManager: success toast when synergy connection is created ("Connexion X ↔ Y créée !"), error toast on network/backend failure, info toast when synergy is dismissed, and info toast when "Reprendre contact" prepares a message for sharing.
-
-- [x] Task 13: Build et test final - Build succeeded with xcodebuild (iPhone 17 Pro simulator). All 12 previous tasks validated and implemented. Project compiles without errors. Ready for manual testing on simulator to verify button interactions and debug logs.
+- [ ] Task 8: Test Feed navigation - Naviguer vers l'onglet Feed et vérifier qu'il affiche les cards correctement.

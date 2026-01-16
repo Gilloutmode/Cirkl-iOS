@@ -56,6 +56,8 @@ struct CirklAIButton: View {
         case .synergy: return synergyColor
         case .opportunity: return opportunityColor
         case .newConnection: return newConnectionColor
+        case .synergyLow: return synergyColor.opacity(0.7)
+        case .synergyHigh: return opportunityColor
         }
     }
 
@@ -260,6 +262,8 @@ struct CirklAIButton: View {
         case .synergy: return 0.15
         case .opportunity: return 0.25
         case .newConnection: return 0.35
+        case .synergyLow: return 0.20
+        case .synergyHigh: return 0.30
         }
     }
 
@@ -269,6 +273,8 @@ struct CirklAIButton: View {
         case .synergy: return 2.0
         case .opportunity: return 1.5
         case .newConnection: return 0.8
+        case .synergyLow: return 1.5
+        case .synergyHigh: return 1.0
         }
     }
 
@@ -494,6 +500,8 @@ struct SynergyContext: Equatable {
         case .synergy: return "Synergie détectée"
         case .opportunity: return "Opportunité"
         case .newConnection: return "Nouvelle connexion"
+        case .synergyLow: return "Opportunité détectée"
+        case .synergyHigh: return "Opportunité importante"
         }
     }
 
@@ -503,6 +511,8 @@ struct SynergyContext: Equatable {
         case .synergy: return "🤝"
         case .opportunity: return "💡"
         case .newConnection: return "✨"
+        case .synergyLow: return "🔗"
+        case .synergyHigh: return "🔥"
         }
     }
 
