@@ -24,7 +24,7 @@ Correction de tous les bugs du Feed CirKL : state management incorrect, boutons 
 
 - [x] Task 8: Fix réactivité isRead - Updated markAsRead() and markAllAsRead() in FeedViewModel to use copy-and-replace pattern for guaranteed SwiftUI reactivity. Added early return for already-read items. Added animation modifier to feed cards to animate isRead changes. Added debug logging with format "[Feed] markAsRead: itemId → isRead=true".
 
-- [ ] Task 9: Implémenter le callback ProfileDetailView - Dans FeedView.swift, remplacer le callback vide `{ _ in }` par une vraie implémentation qui synchronise les modifications.
+- [x] Task 9: Implémenter le callback ProfileDetailView - Added `updateConnectionInFeed(OrbitalContact)` method to FeedViewModel that updates connection names in feed items when profile is modified. Updated FeedItemDetailSheet to accept `onConnectionUpdated` callback and pass it to ProfileDetailView. Changed `connectionName` in FeedItem model from `let` to `var` to allow modification. Full data flow: ProfileDetailView → FeedItemDetailSheet → FeedView → FeedViewModel.updateConnectionInFeed().
 
 - [ ] Task 10: Ajouter logs de debug complets - Ajouter des print() dans: handleItemTap(), markAsRead(), createSynergyConnection(), tous les boutons d'action. Format: "[Feed] Action: description"
 

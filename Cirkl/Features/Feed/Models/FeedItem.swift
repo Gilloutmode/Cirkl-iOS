@@ -13,8 +13,8 @@ struct FeedItem: Identifiable, Equatable {
 
     // MARK: - Champs communs à tous les types
 
-    /// Nom de la connexion principale concernée
-    let connectionName: String?
+    /// Nom de la connexion principale concernée (var pour permettre la synchronisation avec ProfileDetailView)
+    var connectionName: String?
 
     /// URL de l'avatar de la connexion
     let connectionAvatar: URL?

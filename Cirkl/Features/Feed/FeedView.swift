@@ -47,7 +47,9 @@ struct FeedView: View {
         .animation(DesignTokens.Animations.fast, value: viewModel.unreadCount)
         // Sheet pour le détail connexion
         .sheet(item: $selectedFeedItem) { item in
-            FeedItemDetailSheet(item: item)
+            FeedItemDetailSheet(item: item) { updatedContact in
+                viewModel.updateConnectionInFeed(updatedContact)
+            }
         }
     }
 
@@ -286,6 +288,7 @@ private struct FilterPill: View {
 
 private struct FeedItemDetailSheet: View {
     let item: FeedItem
+    let onConnectionUpdated: (OrbitalContact) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var showProfileDetail = false
     @State private var showShareSheet = false
@@ -325,8 +328,13 @@ private struct FeedItemDetailSheet: View {
         .preferredColorScheme(.dark)
         .sheet(isPresented: $showProfileDetail) {
             if let contact = createOrbitalContact() {
-                ProfileDetailView(contact: contact) { _ in
-                    // Update handled by parent
+                ProfileDetailView(contact: contact) { updatedContact in
+                    // Sync modifications back to the feed
+                    onConnectionUpdated(updatedContact)
+
+                    #if DEBUG
+                    print("[Feed] ProfileDetailView callback: Connection updated - \(updatedContact.name)")
+                    #endif
                 }
             }
         }

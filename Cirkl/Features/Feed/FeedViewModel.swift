@@ -240,4 +240,36 @@ final class FeedViewModel: ObservableObject {
         print("[Feed] Resume contact action completed for: \(itemId)")
         #endif
     }
+
+    // MARK: - Profile Updates
+
+    /// Met à jour les items du feed quand un profil de connexion est modifié depuis ProfileDetailView
+    /// Cette méthode synchronise le nom et autres données modifiables
+    func updateConnectionInFeed(_ updatedContact: OrbitalContact) {
+        var updatedItems = false
+
+        for index in items.indices {
+            // Match by connectionId
+            if items[index].connectionId == updatedContact.id {
+                var item = items[index]
+
+                // Update the connection name if it changed
+                if item.connectionName != updatedContact.name {
+                    item.connectionName = updatedContact.name
+                    items[index] = item
+                    updatedItems = true
+
+                    #if DEBUG
+                    print("[Feed] updateConnectionInFeed: Updated item \(item.id) with new name: \(updatedContact.name)")
+                    #endif
+                }
+            }
+        }
+
+        #if DEBUG
+        if !updatedItems {
+            print("[Feed] updateConnectionInFeed: No items found for connectionId: \(updatedContact.id)")
+        }
+        #endif
+    }
 }
