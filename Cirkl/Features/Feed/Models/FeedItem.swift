@@ -64,6 +64,34 @@ struct FeedItem: Identifiable, Equatable {
     /// Ex: "Café @ WeWork République"
     let lastInteractionContext: String?
 
+    // MARK: - Champs spécifiques à Incoming Synergy (🤝)
+
+    /// Nom de l'introducteur
+    /// Ex: "Gil Toobool"
+    let introducerName: String?
+
+    /// ID de l'introducteur
+    let introducerId: String?
+
+    /// Nom de la personne présentée
+    /// Ex: "Dan Levy"
+    let introducedPersonName: String?
+
+    /// Rôle/métier de la personne présentée
+    /// Ex: "Agent immobilier"
+    let introducedPersonRole: String?
+
+    /// Localisation de la personne présentée
+    /// Ex: "Tel Aviv"
+    let introducedPersonLocation: String?
+
+    /// Message d'introduction
+    /// Ex: "Dan pourrait t'aider à trouver un appartement"
+    let introductionMessage: String?
+
+    /// ID de la requête de synergie pour accept/decline
+    let synergyRequestId: String?
+
     // MARK: - Computed Properties
 
     var relativeTimestamp: String {
@@ -137,12 +165,14 @@ enum FeedItemType: String, CaseIterable, Equatable {
     case update = "update"
     case synergy = "synergy"
     case networkPulse = "network_pulse"
+    case incomingSynergy = "incoming_synergy"
 
     var icon: String {
         switch self {
         case .update: return "megaphone.fill"
         case .synergy: return "sparkles"
         case .networkPulse: return "heart.text.square.fill"
+        case .incomingSynergy: return "person.2.fill"
         }
     }
 
@@ -151,6 +181,7 @@ enum FeedItemType: String, CaseIterable, Equatable {
         case .update: return "📢"
         case .synergy: return "🔮"
         case .networkPulse: return "💓"
+        case .incomingSynergy: return "🤝"
         }
     }
 
@@ -159,6 +190,7 @@ enum FeedItemType: String, CaseIterable, Equatable {
         case .update: return DesignTokens.Colors.electricBlue
         case .synergy: return DesignTokens.Colors.purple
         case .networkPulse: return DesignTokens.Colors.warning
+        case .incomingSynergy: return DesignTokens.Colors.success
         }
     }
 
@@ -167,6 +199,7 @@ enum FeedItemType: String, CaseIterable, Equatable {
         case .update: return "Updates"
         case .synergy: return "Synergies"
         case .networkPulse: return "Rappels"
+        case .incomingSynergy: return "Mises en relation"
         }
     }
 }
@@ -193,6 +226,34 @@ enum FeedFilter: String, CaseIterable {
 
 extension FeedItem {
     static let mockItems: [FeedItem] = [
+        // Incoming Synergy (🤝) - En premier pour test
+        FeedItem(
+            id: "0",
+            type: .incomingSynergy,
+            timestamp: Date().addingTimeInterval(-7200), // 2h ago
+            isRead: false,
+            connectionName: nil,
+            connectionAvatar: nil,
+            contextWithUser: nil,
+            connectionId: nil,
+            updateContent: nil,
+            synergyPerson1: nil,
+            synergyPerson1Name: nil,
+            synergyPerson2: nil,
+            synergyPerson2Name: nil,
+            synergyMatch: nil,
+            pulseStatus: nil,
+            daysSinceContact: nil,
+            lastInteractionContext: nil,
+            introducerName: "Gil Toobool",
+            introducerId: "user-gil-123",
+            introducedPersonName: "Dan Levy",
+            introducedPersonRole: "Agent immobilier",
+            introducedPersonLocation: "Tel Aviv",
+            introductionMessage: "Dan pourrait t'aider à trouver un appartement à Netanya",
+            synergyRequestId: "synergy-req-456"
+        ),
+
         // Updates (📢)
         FeedItem(
             id: "1",
@@ -211,7 +272,14 @@ extension FeedItem {
             synergyMatch: nil,
             pulseStatus: nil,
             daysSinceContact: nil,
-            lastInteractionContext: nil
+            lastInteractionContext: nil,
+            introducerName: nil,
+            introducerId: nil,
+            introducedPersonName: nil,
+            introducedPersonRole: nil,
+            introducedPersonLocation: nil,
+            introductionMessage: nil,
+            synergyRequestId: nil
         ),
         FeedItem(
             id: "2",
@@ -230,7 +298,14 @@ extension FeedItem {
             synergyMatch: nil,
             pulseStatus: nil,
             daysSinceContact: nil,
-            lastInteractionContext: nil
+            lastInteractionContext: nil,
+            introducerName: nil,
+            introducerId: nil,
+            introducedPersonName: nil,
+            introducedPersonRole: nil,
+            introducedPersonLocation: nil,
+            introductionMessage: nil,
+            synergyRequestId: nil
         ),
         FeedItem(
             id: "3",
@@ -249,7 +324,14 @@ extension FeedItem {
             synergyMatch: nil,
             pulseStatus: nil,
             daysSinceContact: nil,
-            lastInteractionContext: nil
+            lastInteractionContext: nil,
+            introducerName: nil,
+            introducerId: nil,
+            introducedPersonName: nil,
+            introducedPersonRole: nil,
+            introducedPersonLocation: nil,
+            introductionMessage: nil,
+            synergyRequestId: nil
         ),
 
         // Synergies (🔮)
@@ -270,7 +352,14 @@ extension FeedItem {
             synergyMatch: "à Netanya",
             pulseStatus: nil,
             daysSinceContact: nil,
-            lastInteractionContext: nil
+            lastInteractionContext: nil,
+            introducerName: nil,
+            introducerId: nil,
+            introducedPersonName: nil,
+            introducedPersonRole: nil,
+            introducedPersonLocation: nil,
+            introductionMessage: nil,
+            synergyRequestId: nil
         ),
         FeedItem(
             id: "5",
@@ -289,7 +378,14 @@ extension FeedItem {
             synergyMatch: "freelance disponible",
             pulseStatus: nil,
             daysSinceContact: nil,
-            lastInteractionContext: nil
+            lastInteractionContext: nil,
+            introducerName: nil,
+            introducerId: nil,
+            introducedPersonName: nil,
+            introducedPersonRole: nil,
+            introducedPersonLocation: nil,
+            introductionMessage: nil,
+            synergyRequestId: nil
         ),
 
         // Network Pulse (💓)
@@ -310,7 +406,14 @@ extension FeedItem {
             synergyMatch: nil,
             pulseStatus: .dormant,
             daysSinceContact: 21,
-            lastInteractionContext: "Café @ WeWork République"
+            lastInteractionContext: "Café @ WeWork République",
+            introducerName: nil,
+            introducerId: nil,
+            introducedPersonName: nil,
+            introducedPersonRole: nil,
+            introducedPersonLocation: nil,
+            introductionMessage: nil,
+            synergyRequestId: nil
         ),
         FeedItem(
             id: "7",
@@ -329,7 +432,14 @@ extension FeedItem {
             synergyMatch: nil,
             pulseStatus: .atRisk,
             daysSinceContact: 45,
-            lastInteractionContext: "Déjeuner business @ La Felicità"
+            lastInteractionContext: "Déjeuner business @ La Felicità",
+            introducerName: nil,
+            introducerId: nil,
+            introducedPersonName: nil,
+            introducedPersonRole: nil,
+            introducedPersonLocation: nil,
+            introductionMessage: nil,
+            synergyRequestId: nil
         ),
         FeedItem(
             id: "8",
@@ -348,7 +458,14 @@ extension FeedItem {
             synergyMatch: nil,
             pulseStatus: .dormant,
             daysSinceContact: 18,
-            lastInteractionContext: "Event networking @ 42"
+            lastInteractionContext: "Event networking @ 42",
+            introducerName: nil,
+            introducerId: nil,
+            introducedPersonName: nil,
+            introducedPersonRole: nil,
+            introducedPersonLocation: nil,
+            introductionMessage: nil,
+            synergyRequestId: nil
         )
     ]
 }

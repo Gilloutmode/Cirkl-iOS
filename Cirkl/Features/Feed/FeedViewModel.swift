@@ -209,6 +209,71 @@ final class FeedViewModel: ObservableObject {
         items.remove(at: index)
     }
 
+    // MARK: - Incoming Synergy Actions
+
+    /// Accepte une mise en relation entrante
+    func acceptIncomingSynergy(_ item: FeedItem) async {
+        guard let requestId = item.synergyRequestId else {
+            #if DEBUG
+            print("[Feed] acceptIncomingSynergy: No synergyRequestId for item \(item.id)")
+            #endif
+            return
+        }
+
+        loadingItemId = item.id
+        error = nil
+
+        #if DEBUG
+        print("[Feed] Accepting incoming synergy: \(requestId)")
+        print("[Feed] From: \(item.introducerName ?? "Unknown") → \(item.introducedPersonName ?? "Unknown")")
+        #endif
+
+        do {
+            // Call N8N to acknowledge the synergy request
+            try await N8NService.shared.acknowledgeSynergyRequest(requestId: requestId, accepted: true)
+
+            loadingItemId = nil
+
+            // Remove from feed after success
+            if let index = items.firstIndex(where: { $0.id == item.id }) {
+                items.remove(at: index)
+            }
+
+            // Show success toast
+            ToastManager.shared.success("Connexion avec \(item.introducedPersonName ?? "la personne") acceptée !")
+            CirklHaptics.success()
+
+            #if DEBUG
+            print("[Feed] Incoming synergy accepted successfully")
+            #endif
+
+        } catch {
+            loadingItemId = nil
+            self.error = error.localizedDescription
+            ToastManager.shared.error("Erreur lors de l'acceptation")
+            CirklHaptics.error()
+
+            #if DEBUG
+            print("[Feed] Incoming synergy accept error: \(error.localizedDescription)")
+            #endif
+        }
+    }
+
+    /// Décline une mise en relation entrante (peut être reproposée plus tard)
+    func declineIncomingSynergy(_ item: FeedItem) async {
+        #if DEBUG
+        print("[Feed] Declining incoming synergy: \(item.id)")
+        #endif
+
+        // Remove from feed without calling backend
+        // Can be shown again later
+        if let index = items.firstIndex(where: { $0.id == item.id }) {
+            items.remove(at: index)
+        }
+
+        ToastManager.shared.info("Mise en relation reportée")
+    }
+
     // MARK: - Network Pulse Actions
 
     /// Génère un message suggéré pour reprendre contact avec une connexion dormante

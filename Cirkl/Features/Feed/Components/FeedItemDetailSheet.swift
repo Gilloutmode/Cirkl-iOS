@@ -69,6 +69,7 @@ struct FeedItemDetailSheet: View {
         case .update: return "Mise à jour"
         case .synergy: return "Synergie"
         case .networkPulse: return "Network Pulse"
+        case .incomingSynergy: return "Mise en relation"
         }
     }
 
@@ -134,6 +135,9 @@ struct FeedItemDetailSheet: View {
 
             case .networkPulse:
                 pulseContent
+
+            case .incomingSynergy:
+                incomingSynergyContent
             }
         }
         .padding(DesignTokens.Spacing.md)
@@ -220,6 +224,61 @@ struct FeedItemDetailSheet: View {
         }
     }
 
+    @ViewBuilder
+    private var incomingSynergyContent: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
+            Label("Mise en relation", systemImage: "person.2.fill")
+                .font(DesignTokens.Typography.caption1)
+                .foregroundStyle(DesignTokens.Colors.success)
+
+            if let introducer = item.introducerName {
+                HStack(spacing: DesignTokens.Spacing.sm) {
+                    Image(systemName: "arrow.right.circle.fill")
+                        .foregroundStyle(DesignTokens.Colors.success)
+                    Text("\(introducer) veut te présenter :")
+                        .font(DesignTokens.Typography.body)
+                        .foregroundStyle(DesignTokens.Colors.textSecondary)
+                }
+            }
+
+            if let personName = item.introducedPersonName {
+                HStack(spacing: DesignTokens.Spacing.sm) {
+                    personBadge(name: personName, color: DesignTokens.Colors.success)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(personName)
+                            .font(DesignTokens.Typography.headline)
+                            .foregroundStyle(DesignTokens.Colors.textPrimary)
+                        if let role = item.introducedPersonRole {
+                            Text(role)
+                                .font(DesignTokens.Typography.caption1)
+                                .foregroundStyle(DesignTokens.Colors.textSecondary)
+                        }
+                        if let location = item.introducedPersonLocation {
+                            HStack(spacing: 4) {
+                                Image(systemName: "mappin")
+                                    .font(.system(size: 10))
+                                Text(location)
+                                    .font(DesignTokens.Typography.caption2)
+                            }
+                            .foregroundStyle(DesignTokens.Colors.textTertiary)
+                        }
+                    }
+                }
+            }
+
+            if let message = item.introductionMessage {
+                HStack(alignment: .top, spacing: 8) {
+                    Text("💬")
+                        .font(.system(size: 14))
+                    Text("\"\(message)\"")
+                        .font(DesignTokens.Typography.body)
+                        .italic()
+                        .foregroundStyle(DesignTokens.Colors.textSecondary)
+                }
+            }
+        }
+    }
+
     private func personBadge(name: String, color: Color) -> some View {
         Circle()
             .fill(color.opacity(0.2))
@@ -272,6 +331,18 @@ struct FeedItemDetailSheet: View {
                 .foregroundStyle(DesignTokens.Colors.textTertiary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, DesignTokens.Spacing.sm)
+
+            case .incomingSynergy:
+                // Les actions sont dans IncomingSynergyCard directement
+                HStack(spacing: DesignTokens.Spacing.xs) {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 14))
+                    Text("Accepte ou décline depuis la carte du feed")
+                        .font(DesignTokens.Typography.caption1)
+                }
+                .foregroundStyle(DesignTokens.Colors.textTertiary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, DesignTokens.Spacing.sm)
             }
 
             // Action contextuelle supplémentaire
@@ -290,6 +361,10 @@ struct FeedItemDetailSheet: View {
         case .synergy:
             // Note: Les boutons d'action (Créer connexion / Pas maintenant)
             // sont dans SynergyCard directement, pas dans le detail sheet
+            EmptyView()
+
+        case .incomingSynergy:
+            // Note: Les boutons Accept/Decline sont dans IncomingSynergyCard
             EmptyView()
 
         case .networkPulse:
