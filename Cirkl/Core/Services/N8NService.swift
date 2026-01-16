@@ -372,6 +372,63 @@ final class N8NService {
         #endif
     }
 
+    // MARK: - Acknowledge Incoming Synergy Request
+
+    /// Acknowledge an incoming synergy request (accept or decline)
+    /// - Parameters:
+    ///   - requestId: The unique identifier of the synergy request
+    ///   - accepted: Whether the user accepted or declined the introduction
+    func acknowledgeSynergyRequest(requestId: String, accepted: Bool) async throws {
+        let acknowledgeURL = "https://gilloutmode.app.n8n.cloud/webhook/synergy-acknowledge"
+
+        guard let url = URL(string: acknowledgeURL) else {
+            throw N8NError.invalidURL
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Cirkl-iOS/\(DeviceInfo.current.appVersion)", forHTTPHeaderField: "User-Agent")
+        request.timeoutInterval = 30
+
+        let payload: [String: Any] = [
+            "requestId": requestId,
+            "accepted": accepted,
+            "timestamp": ISO8601DateFormatter().string(from: Date())
+        ]
+
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: payload)
+        } catch {
+            throw N8NError.encodingFailed(error)
+        }
+
+        #if DEBUG
+        print("📤 [Feed] Acknowledge Synergy Request: requestId=\(requestId), accepted=\(accepted)")
+        #endif
+
+        let (data, response): (Data, URLResponse)
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            throw N8NError.networkError(error)
+        }
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              200...299 ~= httpResponse.statusCode else {
+            #if DEBUG
+            print("❌ [Feed] Acknowledge synergy request failed")
+            #endif
+            throw N8NError.invalidResponse
+        }
+
+        #if DEBUG
+        if let jsonString = String(data: data, encoding: .utf8) {
+            print("✅ [Feed] Acknowledge synergy request response: \(jsonString)")
+        }
+        #endif
+    }
+
     // MARK: - Private Methods
 
     private func performRequest(_ messageRequest: MessageRequest) async throws -> AssistantResponse {

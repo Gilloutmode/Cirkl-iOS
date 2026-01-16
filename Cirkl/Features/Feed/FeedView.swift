@@ -189,6 +189,24 @@ struct FeedView: View {
             NetworkPulseCard(item: item) {
                 handleItemTap(item)
             }
+
+        case .incomingSynergy:
+            IncomingSynergyCard(
+                item: item,
+                isLoading: viewModel.isItemLoading(item.id),
+                onAccept: {
+                    CirklHaptics.medium()
+                    Task {
+                        await viewModel.acceptIncomingSynergy(item)
+                    }
+                },
+                onDecline: {
+                    CirklHaptics.light()
+                    Task {
+                        await viewModel.declineIncomingSynergy(item)
+                    }
+                }
+            )
         }
     }
 

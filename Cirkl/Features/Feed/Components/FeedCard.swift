@@ -20,6 +20,8 @@ struct FeedCard: View {
             return "Synergie détectée"
         case .networkPulse:
             return item.connectionName ?? "Rappel réseau"
+        case .incomingSynergy:
+            return item.introducedPersonName ?? "Mise en relation"
         }
     }
 
@@ -38,6 +40,11 @@ struct FeedCard: View {
                 return "Aucun contact depuis \(days) jours"
             }
             return "Cette connexion s'éloigne"
+        case .incomingSynergy:
+            if let introducer = item.introducerName {
+                return "\(introducer) veut te présenter quelqu'un"
+            }
+            return "Une mise en relation t'attend"
         }
     }
 
