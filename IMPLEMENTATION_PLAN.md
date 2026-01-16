@@ -26,7 +26,7 @@ Correction de tous les bugs du Feed CirKL : state management incorrect, boutons 
 
 - [x] Task 9: Implémenter le callback ProfileDetailView - Added `updateConnectionInFeed(OrbitalContact)` method to FeedViewModel that updates connection names in feed items when profile is modified. Updated FeedItemDetailSheet to accept `onConnectionUpdated` callback and pass it to ProfileDetailView. Changed `connectionName` in FeedItem model from `let` to `var` to allow modification. Full data flow: ProfileDetailView → FeedItemDetailSheet → FeedView → FeedViewModel.updateConnectionInFeed().
 
-- [ ] Task 10: Ajouter logs de debug complets - Ajouter des print() dans: handleItemTap(), markAsRead(), createSynergyConnection(), tous les boutons d'action. Format: "[Feed] Action: description"
+- [x] Task 10: Ajouter logs de debug complets - Added debug logs with [Feed] format to: SynergyCard buttons ("Créer la connexion" and "Pas maintenant"), UpdateCard onTap, NetworkPulseCard onTap. FeedViewModel methods (markAsRead, createSynergyConnection, handleItemTap) already had comprehensive logging.
 
 - [ ] Task 11: Vérifier et corriger les compteurs de filtres - Dans FeedViewModel, s'assurer que updateCount, synergyCount et reminderCount retournent les bonnes valeurs basées sur les items filtrés.
 

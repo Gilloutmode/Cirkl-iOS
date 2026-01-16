@@ -117,6 +117,9 @@ struct SynergyCard: View {
             HStack(spacing: DesignTokens.Spacing.md) {
                 // Primary action: Create connection
                 Button(action: {
+                    #if DEBUG
+                    print("[Feed] SynergyCard: 'Créer la connexion' button tapped for \(item.synergyPerson1Name ?? "?") ↔ \(item.synergyPerson2Name ?? "?")")
+                    #endif
                     onCreateConnection()
                 }) {
                     HStack(spacing: 6) {
@@ -146,6 +149,9 @@ struct SynergyCard: View {
 
                 // Secondary action: Dismiss
                 Button(action: {
+                    #if DEBUG
+                    print("[Feed] SynergyCard: 'Pas maintenant' button tapped for item \(item.id)")
+                    #endif
                     CirklHaptics.light()
                     onDismiss()
                 }) {

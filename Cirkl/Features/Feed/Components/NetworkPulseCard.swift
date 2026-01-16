@@ -18,7 +18,12 @@ struct NetworkPulseCard: View {
     }
 
     var body: some View {
-        Button(action: onTap) {
+        Button(action: {
+            #if DEBUG
+            print("[Feed] NetworkPulseCard: tapped for \(item.connectionName ?? "unknown") - status: \(item.pulseStatus?.rawValue ?? "unknown") (id: \(item.id))")
+            #endif
+            onTap()
+        }) {
             HStack(alignment: .top, spacing: DesignTokens.Spacing.md) {
                 // Status indicator + Avatar
                 ZStack(alignment: .bottomTrailing) {
