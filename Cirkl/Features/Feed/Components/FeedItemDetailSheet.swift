@@ -138,7 +138,11 @@ struct FeedItemDetailSheet: View {
         }
         .padding(DesignTokens.Spacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(glassBackground)
+        .background(
+            RoundedRectangle(cornerRadius: DesignTokens.Radius.large)
+                .fill(DesignTokens.Colors.cardBackgroundElevated)
+        )
+        .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
     }
 
     @ViewBuilder
@@ -336,20 +340,6 @@ struct FeedItemDetailSheet: View {
         }
 
         return "Hey \(name) ! Je pensais à toi. On se fait un café bientôt ?"
-    }
-
-    // MARK: - Glass Background
-
-    @ViewBuilder
-    private var glassBackground: some View {
-        if #available(iOS 26.0, *) {
-            RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
-                .fill(.clear)
-                .glassEffect(.regular, in: .rect(cornerRadius: DesignTokens.Radius.medium))
-        } else {
-            RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
-                .fill(.ultraThinMaterial)
-        }
     }
 
     // MARK: - Create OrbitalContact
