@@ -12,7 +12,7 @@ Correction de tous les bugs du Feed CirKL : state management incorrect, boutons 
 
 - [x] Task 2: Implémenter loading state dans FeedViewModel - Added `loadingItemId: String?` property and `isItemLoading()` helper method. Made `createSynergyConnection()` async with loading state tracking. Updated SynergyCard to accept `isLoading` parameter with ProgressView and disabled state during operations.
 
-- [ ] Task 3: Créer la méthode N8NService.createSynergyConnection() - Dans N8NService.swift, ajouter une méthode async pour créer une connexion synergie via le webhook. Utiliser l'endpoint `/webhook/acknowledge-synergies` ou créer un nouveau.
+- [x] Task 3: Créer la méthode N8NService.createSynergyConnection() - Added `CreateSynergyRequest` and `CreateSynergyResponse` structs. Implemented `createSynergyConnection(userId:synergyId:person1Name:person2Name:matchContext:)` method that POSTs to `/webhook/acknowledge-synergies` with full synergy data. Includes debug logging and proper error handling.
 
 - [ ] Task 4: Connecter createSynergyConnection() au backend - Dans FeedViewModel.createSynergyConnection(), appeler N8NService.createSynergyConnection() avec try/await. Supprimer l'item du Feed UNIQUEMENT après confirmation backend. Ajouter error handling.
 

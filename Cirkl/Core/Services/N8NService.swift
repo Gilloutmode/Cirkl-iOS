@@ -232,6 +232,108 @@ final class N8NService {
         }
     }
 
+    // MARK: - Create Synergy Connection
+
+    /// Request for creating a synergy connection between two people
+    struct CreateSynergyRequest: Encodable {
+        let userId: String
+        let action: String  // "create_synergy"
+        let synergyId: String
+        let person1Name: String
+        let person2Name: String
+        let matchContext: String?
+        let sessionId: String
+    }
+
+    /// Response from create synergy endpoint
+    struct CreateSynergyResponse: Decodable, Sendable {
+        let success: Bool
+        let message: String?
+    }
+
+    /// Create a synergy connection between two people in the user's network
+    /// - Parameters:
+    ///   - userId: The current user's identifier
+    ///   - synergyId: The unique identifier of the synergy item
+    ///   - person1Name: Name of the first person in the synergy
+    ///   - person2Name: Name of the second person in the synergy
+    ///   - matchContext: Context of why they should connect (optional)
+    /// - Returns: CreateSynergyResponse indicating success or failure
+    func createSynergyConnection(
+        userId: String,
+        synergyId: String,
+        person1Name: String,
+        person2Name: String,
+        matchContext: String? = nil
+    ) async throws -> CreateSynergyResponse {
+        let acknowledgeURL = "https://gilloutmode.app.n8n.cloud/webhook/acknowledge-synergies"
+
+        guard let url = URL(string: acknowledgeURL) else {
+            throw N8NError.invalidURL
+        }
+
+        let request = CreateSynergyRequest(
+            userId: userId,
+            action: "create_synergy",
+            synergyId: synergyId,
+            person1Name: person1Name,
+            person2Name: person2Name,
+            matchContext: matchContext,
+            sessionId: UUID().uuidString
+        )
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.setValue("Cirkl-iOS/\(DeviceInfo.current.appVersion)", forHTTPHeaderField: "User-Agent")
+        urlRequest.timeoutInterval = 30
+
+        do {
+            urlRequest.httpBody = try encoder.encode(request)
+        } catch {
+            throw N8NError.encodingFailed(error)
+        }
+
+        #if DEBUG
+        if let body = urlRequest.httpBody, let jsonString = String(data: body, encoding: .utf8) {
+            print("📤 [Feed] N8N Create Synergy Request: \(jsonString)")
+        }
+        #endif
+
+        let (data, response): (Data, URLResponse)
+        do {
+            (data, response) = try await URLSession.shared.data(for: urlRequest)
+        } catch {
+            throw N8NError.networkError(error)
+        }
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw N8NError.invalidResponse
+        }
+
+        #if DEBUG
+        if let jsonString = String(data: data, encoding: .utf8) {
+            print("📥 [Feed] N8N Create Synergy Response (\(httpResponse.statusCode)): \(jsonString)")
+        }
+        #endif
+
+        guard 200...299 ~= httpResponse.statusCode else {
+            throw N8NError.httpError(statusCode: httpResponse.statusCode, data: data)
+        }
+
+        // Try to decode structured response, fallback to success if empty
+        if data.isEmpty {
+            return CreateSynergyResponse(success: true, message: "Synergy created")
+        }
+
+        do {
+            return try decoder.decode(CreateSynergyResponse.self, from: data)
+        } catch {
+            // If decoding fails but HTTP was successful, assume success
+            return CreateSynergyResponse(success: true, message: "Synergy created")
+        }
+    }
+
     /// Acknowledge synergies - updates Neo4j to clear button state
     /// Call this when user has seen and responded to synergy opportunities
     func acknowledgeSynergies(userId: String) async throws {
