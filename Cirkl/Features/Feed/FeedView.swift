@@ -6,7 +6,9 @@ import SwiftUI
 
 struct FeedView: View {
 
-    @State private var viewModel = FeedViewModel()
+    // IMPORTANT: Pour @Observable, ne pas utiliser @State sur le viewModel
+    // @Observable gère sa propre réactivité - @State casse le tracking
+    private var viewModel = FeedViewModel()
     @State private var selectedFeedItem: FeedItem?
 
     var body: some View {
@@ -173,9 +175,8 @@ struct FeedView: View {
                         count: countForFilter(filter),
                         isSelected: viewModel.selectedFilter == filter
                     ) {
-                        withAnimation(DesignTokens.Animations.fast) {
-                            viewModel.selectFilter(filter)
-                        }
+                        // Pas de withAnimation ici - géré par .animation() sur la View
+                        viewModel.selectFilter(filter)
                         CirklHaptics.light()
                     }
                 }
