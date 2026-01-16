@@ -7,6 +7,8 @@ import SwiftUI
 struct FeedView: View {
 
     @State private var viewModel = FeedViewModel()
+    @State private var selectedConnectionId: String?
+    @State private var showConnectionDetail = false
 
     var body: some View {
         NavigationStack {
@@ -24,7 +26,9 @@ struct FeedView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     if viewModel.hasUnread {
                         Button {
-                            viewModel.markAllAsRead()
+                            withAnimation(DesignTokens.Animations.fast) {
+                                viewModel.markAllAsRead()
+                            }
                         } label: {
                             Text("Tout lire")
                                 .font(DesignTokens.Typography.buttonSmall)
@@ -38,6 +42,16 @@ struct FeedView: View {
             await viewModel.load()
         }
         .preferredColorScheme(.dark)
+        // Animation globale pour les changements de filtre et items
+        .animation(DesignTokens.Animations.fast, value: viewModel.selectedFilter)
+        .animation(DesignTokens.Animations.normal, value: viewModel.items.count)
+        .animation(DesignTokens.Animations.fast, value: viewModel.unreadCount)
+        // Sheet pour le détail connexion
+        .sheet(isPresented: $showConnectionDetail) {
+            if let connectionId = selectedConnectionId {
+                ConnectionDetailSheet(connectionId: connectionId)
+            }
+        }
     }
 
     // MARK: - Content
@@ -104,6 +118,7 @@ struct FeedView: View {
                             insertion: .opacity.combined(with: .move(edge: .top)),
                             removal: .opacity.combined(with: .scale(scale: 0.9))
                         ))
+                        .id(item.id) // Important pour les animations
                 }
 
                 // Bottom spacer
@@ -131,11 +146,15 @@ struct FeedView: View {
             SynergyCard(
                 item: item,
                 onCreateConnection: {
-                    viewModel.createSynergyConnection(item.id)
+                    withAnimation(DesignTokens.Animations.normal) {
+                        viewModel.createSynergyConnection(item.id)
+                    }
                     CirklHaptics.success()
                 },
                 onDismiss: {
-                    viewModel.dismissSynergy(item.id)
+                    withAnimation(DesignTokens.Animations.normal) {
+                        viewModel.dismissSynergy(item.id)
+                    }
                 }
             )
 
@@ -157,7 +176,10 @@ struct FeedView: View {
                         count: countForFilter(filter),
                         isSelected: viewModel.selectedFilter == filter
                     ) {
-                        viewModel.selectFilter(filter)
+                        withAnimation(DesignTokens.Animations.fast) {
+                            viewModel.selectFilter(filter)
+                        }
+                        CirklHaptics.light()
                     }
                 }
             }
@@ -177,8 +199,10 @@ struct FeedView: View {
     }
 
     private func handleItemTap(_ item: FeedItem) {
-        // Mark as read
-        viewModel.markAsRead(item.id)
+        // Mark as read with animation
+        withAnimation(DesignTokens.Animations.fast) {
+            viewModel.markAsRead(item.id)
+        }
 
         // Haptic feedback
         CirklHaptics.light()
@@ -187,7 +211,11 @@ struct FeedView: View {
         print("📰 Tapped: \(item.connectionName ?? item.type.displayName)")
         #endif
 
-        // TODO: Navigate to connection profile or detail
+        // Navigate to connection profile if available
+        if let connectionId = item.connectionId {
+            selectedConnectionId = connectionId
+            showConnectionDetail = true
+        }
     }
 }
 
@@ -221,23 +249,70 @@ private struct FilterPill: View {
             )
             .padding(.horizontal, DesignTokens.Spacing.md)
             .padding(.vertical, DesignTokens.Spacing.sm)
-            .background {
-                if #available(iOS 26.0, *) {
-                    Capsule()
-                        .fill(isSelected ? DesignTokens.Colors.electricBlue : .clear)
-                        .glassEffect(.regular, in: .capsule)
-                } else {
-                    if isSelected {
-                        Capsule()
-                            .fill(DesignTokens.Colors.electricBlue)
-                    } else {
-                        Capsule()
-                            .fill(.ultraThinMaterial)
+            .background { pillBackground }
+            .contentShape(Capsule()) // FIX: Zone de tap explicite
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var pillBackground: some View {
+        if #available(iOS 26.0, *) {
+            Capsule()
+                .fill(isSelected ? DesignTokens.Colors.electricBlue : .clear)
+                .glassEffect(.regular, in: .capsule)
+        } else {
+            if isSelected {
+                Capsule()
+                    .fill(DesignTokens.Colors.electricBlue)
+            } else {
+                Capsule()
+                    .fill(.ultraThinMaterial)
+            }
+        }
+    }
+}
+
+// MARK: - Connection Detail Sheet (Placeholder)
+
+private struct ConnectionDetailSheet: View {
+    let connectionId: String
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: DesignTokens.Spacing.lg) {
+                Image(systemName: "person.circle.fill")
+                    .font(.system(size: 80))
+                    .foregroundStyle(DesignTokens.Colors.electricBlue.opacity(0.5))
+
+                Text("Profil Connexion")
+                    .font(DesignTokens.Typography.title2)
+                    .foregroundStyle(DesignTokens.Colors.textPrimary)
+
+                Text("ID: \(connectionId)")
+                    .font(DesignTokens.Typography.caption1)
+                    .foregroundStyle(DesignTokens.Colors.textTertiary)
+
+                Text("Navigation vers ProfileDetailView à implémenter")
+                    .font(DesignTokens.Typography.body)
+                    .foregroundStyle(DesignTokens.Colors.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding()
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(DesignTokens.Colors.background)
+            .navigationTitle("Connexion")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Fermer") {
+                        dismiss()
                     }
                 }
             }
         }
-        .buttonStyle(.plain)
+        .preferredColorScheme(.dark)
     }
 }
 

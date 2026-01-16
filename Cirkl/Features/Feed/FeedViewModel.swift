@@ -3,6 +3,7 @@ import SwiftUI
 
 // MARK: - Feed ViewModel
 /// Gère les actualités du réseau avec filtrage et marquage lu/non-lu
+/// Note: Pas de withAnimation ici - animations gérées côté View
 
 @MainActor
 @Observable
@@ -95,9 +96,12 @@ final class FeedViewModel {
     // MARK: - Filter Selection
 
     func selectFilter(_ filter: FeedFilter) {
-        withAnimation(DesignTokens.Animations.fast) {
-            selectedFilter = filter
-        }
+        // Pas de withAnimation ici - géré côté View
+        selectedFilter = filter
+
+        #if DEBUG
+        print("📰 Filter changed to: \(filter.rawValue)")
+        #endif
     }
 
     // MARK: - Synergy Actions
@@ -106,9 +110,6 @@ final class FeedViewModel {
     func createSynergyConnection(_ itemId: String) {
         guard let index = items.firstIndex(where: { $0.id == itemId }) else { return }
         let item = items[index]
-
-        // Mark as read
-        items[index].isRead = true
 
         #if DEBUG
         if let person1 = item.synergyPerson1Name,
@@ -120,26 +121,19 @@ final class FeedViewModel {
         // TODO: Appeler N8NService pour créer la connexion
         // En MVP, on simule juste le succès
 
-        // Remove the synergy item after action
-        withAnimation(DesignTokens.Animations.normal) {
-            items.remove(at: index)
-        }
+        // Remove the synergy item - animation gérée côté View
+        items.remove(at: index)
     }
 
     /// Dismiss une synergie (pas intéressé pour le moment)
     func dismissSynergy(_ itemId: String) {
         guard let index = items.firstIndex(where: { $0.id == itemId }) else { return }
 
-        // Mark as read
-        items[index].isRead = true
-
         #if DEBUG
         print("🔮 Synergy dismissed: \(itemId)")
         #endif
 
-        // Remove the synergy item
-        withAnimation(DesignTokens.Animations.normal) {
-            items.remove(at: index)
-        }
+        // Remove the synergy item - animation gérée côté View
+        items.remove(at: index)
     }
 }
